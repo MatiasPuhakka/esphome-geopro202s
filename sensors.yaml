@@ -8,7 +8,7 @@ esp32:
     type: esp-idf
 
 logger:
-  level: VERBOSE
+  level: DEBUG
   baud_rate: 0
 
 globals:
@@ -514,7 +514,7 @@ uart:
                 int8_t val_min = (int8_t)bytes[8];            // Offset 3
                 int8_t val_max = (int8_t)bytes[9];            // Offset 4
                 int8_t val_autumn = (int8_t)bytes[19];        // Offset 14
-                int8_t val_delay = (int8_t)bytes[24];         // Offset 19
+                uint8_t val_delay = bytes[24];                // Offset 19
                 int8_t val_increase = (int8_t)bytes[28];      // Offset 23
 
                 ESP_LOGD("bank", "Bank 0x0C values:");
@@ -550,12 +550,12 @@ uart:
                 // Parse all values according to their offsets
                 int8_t val_control_mode = (int8_t)bytes[15];     // Offset 10
                 int8_t val_tank_bottom_min = (int8_t)bytes[10];  // Offset 5
-                int8_t val_eh_delay = (int8_t)bytes[11];         // Offset 6
+                uint8_t val_eh_delay = bytes[11];             // Offset 6
                 int8_t val_tank_top_summer = (int8_t)bytes[7];   // Offset 2
                 int8_t val_tank_top_winter = (int8_t)bytes[6];   // Offset 1
                 int8_t val_extra_heat = (int8_t)bytes[13];       // Offset 8
-                int8_t val_extra_heat_time = (int8_t)bytes[14];  // Offset 9
-                int8_t val_comp_lock_time = (int8_t)bytes[19];   // Offset 14
+                uint8_t val_extra_heat_time = bytes[14];      // Offset 9
+                uint8_t val_comp_lock_time = bytes[19];       // Offset 14
                 int8_t val_top_eh_diff = (int8_t)bytes[12];      // Offset 7
                 int8_t val_bottom_diff = (int8_t)bytes[8];       // Offset 3
                 int8_t val_top_diff = (int8_t)bytes[9];          // Offset 4
