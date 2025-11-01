@@ -569,9 +569,19 @@ binary_sensor:
     icon: "mdi:radiator"
 
 uart:
+  rx_pin:
+    number: GPIO3
+    mode:
+      input: true
+      pullup: true
   tx_pin: GPIO1
-  rx_pin: GPIO3
   baud_rate: 4800
+  on_data:
+    - lambda: |-
+        ESP_LOGD("uart_rx", "got %u bytes", len);
+        for (size_t i = 0; i < len; i++) {
+          ESP_LOGD("uart_rx", "  data[%u]=0x%02X", i, data[i]);
+        }
   data_bits: 8
   parity: NONE
   stop_bits: 1
