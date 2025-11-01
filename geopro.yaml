@@ -8,7 +8,7 @@ esp32:
     type: esp-idf
 
 logger:
-  level: INFO
+  level: DEBUG
   baud_rate: 0
 
 globals:
@@ -569,8 +569,12 @@ binary_sensor:
     icon: "mdi:radiator"
 
 uart:
+  rx_pin:
+    number: GPIO3
+    mode:
+      input: true
+      pullup: true
   tx_pin: GPIO1
-  rx_pin: GPIO3
   baud_rate: 4800
   data_bits: 8
   parity: NONE

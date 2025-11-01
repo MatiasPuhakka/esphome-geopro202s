@@ -1,0 +1,131 @@
+esphome:
+  name: geopro-202s
+  friendly_name: Geopro 202s
+
+external_components:
+  - source: github://MatiasPuhakka/esphome-geopro202s@main
+    components: [geopro_202s]
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+# Required for serial communication
+uart:
+  tx_pin: GPIO1
+  rx_pin: GPIO3
+  baud_rate: 4800
+  data_bits: 8
+  parity: NONE
+  stop_bits: 1
+
+logger:
+  level: INFO
+
+# Main component configuration
+geopro_202s:
+  id: geopro
+  # Temperature sensors
+  outside_temp:
+    name: "Ulkolämpötila"
+  l1_supply:
+    name: "L1 Menovesi"
+  tank_top_in:
+    name: "Varaaja ylä tulo"
+  tank_top:
+    name: "Varaaja ylä"
+  tank_middle:
+    name: "Varaaja keski"
+  tank_bottom:
+    name: "Varaaja ala"
+  brine:
+    name: "Maaliuos"
+
+  # Valve positions
+  valve_l1:
+    name: "L1 Venttiili"
+  valve_dhw:
+    name: "JV Venttiili"
+
+  # Operating hours
+  hours_eh:
+    name: "Sähkövastus tunnit"
+  hours_comp:
+    name: "Kompressori tunnit"
+
+  # Status indicators
+  compressor:
+    name: "Kompressori"
+  el_heater:
+    name: "Sähkövastus"
+
+  # Bank 0x0C - Heating Circuit Settings (read-only sensors)
+  # For writable controls, see number controls below
+  l1_minus20:
+    name: "L1 -20°C"
+  l1_zero:
+    name: "L1 0°C"
+  l1_plus20:
+    name: "L1 +20°C"
+  l1_min_limit:
+    name: "L1 Minimiraja"
+  l1_max_limit:
+    name: "L1 Maksimiraja"
+  l1_night_effect:
+    name: "L1 Yöalennus vaikutus"
+  l1_autumn_dry:
+    name: "L1 Syyskuivaus"
+  l1_out_temp_delay:
+    name: "L1 Ulkolämpötilan hidastus"
+  l1_pre_increase:
+    name: "L1 Esikorotus"
+
+  # Bank 0x2C - L1 Settings
+  l1_summer_close:
+    name: "L1 venttiilin kesäsulku"
+
+  # Bank 0x0B - Heat Pump Settings
+  hp_mode:
+    name: "ML Ohjaustapa"
+  tank_min:
+    name: "ML VaraajaAlaMin"
+  delay_time:
+    name: "ML SV_viiveaika"
+  summer_temp:
+    name: "ML VarYlä Kesä"
+  winter_temp:
+    name: "ML VarYlä Talvi"
+  extra_heating:
+    name: "ML Lisälämmitys"
+  extra_time:
+    name: "ML Lisälämmitys aika"
+  comp_lock:
+    name: "ML Kompuran esto"
+  top_eh_diff:
+    name: "ML VarYlaEroSV"
+  bottom_diff:
+    name: "ML VaraajaAlaEro"
+  top_diff:
+    name: "ML VaraajaYläEro"
+  dhw_pre:
+    name: "ML JV esiavaus"
+  dhw_lock:
+    name: "ML JV Esto"
+  brine_alert:
+    name: "ML Maaliuos hälytys"
+
+ethernet:
+  type: LAN8720
+  mdc_pin: GPIO23
+  mdio_pin: GPIO18
+  clk_mode: GPIO17_OUT
+  phy_addr: 0
+  power_pin: GPIO12
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  password: !secret ota_password
