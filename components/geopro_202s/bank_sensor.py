@@ -43,37 +43,37 @@ CONF_DHW_PRE = "dhw_pre"
 CONF_DHW_LOCK = "dhw_lock"
 CONF_BRINE_ALERT = "brine_alert"
 
-# Bank sensor configuration: (bank_id, offset, default_name, unit, device_class)
+# Bank sensor configuration: (bank_id, offset, default_name, unit, device_class, icon)
 BANK_SENSORS = {
     # Bank 0x0C
-    CONF_L1_MINUS20: (0x0C, 0, "L1 -20°C", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE),
-    CONF_L1_ZERO: (0x0C, 1, "L1 0°C", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE),
-    CONF_L1_PLUS20: (0x0C, 2, "L1 +20°C", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE),
-    CONF_L1_MIN_LIMIT: (0x0C, 3, "L1 Minimiraja", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE),
-    CONF_L1_MAX_LIMIT: (0x0C, 4, "L1 Maksimiraja", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE),
-    CONF_L1_NIGHT_EFFECT: (0x0C, 5, "L1 Yöalennus vaikutus", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE),
-    CONF_L1_AUTUMN_DRY: (0x0C, 14, "L1 Syyskuivaus", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE),
-    CONF_L1_OUT_TEMP_DELAY: (0x0C, 19, "L1 Ulkolämpötilan hidastus", UNIT_MINUTE, DEVICE_CLASS_DURATION),
-    CONF_L1_PRE_INCREASE: (0x0C, 23, "L1 Esikorotus", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE),
+    CONF_L1_MINUS20: (0x0C, 0, "L1 -20°C", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:chart-line"),
+    CONF_L1_ZERO: (0x0C, 1, "L1 0°C", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:chart-line"),
+    CONF_L1_PLUS20: (0x0C, 2, "L1 +20°C", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:chart-line"),
+    CONF_L1_MIN_LIMIT: (0x0C, 3, "L1 Minimiraja", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
+    CONF_L1_MAX_LIMIT: (0x0C, 4, "L1 Maksimiraja", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
+    CONF_L1_NIGHT_EFFECT: (0x0C, 5, "L1 Yöalennus vaikutus", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
+    CONF_L1_AUTUMN_DRY: (0x0C, 14, "L1 Syyskuivaus", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
+    CONF_L1_OUT_TEMP_DELAY: (0x0C, 19, "L1 Ulkolämpötilan hidastus", UNIT_MINUTE, DEVICE_CLASS_DURATION, "mdi:clock"),
+    CONF_L1_PRE_INCREASE: (0x0C, 23, "L1 Esikorotus", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
 
     # Bank 0x2C
-    CONF_L1_SUMMER_CLOSE: (0x2C, 8, "L1 venttiilin kesäsulku", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE),
+    CONF_L1_SUMMER_CLOSE: (0x2C, 8, "L1 venttiilin kesäsulku", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
 
     # Bank 0x0B
-    CONF_WINTER_TEMP: (0x0B, 1, "ML VarYlä Talvi", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE),
-    CONF_SUMMER_TEMP: (0x0B, 2, "ML VarYlä Kesä", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE),
-    CONF_BOTTOM_DIFF: (0x0B, 3, "ML VaraajaAlaEro", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE),
-    CONF_TOP_DIFF: (0x0B, 4, "ML VaraajaYläEro", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE),
-    CONF_TANK_MIN: (0x0B, 5, "ML VaraajaAlaMin", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE),
-    CONF_DELAY_TIME: (0x0B, 6, "ML SV_viiveaika", UNIT_MINUTE, DEVICE_CLASS_DURATION),
-    CONF_TOP_EH_DIFF: (0x0B, 7, "ML VarYlaEroSV", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE),
-    CONF_EXTRA_HEATING: (0x0B, 8, "ML Lisälämmitys", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE),
-    CONF_EXTRA_TIME: (0x0B, 9, "ML Lisälämmitys aika", UNIT_MINUTE, DEVICE_CLASS_DURATION),
-    CONF_HP_MODE: (0x0B, 10, "ML Ohjaustapa", None, None),
-    CONF_BRINE_ALERT: (0x0B, 11, "ML Maaliuos hälytys", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE),
-    CONF_DHW_PRE: (0x0B, 12, "ML JV esiavaus", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE),
-    CONF_DHW_LOCK: (0x0B, 13, "ML JV Esto", UNIT_MINUTE, DEVICE_CLASS_DURATION),
-    CONF_COMP_LOCK: (0x0B, 14, "ML Kompuran esto", UNIT_MINUTE, DEVICE_CLASS_DURATION),
+    CONF_WINTER_TEMP: (0x0B, 1, "ML VarYlä Talvi", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
+    CONF_SUMMER_TEMP: (0x0B, 2, "ML VarYlä Kesä", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
+    CONF_BOTTOM_DIFF: (0x0B, 3, "ML VaraajaAlaEro", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
+    CONF_TOP_DIFF: (0x0B, 4, "ML VaraajaYläEro", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
+    CONF_TANK_MIN: (0x0B, 5, "ML VaraajaAlaMin", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
+    CONF_DELAY_TIME: (0x0B, 6, "ML SV_viiveaika", UNIT_MINUTE, DEVICE_CLASS_DURATION, "mdi:clock"),
+    CONF_TOP_EH_DIFF: (0x0B, 7, "ML VarYlaEroSV", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
+    CONF_EXTRA_HEATING: (0x0B, 8, "ML Lisälämmitys", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
+    CONF_EXTRA_TIME: (0x0B, 9, "ML Lisälämmitys aika", UNIT_MINUTE, DEVICE_CLASS_DURATION, "mdi:clock"),
+    CONF_HP_MODE: (0x0B, 10, "ML Ohjaustapa", None, None, "mdi:gauge"),
+    CONF_BRINE_ALERT: (0x0B, 11, "ML Maaliuos hälytys", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
+    CONF_DHW_PRE: (0x0B, 12, "ML JV esiavaus", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
+    CONF_DHW_LOCK: (0x0B, 13, "ML JV Esto", UNIT_MINUTE, DEVICE_CLASS_DURATION, "mdi:clock"),
+    CONF_COMP_LOCK: (0x0B, 14, "ML Kompuran esto", UNIT_MINUTE, DEVICE_CLASS_DURATION, "mdi:clock"),
 }
 
 CONFIG_SCHEMA = GEOPRO_202S_COMPONENT_SCHEMA.extend({
@@ -82,13 +82,14 @@ CONFIG_SCHEMA = GEOPRO_202S_COMPONENT_SCHEMA.extend({
         device_class=info[4],
         state_class=STATE_CLASS_MEASUREMENT,
         accuracy_decimals=0,
+        icon=info[5],
     ) for key, info in BANK_SENSORS.items()
 })
 
 async def to_code(config):
     hub = await cg.get_variable(config[CONF_ID])
 
-    for key, (bank_id, offset, default_name, unit, device_class) in BANK_SENSORS.items():
+    for key, (bank_id, offset, default_name, unit, device_class, icon) in BANK_SENSORS.items():
         if key in config:
             sens = await sensor.new_sensor(config[key])
             cg.add(hub.register_bank_sensor(bank_id, offset, sens))

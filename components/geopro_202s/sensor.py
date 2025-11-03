@@ -78,6 +78,7 @@ CONFIG_SCHEMA = GEOPRO_202S_COMPONENT_SCHEMA.extend({
         state_class=STATE_CLASS_MEASUREMENT,
         unit_of_measurement=UNIT_CELSIUS,
         accuracy_decimals=2,
+        icon="mdi:thermometer",
     ) for key in TEMPERATURE_SENSORS.keys()
 }).extend({
     # Valve position sensors
@@ -85,6 +86,7 @@ CONFIG_SCHEMA = GEOPRO_202S_COMPONENT_SCHEMA.extend({
         state_class=STATE_CLASS_MEASUREMENT,
         unit_of_measurement=UNIT_PERCENT,
         accuracy_decimals=0,
+        icon="mdi:valve",
     ) for key in VALVE_SENSORS.keys()
 }).extend({
     # Hour counters
@@ -93,6 +95,7 @@ CONFIG_SCHEMA = GEOPRO_202S_COMPONENT_SCHEMA.extend({
         state_class=STATE_CLASS_TOTAL_INCREASING,
         unit_of_measurement=UNIT_HOUR,
         accuracy_decimals=0,
+        icon="mdi:clock",
     ) for key in HOUR_SENSORS.keys()
 }).extend({
     # Status word

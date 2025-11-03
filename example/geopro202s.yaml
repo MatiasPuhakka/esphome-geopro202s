@@ -29,8 +29,12 @@ geopro_202s:
   # Temperature sensors
   outside_temp:
     name: "Ulkolämpötila"
+  l1_room:
+    name: "L1 Huone"
   l1_supply:
     name: "L1 Menovesi"
+  free_measurement:
+    name: "Vapaa mittaus"
   tank_top_in:
     name: "Varaaja ylä tulo"
   tank_top:
@@ -53,6 +57,10 @@ geopro_202s:
     name: "Sähkövastus tunnit"
   hours_comp:
     name: "Kompressori tunnit"
+
+  # Status word
+  status_word:
+    name: "Tila Muuttuja"
 
   # Status indicators
   compressor:

@@ -6,7 +6,7 @@
 namespace esphome {
 namespace geopro_202s {
 
-static const uint32_t MIN_READ_INTERVAL = 1000;  // 1 second between readings
+static const uint32_t MIN_READ_INTERVAL = 10000;  // 10 seconds between readings
 static const uint32_t MESSAGE_TIMEOUT = 100;     // 100ms timeout for message reception
 
 void Geopro202sComponent::setup() {
