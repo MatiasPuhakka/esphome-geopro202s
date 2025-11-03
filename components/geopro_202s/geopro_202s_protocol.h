@@ -6,7 +6,6 @@
 #include "esphome/core/hal.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
-#include "esphome/components/number/number.h"
 #include <map>
 #include <utility>
 
@@ -18,7 +17,6 @@ static const char *const TAG = "geopro_202s";
 // Protocol constants
 static const uint8_t MSG_START = 0x02;
 static const uint8_t CMD_READ = 0x81;
-static const uint8_t CMD_WRITE = 0x82;
 static const uint8_t CMD_LEN = 0x02;
 
 // Message types in responses
@@ -70,15 +68,6 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
     this->bank_sensors_[std::make_pair(bank_id, offset)] = sensor;
   }
 
-  // Register bank number controls (for writing)
-  void register_bank_number(uint8_t bank_id, uint8_t offset, number::Number *number) {
-    this->bank_numbers_[std::make_pair(bank_id, offset)] = number;
-  }
-
-  // Write bank value
-  void write_bank_value(uint8_t bank_id, uint8_t offset, int8_t value);
-  void write_bank_value(uint8_t bank_id, uint8_t offset, uint8_t value);
-
   // Update schedule methods
   void schedule_temperature_readings();
   void schedule_valve_readings();
@@ -90,7 +79,6 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
   void handle_char_(uint8_t c);
   void process_message_();
   void send_request_(uint8_t id);
-  void send_write_bank_(uint8_t bank_id, uint8_t offset, uint8_t value);
   uint8_t calculate_crc_(const uint8_t *data, uint8_t len);
 
   // Processing different response types
@@ -112,7 +100,6 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
   sensor::Sensor *status_sensor_{nullptr};
   std::map<uint8_t, binary_sensor::BinarySensor *> status_bits_{};
   std::map<std::pair<uint8_t, uint8_t>, sensor::Sensor *> bank_sensors_{};
-  std::map<std::pair<uint8_t, uint8_t>, number::Number *> bank_numbers_{};
 
   // Update scheduling
   uint32_t last_temp_reading_{0};

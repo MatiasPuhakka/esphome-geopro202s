@@ -166,46 +166,6 @@ void Geopro202sComponent::send_request_(uint8_t id) {
   this->write_array(data, sizeof(data));
 }
 
-void Geopro202sComponent::send_write_bank_(uint8_t bank_id, uint8_t offset, uint8_t value) {
-  // ⚠️ WARNING: Write protocol is UNVERIFIED - use with extreme caution! ⚠️
-  // Write command format: [0x02, CMD_WRITE, length, bank_id, offset, value, crc]
-  // Length = 3 (bank_id + offset + value)
-  // This format is ASSUMED based on read command pattern - NOT CONFIRMED
-  uint8_t length = 0x03;
-  uint8_t crc = (CMD_WRITE + length + bank_id + offset + value) & 0xFF;
-  uint8_t data[] = {MSG_START, CMD_WRITE, length, bank_id, offset, value, crc};
-
-  ESP_LOGW(TAG, "⚠️ ATTEMPTING WRITE - Protocol unverified!");
-  ESP_LOGD(TAG, "Write command: bank=0x%02X offset=%d value=%d crc=0x%02X", bank_id, offset, value, crc);
-  ESP_LOGD(TAG, "Raw bytes: %02X %02X %02X %02X %02X %02X %02X",
-           data[0], data[1], data[2], data[3], data[4], data[5], data[6]);
-
-  this->write_array(data, sizeof(data));
-}
-
-void Geopro202sComponent::write_bank_value(uint8_t bank_id, uint8_t offset, int8_t value) {
-  // Clamp int8_t value to valid range
-  if (value < -128) value = -128;
-  if (value > 127) value = 127;
-  send_write_bank_(bank_id, offset, (uint8_t)(value & 0xFF));
-
-  // Update sensor immediately if registered
-  auto it = this->bank_sensors_.find(std::make_pair(bank_id, offset));
-  if (it != this->bank_sensors_.end()) {
-    it->second->publish_state(value);
-  }
-}
-
-void Geopro202sComponent::write_bank_value(uint8_t bank_id, uint8_t offset, uint8_t value) {
-  send_write_bank_(bank_id, offset, value);
-
-  // Update sensor immediately if registered
-  auto it = this->bank_sensors_.find(std::make_pair(bank_id, offset));
-  if (it != this->bank_sensors_.end()) {
-    it->second->publish_state(value);
-  }
-}
-
 uint8_t Geopro202sComponent::calculate_crc_(const uint8_t *data, uint8_t len) {
   uint8_t crc = 0;
   for (uint8_t i = 0; i < len; i++) {
@@ -385,7 +345,6 @@ void Geopro202sComponent::dump_config() {
   ESP_LOGCONFIG(TAG, "  Hour sensors: %d", this->hour_sensors_.size());
   ESP_LOGCONFIG(TAG, "  Status bits: %d", this->status_bits_.size());
   ESP_LOGCONFIG(TAG, "  Bank sensors: %d", this->bank_sensors_.size());
-  ESP_LOGCONFIG(TAG, "  Bank number controls: %d", this->bank_numbers_.size());
 }
 
 } // namespace geopro_202s
