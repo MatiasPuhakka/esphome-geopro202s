@@ -123,6 +123,8 @@ geopro_202s:
   brine_alert:
     name: "ML Maaliuos hälytys"
 
+# Network connectivity - choose either Ethernet or WiFi
+# Option 1: Ethernet (LAN8720)
 ethernet:
   type: LAN8720
   mdc_pin: GPIO23
@@ -131,9 +133,20 @@ ethernet:
   phy_addr: 0
   power_pin: GPIO12
 
+# Option 2: WiFi (alternative to Ethernet)
+# wifi:
+#   ssid: !secret wifi_ssid
+#   password: !secret wifi_password
+
+# Optional: ESPHome API (for Home Assistant integration)
+# Requires secrets.yaml with: api_encryption_key: "your-key-here"
+# Generate with: esphome secrets generate-api-key
 api:
   encryption:
     key: !secret api_encryption_key
 
+# Optional: OTA updates
+# Requires secrets.yaml with: ota_password: "your-password-here"
 ota:
-  password: !secret ota_password
+  - platform: esphome
+    password: !secret ota_password

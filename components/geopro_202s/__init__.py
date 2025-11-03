@@ -4,7 +4,7 @@ from esphome.components import uart
 from esphome.const import CONF_ID
 
 DEPENDENCIES = ['uart']
-AUTO_LOAD = ['sensor', 'binary_sensor', 'bank_sensor']
+AUTO_LOAD = ['sensor', 'binary_sensor']
 
 # Component namespace
 geopro_202s_ns = cg.esphome_ns.namespace('geopro_202s')
