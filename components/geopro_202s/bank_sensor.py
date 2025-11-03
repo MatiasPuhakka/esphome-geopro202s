@@ -76,15 +76,23 @@ BANK_SENSORS = {
     CONF_COMP_LOCK: (0x0B, 14, "ML Kompuran esto", UNIT_MINUTE, DEVICE_CLASS_DURATION, "mdi:clock"),
 }
 
-CONFIG_SCHEMA = GEOPRO_202S_COMPONENT_SCHEMA.extend({
-    cv.Optional(key): sensor.sensor_schema(
-        unit_of_measurement=info[3],
-        device_class=info[4],
-        state_class=STATE_CLASS_MEASUREMENT,
-        accuracy_decimals=0,
-        icon=info[5],
-    ) for key, info in BANK_SENSORS.items()
-})
+# Build schema dict for bank sensors, handling None values for unit/device_class
+bank_sensor_schemas = {}
+for key, info in BANK_SENSORS.items():
+    schema_kwargs = {
+        "state_class": STATE_CLASS_MEASUREMENT,
+        "accuracy_decimals": 0,
+        "icon": info[5],
+    }
+    # Only add unit_of_measurement if it's not None
+    if info[3] is not None:
+        schema_kwargs["unit_of_measurement"] = info[3]
+    # Only add device_class if it's not None
+    if info[4] is not None:
+        schema_kwargs["device_class"] = info[4]
+    bank_sensor_schemas[cv.Optional(key)] = sensor.sensor_schema(**schema_kwargs)
+
+CONFIG_SCHEMA = GEOPRO_202S_COMPONENT_SCHEMA.extend(bank_sensor_schemas)
 
 async def to_code(config):
     hub = await cg.get_variable(config[CONF_ID])

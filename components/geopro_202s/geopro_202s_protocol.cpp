@@ -7,24 +7,29 @@ namespace esphome {
 namespace geopro_202s {
 
 static const uint32_t MIN_READ_INTERVAL = 10000;  // 10 seconds between readings
+static const uint32_t BANK_READ_INTERVAL = 60000; // 60 seconds between bank readings
 static const uint32_t MESSAGE_TIMEOUT = 100;     // 100ms timeout for message reception
 
 void Geopro202sComponent::setup() {
   ESP_LOGCONFIG(TAG, "Setting up Geopro 202S...");
   this->rx_buffer_.reserve(64);  // Pre-allocate buffer for bank messages
+
+  // Initialize timestamps to trigger immediate readings
+  this->last_bank_reading_ = 0;
+  this->last_status_reading_ = 0;
 }
 
 void Geopro202sComponent::loop() {
-  // Read available data
+  // Read available data first (process any incoming responses)
   while (this->available()) {
     uint8_t c;
     this->read_byte(&c);
     this->handle_char_(c);
   }
 
-  // Schedule regular updates
   const uint32_t now = millis();
 
+  // Schedule regular updates - add requests to queue instead of sending immediately
   if (now - this->last_temp_reading_ > MIN_READ_INTERVAL) {
     this->schedule_temperature_readings();
     this->last_temp_reading_ = now;
@@ -40,9 +45,19 @@ void Geopro202sComponent::loop() {
     this->last_status_reading_ = now;
   }
 
-  if (now - this->last_bank_reading_ > MIN_READ_INTERVAL * 60) {  // Read banks every 60 seconds
+  // Trigger bank readings immediately on first run or every 60 seconds
+  if (this->last_bank_reading_ == 0 || (now - this->last_bank_reading_ > BANK_READ_INTERVAL)) {
+    ESP_LOGD(TAG, "Triggering bank readings (last: %lu, now: %lu, interval: %u)", this->last_bank_reading_, now, BANK_READ_INTERVAL);
     this->schedule_bank_readings();
     this->last_bank_reading_ = now;
+  }
+
+  // Send one request from queue per loop (non-blocking)
+  if (!this->request_queue_.empty() && (now - this->last_request_time_ >= REQUEST_DELAY)) {
+    uint8_t id = this->request_queue_.front();
+    this->request_queue_.erase(this->request_queue_.begin());
+    this->send_request_(id);
+    this->last_request_time_ = now;
   }
 }
 
@@ -82,12 +97,13 @@ void Geopro202sComponent::process_message_() {
   // Verify CRC
   uint8_t crc = calculate_crc_(this->rx_buffer_.data() + 1, this->rx_buffer_.size() - 2);
   if (crc != this->rx_buffer_.back()) {
-    ESP_LOGW(TAG, "Invalid CRC");
+    ESP_LOGW(TAG, "Invalid CRC (calculated: 0x%02X, received: 0x%02X)", crc, this->rx_buffer_.back());
     return;
   }
 
   uint8_t msg_type = this->rx_buffer_[2];
   uint8_t id = this->rx_buffer_[4];
+  ESP_LOGD(TAG, "Received message: type=0x%02X, id=0x%02X, size=%d", msg_type, id, this->rx_buffer_.size());
 
   switch (msg_type) {
     case TYPE_TEMP:
@@ -103,8 +119,11 @@ void Geopro202sComponent::process_message_() {
       break;
 
     case TYPE_BANK:
+      ESP_LOGD(TAG, "Received TYPE_BANK message for bank 0x%02X, size: %d", id, this->rx_buffer_.size());
       if (this->rx_buffer_.size() >= 32) {
         this->process_bank_(id, this->rx_buffer_.data() + 5);
+      } else {
+        ESP_LOGW(TAG, "Bank message too short: %d bytes (expected at least 32)", this->rx_buffer_.size());
       }
       break;
 
@@ -120,7 +139,7 @@ void Geopro202sComponent::process_temperature_(uint8_t id, const uint8_t *data) 
   if (temp_it != this->temp_sensors_.end()) {
     int16_t raw = (data[0] << 8) | data[1];
     float temp = raw / 100.0f;
-    ESP_LOGV(TAG, "Temperature sensor 0x%02X: %.2f°C", id, temp);
+    ESP_LOGD(TAG, "Temperature sensor 0x%02X: %.2f°C (raw: %d)", id, temp, raw);
     temp_it->second->publish_state(temp);
     return;
   }
@@ -137,7 +156,7 @@ void Geopro202sComponent::process_temperature_(uint8_t id, const uint8_t *data) 
   // Handle status word
   if (id == 0x2D && this->status_sensor_ != nullptr) {
     uint16_t value = (data[0] << 8) | data[1];
-    ESP_LOGV(TAG, "Status word: 0x%04X", value);
+    ESP_LOGD(TAG, "Status word: 0x%04X", value);
     this->status_sensor_->publish_state(value);
 
     // Update binary sensors based on status word bits
@@ -163,6 +182,7 @@ void Geopro202sComponent::process_valve_(uint8_t id, const uint8_t *data) {
 void Geopro202sComponent::send_request_(uint8_t id) {
   uint8_t crc = (CMD_READ + CMD_LEN + 0x00 + id) & 0xFF;
   uint8_t data[] = {MSG_START, CMD_READ, CMD_LEN, 0x00, id, crc};
+  ESP_LOGD(TAG, "Sending request for sensor 0x%02X", id);
   this->write_array(data, sizeof(data));
 }
 
@@ -175,31 +195,29 @@ uint8_t Geopro202sComponent::calculate_crc_(const uint8_t *data, uint8_t len) {
 }
 
 void Geopro202sComponent::schedule_temperature_readings() {
+  // Add temperature sensor requests to queue (non-blocking)
   for (const auto &sensor : this->temp_sensors_) {
-    this->send_request_(sensor.first);
-    delay(10);  // Small delay between requests
+    this->request_queue_.push_back(sensor.first);
   }
 }
 
 void Geopro202sComponent::schedule_valve_readings() {
+  // Add valve sensor requests to queue
   for (const auto &sensor : this->valve_sensors_) {
-    this->send_request_(sensor.first);
-    delay(10);
+    this->request_queue_.push_back(sensor.first);
   }
 }
 
 void Geopro202sComponent::schedule_status_readings() {
-  // Schedule hour counter readings
+  // Add hour counter requests to queue
   for (const auto &sensor : this->hour_sensors_) {
-    this->send_request_(sensor.first);
-    delay(10);
+    this->request_queue_.push_back(sensor.first);
   }
 
   // Schedule status word reading
   if (this->status_sensor_ != nullptr || !this->status_bits_.empty()) {
     uint8_t id = 0x2D;  // Status word ID
-    this->send_request_(id);
-    delay(10);
+    this->request_queue_.push_back(id);
   }
 }
 
@@ -210,10 +228,12 @@ void Geopro202sComponent::schedule_bank_readings() {
     banks_to_read.insert(sensor.first.first);  // bank_id is the first element of the pair
   }
 
-  // Request each bank
+  ESP_LOGD(TAG, "Scheduling bank readings: %d unique banks for %d bank sensors", banks_to_read.size(), this->bank_sensors_.size());
+
+  // Add bank requests to queue
   for (uint8_t bank_id : banks_to_read) {
-    this->send_request_(bank_id);
-    delay(100);  // Longer delay for bank reads
+    ESP_LOGD(TAG, "Queuing bank request: 0x%02X", bank_id);
+    this->request_queue_.push_back(bank_id);
   }
 }
 
@@ -223,7 +243,7 @@ void Geopro202sComponent::process_bank_(uint8_t bank_id, const uint8_t *data) {
 
   // Bank 0x0C - Heating Circuit Settings
   if (bank_id == 0x0C) {
-    ESP_LOGV(TAG, "Processing bank 0x0C");
+    ESP_LOGD(TAG, "Processing bank 0x0C, rx_buffer size: %d", this->rx_buffer_.size());
 
     // L1 -20°C point (bytes[5], offset 0)
     update_bank_sensor(0x0C, 0, (int8_t)data[0]);
@@ -252,7 +272,7 @@ void Geopro202sComponent::process_bank_(uint8_t bank_id, const uint8_t *data) {
   }
   // Bank 0x2C - L1 Settings
   else if (bank_id == 0x2C) {
-    ESP_LOGV(TAG, "Processing bank 0x2C");
+    ESP_LOGD(TAG, "Processing bank 0x2C, rx_buffer size: %d", this->rx_buffer_.size());
 
     // L1 Summer close (bytes[13], offset 8)
     if (this->rx_buffer_.size() >= 14) {
@@ -261,7 +281,7 @@ void Geopro202sComponent::process_bank_(uint8_t bank_id, const uint8_t *data) {
   }
   // Bank 0x0B - Heat Pump Settings
   else if (bank_id == 0x0B) {
-    ESP_LOGV(TAG, "Processing bank 0x0B");
+    ESP_LOGD(TAG, "Processing bank 0x0B, rx_buffer size: %d", this->rx_buffer_.size());
 
     // Tank top winter (bytes[6], offset 1)
     if (this->rx_buffer_.size() >= 7) {
@@ -325,16 +345,20 @@ void Geopro202sComponent::process_bank_(uint8_t bank_id, const uint8_t *data) {
 void Geopro202sComponent::update_bank_sensor(uint8_t bank_id, uint8_t offset, int8_t value) {
   auto it = this->bank_sensors_.find(std::make_pair(bank_id, offset));
   if (it != this->bank_sensors_.end()) {
-    ESP_LOGV(TAG, "Bank 0x%02X offset %d: %d", bank_id, offset, value);
+    ESP_LOGD(TAG, "Bank 0x%02X offset %d: %d", bank_id, offset, value);
     it->second->publish_state(value);
+  } else {
+    ESP_LOGV(TAG, "Bank 0x%02X offset %d: %d (not registered)", bank_id, offset, value);
   }
 }
 
 void Geopro202sComponent::update_bank_sensor(uint8_t bank_id, uint8_t offset, uint8_t value) {
   auto it = this->bank_sensors_.find(std::make_pair(bank_id, offset));
   if (it != this->bank_sensors_.end()) {
-    ESP_LOGV(TAG, "Bank 0x%02X offset %d: %d", bank_id, offset, value);
+    ESP_LOGD(TAG, "Bank 0x%02X offset %d: %d", bank_id, offset, value);
     it->second->publish_state(value);
+  } else {
+    ESP_LOGV(TAG, "Bank 0x%02X offset %d: %d (not registered)", bank_id, offset, value);
   }
 }
 
@@ -345,6 +369,14 @@ void Geopro202sComponent::dump_config() {
   ESP_LOGCONFIG(TAG, "  Hour sensors: %d", this->hour_sensors_.size());
   ESP_LOGCONFIG(TAG, "  Status bits: %d", this->status_bits_.size());
   ESP_LOGCONFIG(TAG, "  Bank sensors: %d", this->bank_sensors_.size());
+
+  // Log registered bank sensors for debugging
+  if (!this->bank_sensors_.empty()) {
+    ESP_LOGCONFIG(TAG, "  Registered bank sensors:");
+    for (const auto &sensor : this->bank_sensors_) {
+      ESP_LOGCONFIG(TAG, "    Bank 0x%02X, offset %d", sensor.first.first, sensor.first.second);
+    }
+  }
 }
 
 } // namespace geopro_202s

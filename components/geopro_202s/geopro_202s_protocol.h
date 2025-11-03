@@ -106,6 +106,11 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
   uint32_t last_valve_reading_{0};
   uint32_t last_status_reading_{0};
   uint32_t last_bank_reading_{0};
+
+  // Request queue for non-blocking communication
+  std::vector<uint8_t> request_queue_{};
+  uint32_t last_request_time_{0};
+  static const uint32_t REQUEST_DELAY = 200;  // 200ms between requests
 };
 
 } // namespace geopro_202s
