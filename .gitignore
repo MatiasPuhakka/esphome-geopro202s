@@ -2,3 +2,5 @@
 .esphome
 secrets.yaml
 /build
+# ESPHome writes this next to tests/all-keys.yaml on every run
+/tests/.gitignore
