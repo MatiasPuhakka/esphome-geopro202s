@@ -7,7 +7,10 @@ from esphome.const import (
     DEVICE_CLASS_DURATION,
     STATE_CLASS_MEASUREMENT,
     UNIT_CELSIUS,
+    UNIT_HOUR,
     UNIT_MINUTE,
+    UNIT_PERCENT,
+    UNIT_SECOND,
 )
 from . import GEOPRO_202S_COMPONENT_SCHEMA, Geopro202sComponent
 
@@ -53,7 +56,7 @@ BANK_SENSORS = {
     CONF_L1_MAX_LIMIT: (0x0C, 4, "L1 Maksimiraja", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
     CONF_L1_NIGHT_EFFECT: (0x0C, 5, "L1 Yöalennus vaikutus", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
     CONF_L1_AUTUMN_DRY: (0x0C, 14, "L1 Syyskuivaus", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
-    CONF_L1_OUT_TEMP_DELAY: (0x0C, 19, "L1 Ulkolämpötilan hidastus", UNIT_MINUTE, DEVICE_CLASS_DURATION, "mdi:clock"),
+    CONF_L1_OUT_TEMP_DELAY: (0x0C, 19, "L1 Ulkolämpötilan hidastus", UNIT_HOUR, DEVICE_CLASS_DURATION, "mdi:clock"),
     CONF_L1_PRE_INCREASE: (0x0C, 23, "L1 Esikorotus", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
 
     # Bank 0x2C
@@ -68,12 +71,12 @@ BANK_SENSORS = {
     CONF_DELAY_TIME: (0x0B, 6, "ML SV_viiveaika", UNIT_MINUTE, DEVICE_CLASS_DURATION, "mdi:clock"),
     CONF_TOP_EH_DIFF: (0x0B, 7, "ML VarYlaEroSV", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
     CONF_EXTRA_HEATING: (0x0B, 8, "ML Lisälämmitys", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
-    CONF_EXTRA_TIME: (0x0B, 9, "ML Lisälämmitys aika", UNIT_MINUTE, DEVICE_CLASS_DURATION, "mdi:clock"),
+    CONF_EXTRA_TIME: (0x0B, 9, "ML Lisälämmitys aika", UNIT_HOUR, DEVICE_CLASS_DURATION, "mdi:clock"),
     CONF_HP_MODE: (0x0B, 10, "ML Ohjaustapa", None, None, "mdi:gauge"),
     CONF_BRINE_ALERT: (0x0B, 11, "ML Maaliuos hälytys", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
-    CONF_DHW_PRE: (0x0B, 12, "ML JV esiavaus", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:temperature-celsius"),
-    CONF_DHW_LOCK: (0x0B, 13, "ML JV Esto", UNIT_MINUTE, DEVICE_CLASS_DURATION, "mdi:clock"),
-    CONF_COMP_LOCK: (0x0B, 14, "ML Kompuran esto", UNIT_MINUTE, DEVICE_CLASS_DURATION, "mdi:clock"),
+    CONF_DHW_PRE: (0x0B, 12, "ML JV esiavaus", UNIT_PERCENT, None, "mdi:valve"),
+    CONF_DHW_LOCK: (0x0B, 13, "ML JV Esto", UNIT_SECOND, DEVICE_CLASS_DURATION, "mdi:clock"),
+    CONF_COMP_LOCK: (0x0B, 14, "ML Kompuran esto", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:thermometer-off"),
 }
 
 # Build schema dict for bank sensors, handling None values for unit/device_class
