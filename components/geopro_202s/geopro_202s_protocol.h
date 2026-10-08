@@ -7,6 +7,7 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "frame.h"
+#include "poll_scheduler.h"
 #include <map>
 #include <utility>
 
@@ -59,16 +60,10 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
     this->bank_sensors_[std::make_pair(bank_id, offset)] = sensor;
   }
 
-  // Update schedule methods
-  void schedule_temperature_readings();
-  void schedule_valve_readings();
-  void schedule_status_readings();
-  void schedule_bank_readings();
-
  protected:
   // Message handling
   void handle_frame_(const Frame &frame);
-  void send_request_(uint8_t id);
+  void send_request_(uint16_t address);
 
   // Processing different response types
   void process_temperature_(uint8_t id, const uint8_t *data);
@@ -78,6 +73,7 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
   void update_bank_sensor(uint8_t bank_id, uint8_t offset, uint8_t value);
 
   FrameDecoder decoder_;
+  PollScheduler scheduler_;
 
   // Registered sensors
   std::map<uint8_t, sensor::Sensor *> temp_sensors_{};
@@ -86,17 +82,6 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
   sensor::Sensor *status_sensor_{nullptr};
   std::map<uint16_t, binary_sensor::BinarySensor *> status_bits_{};
   std::map<std::pair<uint8_t, uint8_t>, sensor::Sensor *> bank_sensors_{};
-
-  // Update scheduling
-  uint32_t last_temp_reading_{0};
-  uint32_t last_valve_reading_{0};
-  uint32_t last_status_reading_{0};
-  uint32_t last_bank_reading_{0};
-
-  // Request queue for non-blocking communication
-  std::vector<uint8_t> request_queue_{};
-  uint32_t last_request_time_{0};
-  static const uint32_t REQUEST_DELAY = 200;  // 200ms between requests
 };
 
 } // namespace geopro_202s

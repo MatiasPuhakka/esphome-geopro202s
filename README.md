@@ -83,7 +83,13 @@ A read request is `02 81 02 <address hi> <address lo> <checksum>`. The reply's d
 
 The wire format lives in `frame.h`/`frame.cpp`, which have no ESPHome dependencies. Run their host tests with `make test`.
 
-The component automatically polls sensors every 10 seconds and configuration banks every 60 seconds.
+### Polling
+
+The component reads every configured address once at startup, then reads values (temperatures, valves, hour counters, the status word) every 10 seconds and configuration banks every 60 seconds. Each address is read once per cycle, however many sensors share it.
+
+Only one request is on the bus at a time. The next request goes out 50 ms after the previous one got its reply. A request with no reply within 500 ms is sent once more; if that also goes unanswered, the component moves on and tries the address again next cycle. A reply only counts if it is for the address that was asked for.
+
+This logic lives in `poll_scheduler.h`/`poll_scheduler.cpp`, which also have no ESPHome dependencies and are covered by `make test`.
 
 ## Contributing
 
