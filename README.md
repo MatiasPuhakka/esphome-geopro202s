@@ -8,7 +8,7 @@ This is an ESPHome component for communicating with Ouman Geopro 202S heat pump 
 - **Valve Positions** - L1 and DHW (domestic hot water) valve positions
 - **Operating Hours** - Electric heater and compressor runtime counters
 - **Status Indicators** - Binary sensors for compressor and electric heater status
-- **Configuration Banks** - Read-only sensors for all 25 configuration parameters:
+- **Configuration Banks** - Read-only sensors for all 24 configuration parameters:
   - Bank 0x0C: Heating circuit settings (L1 curve points, limits, delays)
   - Bank 0x2C: L1 settings (summer close temperature)
   - Bank 0x0B: Heat pump settings (tank temperatures, delays, lock times)
