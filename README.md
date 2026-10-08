@@ -40,6 +40,10 @@ uart:
 geopro_202s:
   id: geopro
 
+  # Poll intervals (optional, defaults shown)
+  value_interval: 10s
+  bank_interval: 60s
+
   # Temperature sensors (all optional - only include what you need)
   outside_temp:
     name: "Outside Temperature"
@@ -85,7 +89,7 @@ The wire format lives in `frame.h`/`frame.cpp`, which have no ESPHome dependenci
 
 ### Polling
 
-The component reads every configured address once at startup, then reads values (temperatures, valves, hour counters, the status word) every 10 seconds and configuration banks every 60 seconds. Each address is read once per cycle, however many sensors share it.
+The component reads every configured address once at startup, then reads values (temperatures, valves, hour counters, the status word) every `value_interval` (default 10 s) and configuration banks every `bank_interval` (default 60 s). Both take an ESPHome time period such as `30s` or `5min` and must be greater than zero. Each address is read once per cycle, however many sensors share it.
 
 Only one request is on the bus at a time. The next request goes out 50 ms after the previous one got its reply. A request with no reply within 500 ms is sent once more; if that also goes unanswered, the component moves on and tries the address again next cycle. A reply only counts if it is for the address that was asked for.
 

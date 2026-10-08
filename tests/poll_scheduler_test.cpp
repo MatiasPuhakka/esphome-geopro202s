@@ -112,6 +112,28 @@ TEST_CASE("intervals come from the constructor and setters") {
   CHECK(next(scheduler, 2000 + REQUEST_GAP_MS) == 0x0C);
 }
 
+TEST_CASE("values every 3 s and banks every 7 s with non-default intervals") {
+  Harness h;
+  h.scheduler.set_value_interval(3000);
+  h.scheduler.set_bank_interval(7000);
+  h.scheduler.add_value_address(0x01);
+  h.scheduler.add_bank_address(0x0C);
+
+  CHECK(h.run_answering(1000) == Addresses{0x01, 0x0C});
+  CHECK(h.run_answering(2000).empty());
+  CHECK(h.now == 3000);
+
+  // Values come due at 3, 6, 9 and 12 s, banks at 7 and 14 s.
+  CHECK(h.run_answering(1000) == Addresses{0x01});
+  CHECK(h.run_answering(3000) == Addresses{0x01});
+  CHECK(h.run_answering(1000) == Addresses{0x0C});
+  CHECK(h.run_answering(2000) == Addresses{0x01});
+  CHECK(h.run_answering(3000) == Addresses{0x01});
+  CHECK(h.now == 13000);
+  CHECK(h.run_answering(1000).empty());
+  CHECK(h.run_answering(1000) == Addresses{0x0C});
+}
+
 TEST_CASE("no new request while one is in flight") {
   Harness h;
   h.scheduler.add_value_address(0x01);

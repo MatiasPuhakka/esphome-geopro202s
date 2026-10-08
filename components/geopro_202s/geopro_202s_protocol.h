@@ -33,6 +33,10 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
   void dump_config() override;
   float get_setup_priority() const override { return setup_priority::DATA; }
 
+  // Poll intervals, in milliseconds. Leaving them unset keeps the scheduler's defaults.
+  void set_value_interval(uint32_t interval_ms) { this->scheduler_.set_value_interval(interval_ms); }
+  void set_bank_interval(uint32_t interval_ms) { this->scheduler_.set_bank_interval(interval_ms); }
+
   // Register sensors
   void register_temp_sensor(uint8_t id, sensor::Sensor *sensor) {
     this->temp_sensors_[id] = sensor;
