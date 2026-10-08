@@ -18,6 +18,13 @@ void PollScheduler::add_value_address(uint16_t address) { add_unique(this->value
 
 void PollScheduler::add_bank_address(uint16_t address) { add_unique(this->banks_.addresses, address); }
 
+void PollScheduler::add_address(PollGroup group, uint16_t address) {
+  if (group == PollGroup::BANK)
+    this->add_bank_address(address);
+  else
+    this->add_value_address(address);
+}
+
 bool PollScheduler::next_request(uint32_t now, uint16_t &address) {
   this->start_due_cycles_(now);
 

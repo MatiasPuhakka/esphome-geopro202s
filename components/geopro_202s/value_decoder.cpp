@@ -6,6 +6,8 @@ namespace geopro_202s {
 static bool decode_one(const std::vector<uint8_t> &data, uint8_t offset, DecodeRule rule, float &value) {
   if (rule.width != 1 && rule.width != 2)
     return false;
+  if (rule.mask == 0 && rule.divisor == 0)
+    return false;
   if (static_cast<size_t>(offset) + rule.width > data.size())
     return false;
 
@@ -13,15 +15,16 @@ static bool decode_one(const std::vector<uint8_t> &data, uint8_t offset, DecodeR
   for (uint8_t i = 0; i < rule.width; i++)
     raw = (raw << 8) | data[offset + i];
 
-  if (!rule.is_signed) {
-    value = static_cast<float>(raw);
+  if (rule.mask != 0) {
+    value = (raw & rule.mask) != 0 ? 1.0f : 0.0f;
     return true;
   }
+
+  int32_t number = static_cast<int32_t>(raw);
   const uint32_t sign_bit = 1u << (rule.width * 8 - 1);
-  int32_t signed_raw = static_cast<int32_t>(raw);
-  if (raw & sign_bit)
-    signed_raw -= static_cast<int32_t>(sign_bit << 1);
-  value = static_cast<float>(signed_raw);
+  if (rule.is_signed && (raw & sign_bit))
+    number -= static_cast<int32_t>(sign_bit << 1);
+  value = static_cast<float>(number) / rule.divisor;
   return true;
 }
 
