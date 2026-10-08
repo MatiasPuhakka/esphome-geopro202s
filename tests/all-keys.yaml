@@ -24,6 +24,8 @@ uart:
 
 geopro_202s:
   id: geopro
+  value_interval: 15s
+  bank_interval: 2min
   outside_temp:
     name: "outside_temp"
   l1_room:
