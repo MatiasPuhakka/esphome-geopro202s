@@ -1,64 +1,44 @@
 #include "geopro_202s_protocol.h"
 #include "esphome/core/log.h"
 #include "esphome/core/helpers.h"
-#include <set>
 
 namespace esphome {
 namespace geopro_202s {
 
-static const uint32_t MIN_READ_INTERVAL = 10000;  // 10 seconds between readings
-static const uint32_t BANK_READ_INTERVAL = 60000; // 60 seconds between bank readings
+static const uint16_t STATUS_WORD_ADDRESS = 0x2D;
 static const size_t BANK_DATA_LENGTH = 31;
 
 void Geopro202sComponent::setup() {
   ESP_LOGCONFIG(TAG, "Setting up Geopro 202S...");
-  // Initialize timestamps to trigger immediate readings
-  this->last_bank_reading_ = 0;
-  this->last_status_reading_ = 0;
+  for (const auto &sensor : this->temp_sensors_)
+    this->scheduler_.add_value_address(sensor.first);
+  for (const auto &sensor : this->valve_sensors_)
+    this->scheduler_.add_value_address(sensor.first);
+  for (const auto &sensor : this->hour_sensors_)
+    this->scheduler_.add_value_address(sensor.first);
+  if (this->status_sensor_ != nullptr || !this->status_bits_.empty())
+    this->scheduler_.add_value_address(STATUS_WORD_ADDRESS);
+  for (const auto &sensor : this->bank_sensors_)
+    this->scheduler_.add_bank_address(sensor.first.first);
 }
 
 void Geopro202sComponent::loop() {
-  // Read available data first (process any incoming responses)
+  const uint32_t now = millis();
+
   while (this->available()) {
     uint8_t c;
     this->read_byte(&c);
     for (const auto &frame : this->decoder_.feed(&c, 1)) {
+      // A frame without data is a read request (an echo of our own, say), not a reply.
+      if (!frame.data.empty())
+        this->scheduler_.on_frame(frame.address, now);
       this->handle_frame_(frame);
     }
   }
 
-  const uint32_t now = millis();
-
-  // Schedule regular updates - add requests to queue instead of sending immediately
-  if (now - this->last_temp_reading_ > MIN_READ_INTERVAL) {
-    this->schedule_temperature_readings();
-    this->last_temp_reading_ = now;
-  }
-
-  if (now - this->last_valve_reading_ > MIN_READ_INTERVAL) {
-    this->schedule_valve_readings();
-    this->last_valve_reading_ = now;
-  }
-
-  if (now - this->last_status_reading_ > MIN_READ_INTERVAL) {
-    this->schedule_status_readings();
-    this->last_status_reading_ = now;
-  }
-
-  // Trigger bank readings immediately on first run or every 60 seconds
-  if (this->last_bank_reading_ == 0 || (now - this->last_bank_reading_ > BANK_READ_INTERVAL)) {
-    ESP_LOGD(TAG, "Triggering bank readings (last: %lu, now: %lu, interval: %u)", this->last_bank_reading_, now, BANK_READ_INTERVAL);
-    this->schedule_bank_readings();
-    this->last_bank_reading_ = now;
-  }
-
-  // Send one request from queue per loop (non-blocking)
-  if (!this->request_queue_.empty() && (now - this->last_request_time_ >= REQUEST_DELAY)) {
-    uint8_t id = this->request_queue_.front();
-    this->request_queue_.erase(this->request_queue_.begin());
-    this->send_request_(id);
-    this->last_request_time_ = now;
-  }
+  uint16_t address;
+  if (this->scheduler_.next_request(now, address))
+    this->send_request_(address);
 }
 
 void Geopro202sComponent::handle_frame_(const Frame &frame) {
@@ -135,53 +115,10 @@ void Geopro202sComponent::process_valve_(uint8_t id, const uint8_t *data) {
   it->second->publish_state(position);
 }
 
-void Geopro202sComponent::send_request_(uint8_t id) {
-  auto request = build_read_request(id);
-  ESP_LOGD(TAG, "Sending request for sensor 0x%02X", id);
+void Geopro202sComponent::send_request_(uint16_t address) {
+  auto request = build_read_request(address);
+  ESP_LOGD(TAG, "Sending request for address 0x%04X", address);
   this->write_array(request.data(), request.size());
-}
-
-void Geopro202sComponent::schedule_temperature_readings() {
-  // Add temperature sensor requests to queue (non-blocking)
-  for (const auto &sensor : this->temp_sensors_) {
-    this->request_queue_.push_back(sensor.first);
-  }
-}
-
-void Geopro202sComponent::schedule_valve_readings() {
-  // Add valve sensor requests to queue
-  for (const auto &sensor : this->valve_sensors_) {
-    this->request_queue_.push_back(sensor.first);
-  }
-}
-
-void Geopro202sComponent::schedule_status_readings() {
-  // Add hour counter requests to queue
-  for (const auto &sensor : this->hour_sensors_) {
-    this->request_queue_.push_back(sensor.first);
-  }
-
-  // Schedule status word reading
-  if (this->status_sensor_ != nullptr || !this->status_bits_.empty()) {
-    uint8_t id = 0x2D;  // Status word ID
-    this->request_queue_.push_back(id);
-  }
-}
-
-void Geopro202sComponent::schedule_bank_readings() {
-  // Get unique bank IDs from registered bank sensors
-  std::set<uint8_t> banks_to_read;
-  for (const auto &sensor : this->bank_sensors_) {
-    banks_to_read.insert(sensor.first.first);  // bank_id is the first element of the pair
-  }
-
-  ESP_LOGD(TAG, "Scheduling bank readings: %d unique banks for %d bank sensors", banks_to_read.size(), this->bank_sensors_.size());
-
-  // Add bank requests to queue
-  for (uint8_t bank_id : banks_to_read) {
-    ESP_LOGD(TAG, "Queuing bank request: 0x%02X", bank_id);
-    this->request_queue_.push_back(bank_id);
-  }
 }
 
 void Geopro202sComponent::process_bank_(uint8_t bank_id, const uint8_t *data) {
