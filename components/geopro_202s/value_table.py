@@ -1,7 +1,7 @@
-"""Every config key the component accepts, one row per key.
+"""The Register map: every config key the component accepts, one row per key.
 
 `__init__` walks VALUES to build CONFIG_SCHEMA and to register each configured
-key with the hub. Add a key by adding a row here.
+key with the hub. Add a key by adding a row here; the hub needs no change.
 """
 
 from dataclasses import dataclass
@@ -20,36 +20,13 @@ from esphome.const import (
     UNIT_PERCENT,
     UNIT_SECOND,
 )
-from esphome.core import HexInt
 
 
-class Kind(Enum):
-    """What a row reads. Decides the entity type and the hub's register method."""
+class PollGroup(Enum):
+    """Which cycle reads a row's address. Mirrors PollGroup in poll_scheduler.h."""
 
-    TEMPERATURE = "temperature"
-    VALVE = "valve"
-    HOURS = "hours"
-    STATUS_WORD = "status_word"
-    STATUS_BIT = "status_bit"
-    BANK = "bank"
-
-    @property
-    def register_method(self):
-        return _REGISTER_METHODS[self]
-
-    @property
-    def is_binary(self):
-        return self is Kind.STATUS_BIT
-
-
-_REGISTER_METHODS = {
-    Kind.TEMPERATURE: "register_temp_sensor",
-    Kind.VALVE: "register_valve_sensor",
-    Kind.HOURS: "register_hour_sensor",
-    Kind.STATUS_WORD: "register_status_sensor",
-    Kind.STATUS_BIT: "register_status_bit",
-    Kind.BANK: "register_bank_sensor",
-}
+    VALUE = "VALUE"  # every value_interval
+    BANK = "BANK"  # every bank_interval
 
 
 @dataclass(frozen=True)
@@ -58,26 +35,39 @@ class DecodeRule:
 
     width: int  # bytes, big-endian
     signed: bool
+    divisor: int = 1  # the raw number is divided by this
+    mask: int = 0  # when set, the value is whether any of these bits is set
 
     def __post_init__(self):
         assert self.width in (1, 2), "width must be 1 or 2 bytes"
+        assert self.divisor > 0, "divisor must be positive"
+        assert 0 <= self.mask < 1 << (8 * self.width), "mask must fit the value's width"
+
+    @property
+    def is_binary(self):
+        return self.mask != 0
 
 
 S8 = DecodeRule(width=1, signed=True)
 U8 = DecodeRule(width=1, signed=False)
+U16 = DecodeRule(width=2, signed=False)
+CENTI_S16 = DecodeRule(width=2, signed=True, divisor=100)
+
+
+def status_bit(mask):
+    """One bit of the 16-bit status word, published as a boolean."""
+    return DecodeRule(width=2, signed=False, mask=mask)
 
 
 @dataclass(frozen=True)
 class Value:
     key: str
-    kind: Kind
-    # Where the value lives: an address for measurements, a bank and offset for
-    # settings, a mask into the 16-bit status word for status bits.
-    address: Optional[int] = None
-    bank: Optional[int] = None
-    offset: Optional[int] = None
-    mask: Optional[int] = None
-    decode: Optional[DecodeRule] = None
+    # The address read for this value (for settings, the bank), where the value
+    # starts in the reply's data, and how to decode it. Rows may share an address.
+    address: int
+    decode: DecodeRule
+    offset: int = 0
+    group: PollGroup = PollGroup.VALUE
     # Entity options. None leaves the ESPHome default in place.
     unit: Optional[str] = None
     device_class: Optional[str] = None
@@ -85,25 +75,10 @@ class Value:
     accuracy: Optional[int] = None
     icon: Optional[str] = None
 
-    def __post_init__(self):
-        if self.kind in (Kind.TEMPERATURE, Kind.VALVE, Kind.HOURS):
-            assert self.address is not None, f"{self.key} needs an address"
-        if self.kind is Kind.BANK:
-            assert self.bank is not None and self.offset is not None, f"{self.key} needs a bank and offset"
-            assert self.decode is not None, f"{self.key} needs a decode rule"
-        if self.kind is Kind.STATUS_BIT:
-            assert self.mask is not None and 0 < self.mask <= 0xFFFF, f"{self.key} mask must fit the 16-bit status word"
-
     @property
-    def register_args(self):
-        """Arguments passed to the hub's register method, before the entity."""
-        if self.kind is Kind.BANK:
-            return (self.bank, self.offset, self.decode)
-        if self.kind is Kind.STATUS_BIT:
-            return (HexInt(self.mask),)
-        if self.kind is Kind.STATUS_WORD:
-            return ()
-        return (self.address,)
+    def is_binary(self):
+        """Binary sensor rather than sensor."""
+        return self.decode.is_binary
 
     @property
     def schema_options(self):
@@ -120,7 +95,7 @@ class Value:
 
 def _temperature(key, address):
     return Value(
-        key, Kind.TEMPERATURE, address=address,
+        key, address, CENTI_S16,
         unit=UNIT_CELSIUS, device_class=DEVICE_CLASS_TEMPERATURE,
         state_class=STATE_CLASS_MEASUREMENT, accuracy=2, icon="mdi:thermometer",
     )
@@ -128,26 +103,32 @@ def _temperature(key, address):
 
 def _valve(key, address):
     return Value(
-        key, Kind.VALVE, address=address,
+        key, address, U8,
         unit=UNIT_PERCENT, state_class=STATE_CLASS_MEASUREMENT, accuracy=0, icon="mdi:valve",
     )
 
 
 def _hours(key, address):
     return Value(
-        key, Kind.HOURS, address=address,
+        key, address, U16,
         unit=UNIT_HOUR, device_class=DEVICE_CLASS_DURATION,
         state_class=STATE_CLASS_TOTAL_INCREASING, accuracy=0, icon="mdi:clock",
     )
 
 
+STATUS_WORD = Value("status_word", 0x2D, U16, state_class=STATE_CLASS_MEASUREMENT, accuracy=0)
+
+
 def _status_bit(key, mask, icon):
-    return Value(key, Kind.STATUS_BIT, mask=mask, device_class=DEVICE_CLASS_RUNNING, icon=icon)
+    return Value(
+        key, STATUS_WORD.address, status_bit(mask), offset=STATUS_WORD.offset,
+        device_class=DEVICE_CLASS_RUNNING, icon=icon,
+    )
 
 
 def _bank(key, bank, offset, unit, device_class, icon, decode=S8):
     return Value(
-        key, Kind.BANK, bank=bank, offset=offset, decode=decode,
+        key, bank, decode, offset=offset, group=PollGroup.BANK,
         unit=unit, device_class=device_class,
         state_class=STATE_CLASS_MEASUREMENT, accuracy=0, icon=icon,
     )
@@ -170,7 +151,7 @@ VALUES = (
     _valve("valve_dhw", 0x33),
     _hours("hours_eh", 0x3A),
     _hours("hours_comp", 0x3B),
-    Value("status_word", Kind.STATUS_WORD, state_class=STATE_CLASS_MEASUREMENT, accuracy=0),
+    STATUS_WORD,
 
     # Status word bits
     _status_bit("compressor", 0x10, "mdi:engine"),

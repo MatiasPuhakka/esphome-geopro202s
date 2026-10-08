@@ -87,6 +87,20 @@ A read request is `02 81 02 <address hi> <address lo> <checksum>`. The reply's d
 
 The wire format lives in `frame.h`/`frame.cpp`, which have no ESPHome dependencies. Run their host tests with `make test`.
 
+### Register map
+
+Every config key is one row in `value_table.py`: the address to read (for a setting, its bank), where the value starts in the reply's data, and a decode rule. The rule gives the width (1 or 2 bytes, big-endian), whether the value is signed, a divisor, and, for a status bit, a mask. Current rules:
+
+- **Temperatures** - signed 16-bit, divided by 100
+- **Valve positions** - unsigned 8-bit
+- **Hour counters and the status word** - unsigned 16-bit
+- **Status bits** - the status word (0x2D) masked, published as a binary sensor
+- **Bank settings** - one byte at the setting's offset, signed unless noted
+
+Several rows can share an address. The status word sensor and the five status bits all read 0x2D, which is requested once per cycle and decoded for every row from one reply. Status bits work without the `status_word` sensor.
+
+Adding a value takes one row and no C++ change. The hub registers each row with `register_value()` and passes every reply to the decoder in `value_decoder.h`/`value_decoder.cpp`, which has no ESPHome dependencies and is covered by `make test`.
+
 ### Polling
 
 The component reads every configured address once at startup, then reads values (temperatures, valves, hour counters, the status word) every `value_interval` (default 10 s) and configuration banks every `bank_interval` (default 60 s). Both take an ESPHome time period such as `30s` or `5min` and must be greater than zero. Each address is read once per cycle, however many sensors share it.

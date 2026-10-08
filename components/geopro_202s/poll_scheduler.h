@@ -26,6 +26,10 @@ static const uint8_t REQUEST_RETRIES = 1;
 // request, so the controller isn't addressed back to back.
 static const uint32_t REQUEST_GAP_MS = 50;
 
+// Which cycle an address is read in: values every value interval, configuration
+// banks every bank interval.
+enum class PollGroup : uint8_t { VALUE, BANK };
+
 // Decides which address to read next. It has no clock of its own: the caller
 // passes the current millis() value on every call, and differences between
 // times are taken modulo 2^32, so the counter wrapping around is harmless.
@@ -38,6 +42,7 @@ class PollScheduler {
   // Adding the same address more than once has no effect.
   void add_value_address(uint16_t address);
   void add_bank_address(uint16_t address);
+  void add_address(PollGroup group, uint16_t address);
   void set_value_interval(uint32_t interval_ms) { this->value_interval_ms_ = interval_ms; }
   void set_bank_interval(uint32_t interval_ms) { this->bank_interval_ms_ = interval_ms; }
 

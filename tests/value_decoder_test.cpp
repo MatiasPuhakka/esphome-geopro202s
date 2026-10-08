@@ -1,6 +1,7 @@
 #include "doctest.h"
 
 #include "frame.h"
+#include "poll_scheduler.h"
 #include "value_decoder.h"
 
 #include <map>
@@ -13,6 +14,7 @@ using esphome::geopro_202s::DecodeRule;
 using esphome::geopro_202s::Frame;
 using esphome::geopro_202s::FrameDecoder;
 using esphome::geopro_202s::frame_checksum;
+using esphome::geopro_202s::PollScheduler;
 using esphome::geopro_202s::Registration;
 
 namespace {
@@ -110,4 +112,121 @@ TEST_CASE("two-byte values are big-endian") {
   auto unsigned_results = decode_values(0x3A, {0xFE, 0x0C}, registrations);
   REQUIRE(unsigned_results.size() == 1);
   CHECK(unsigned_results[0].value == 65036);
+}
+
+namespace {
+
+// Decode rules as value_table.py builds them for single-address rows.
+const DecodeRule CENTI_S16 = {2, true, 100};
+const DecodeRule U16 = {2, false};
+DecodeRule status_bit(uint16_t mask) { return DecodeRule(2, false, 1, mask); }
+
+const uint16_t STATUS_WORD = 0x2D;
+
+// The status-word bits in value_table.py.
+struct StatusBit {
+  const char *key;
+  uint16_t mask;
+};
+const std::vector<StatusBit> STATUS_BITS = {
+    {"compressor", 0x10}, {"el_heater", 0x08}, {"digi1", 0x01}, {"digi2", 0x02}, {"digi3", 0x04},
+};
+
+float decode_single(uint16_t address, const std::vector<uint8_t> &data, DecodeRule rule) {
+  const std::vector<Registration> registrations = {{address, 0, rule}};
+  Frame frame = receive(reply(address, data));
+  auto results = decode_values(frame.address, frame.data, registrations);
+  REQUIRE(results.size() == 1);
+  return results[0].value;
+}
+
+}  // namespace
+
+TEST_CASE("temperature is signed hundredths of a degree") {
+  CHECK(decode_single(0x12, {0xFE, 0x0C}, CENTI_S16) == doctest::Approx(-5.0f));
+  CHECK(decode_single(0x12, {0xFF, 0xF6}, CENTI_S16) == doctest::Approx(-0.1f));
+  CHECK(decode_single(0x21, {0x14, 0x7E}, CENTI_S16) == doctest::Approx(52.46f));
+}
+
+TEST_CASE("valve position is one unsigned byte") {
+  CHECK(decode_single(0x31, {0x64}, U8) == 100);
+  CHECK(decode_single(0x33, {0xC8}, U8) == 200);
+}
+
+TEST_CASE("hour counter above 32767 stays positive") {
+  CHECK(decode_single(0x3B, {0x9C, 0x40}, U16) == 40000);
+  CHECK(decode_single(0x3A, {0xFF, 0xFF}, U16) == 65535);
+}
+
+TEST_CASE("every status bit decodes from the status word") {
+  for (const StatusBit &bit : STATUS_BITS) {
+    CAPTURE(bit.key);
+    // Only this bit set, then every bit but this one.
+    CHECK(decode_single(STATUS_WORD, {0x00, static_cast<uint8_t>(bit.mask)}, status_bit(bit.mask)) == 1);
+    CHECK(decode_single(STATUS_WORD, {0xFF, static_cast<uint8_t>(~bit.mask)}, status_bit(bit.mask)) == 0);
+  }
+}
+
+TEST_CASE("status bits are read and published without the status-word sensor") {
+  // Only bit rows registered, as when status_word is left out of the config.
+  std::vector<Registration> registrations;
+  for (const StatusBit &bit : STATUS_BITS)
+    registrations.push_back({STATUS_WORD, 0, status_bit(bit.mask)});
+
+  PollScheduler scheduler;
+  for (const Registration &registration : registrations)
+    scheduler.add_value_address(registration.address);
+  uint16_t address;
+  REQUIRE(scheduler.next_request(0, address));
+  CHECK(address == STATUS_WORD);
+
+  // compressor and digi2 on.
+  auto results = decode_values(STATUS_WORD, {0x00, 0x12}, registrations);
+  REQUIRE(results.size() == STATUS_BITS.size());
+  std::map<std::string, float> decoded;
+  for (const DecodedValue &result : results)
+    decoded[STATUS_BITS.at(result.index).key] = result.value;
+  const std::map<std::string, float> expected = {
+      {"compressor", 1}, {"el_heater", 0}, {"digi1", 0}, {"digi2", 1}, {"digi3", 0},
+  };
+  CHECK(decoded == expected);
+}
+
+TEST_CASE("rows sharing an address are requested once and decode from one reply") {
+  // A temperature, the status-word sensor and every status bit, as the hub
+  // registers them from the table.
+  std::vector<Registration> registrations = {{0x12, 0, CENTI_S16}, {STATUS_WORD, 0, U16}};
+  for (const StatusBit &bit : STATUS_BITS)
+    registrations.push_back({STATUS_WORD, 0, status_bit(bit.mask)});
+
+  PollScheduler scheduler;
+  for (const Registration &registration : registrations)
+    scheduler.add_value_address(registration.address);
+
+  // Run one cycle, answering each request at once.
+  std::vector<uint16_t> sent;
+  for (uint32_t now = 0; now < 1000; now++) {
+    uint16_t address;
+    if (scheduler.next_request(now, address)) {
+      sent.push_back(address);
+      scheduler.on_frame(address, now);
+    }
+  }
+  CHECK(sent == std::vector<uint16_t>{0x12, STATUS_WORD});
+
+  // One status-word reply feeds the word and all five bits, and nothing else.
+  Frame frame = receive(reply(STATUS_WORD, {0x80, 0x19}));
+  auto results = decode_values(frame.address, frame.data, registrations);
+  REQUIRE(results.size() == 1 + STATUS_BITS.size());
+  CHECK(results[0].index == 1);
+  CHECK(results[0].value == 0x8019);
+  const std::vector<float> bits = {1, 1, 1, 0, 0};  // compressor, el_heater, digi1, digi2, digi3
+  for (size_t i = 0; i < bits.size(); i++) {
+    CHECK(results[i + 1].index == i + 2);
+    CHECK(results[i + 1].value == bits[i]);
+  }
+}
+
+TEST_CASE("a zero divisor produces nothing") {
+  CHECK(decode_values(0x12, {0x00, 0x01}, {{0x12, 0, {2, true, 0}}}).empty());
 }
