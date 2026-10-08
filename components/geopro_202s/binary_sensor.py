@@ -1,6 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import binary_sensor
+from esphome.core import HexInt
 from esphome.const import (
     CONF_ID,
     DEVICE_CLASS_POWER,
@@ -10,7 +11,7 @@ from . import GEOPRO_202S_COMPONENT_SCHEMA, Geopro202sComponent
 
 DEPENDENCIES = ['uart']
 
-# Status word bit masks
+# Status word bit masks (the status word is 16 bits wide)
 BITMASK_DIGI1 = 0x01
 BITMASK_DIGI2 = 0x02
 BITMASK_DIGI3 = 0x04
@@ -59,6 +60,9 @@ STATUS_BITS = {
     },
 }
 
+for _key, _info in STATUS_BITS.items():
+    assert 0 < _info["mask"] <= 0xFFFF, f"{_key} mask must fit the 16-bit status word"
+
 # Create configuration schema
 CONFIG_SCHEMA = GEOPRO_202S_COMPONENT_SCHEMA.extend({
     cv.Optional(key): binary_sensor.binary_sensor_schema(
@@ -73,4 +77,4 @@ async def to_code(config):
     for key, info in STATUS_BITS.items():
         if key in config:
             sens = await binary_sensor.new_binary_sensor(config[key])
-            cg.add(hub.register_status_bit(info["mask"], sens))
+            cg.add(hub.register_status_bit(HexInt(info["mask"]), sens))

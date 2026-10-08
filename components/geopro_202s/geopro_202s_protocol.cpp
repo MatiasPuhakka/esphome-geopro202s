@@ -153,11 +153,12 @@ void Geopro202sComponent::process_temperature_(uint8_t id, const uint8_t *data) 
     return;
   }
 
-  // Handle status word
-  if (id == 0x2D && this->status_sensor_ != nullptr) {
+  // Handle status word: decode once for the word sensor and every bit sensor
+  if (id == 0x2D && (this->status_sensor_ != nullptr || !this->status_bits_.empty())) {
     uint16_t value = (data[0] << 8) | data[1];
     ESP_LOGD(TAG, "Status word: 0x%04X", value);
-    this->status_sensor_->publish_state(value);
+    if (this->status_sensor_ != nullptr)
+      this->status_sensor_->publish_state(value);
 
     // Update binary sensors based on status word bits
     for (auto &bit_sensor : this->status_bits_) {

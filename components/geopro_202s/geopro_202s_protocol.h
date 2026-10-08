@@ -59,7 +59,7 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
   }
 
   // Register binary sensors for status bits
-  void register_status_bit(uint8_t mask, binary_sensor::BinarySensor *sensor) {
+  void register_status_bit(uint16_t mask, binary_sensor::BinarySensor *sensor) {
     this->status_bits_[mask] = sensor;
   }
 
@@ -98,7 +98,7 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
   std::map<uint8_t, sensor::Sensor *> valve_sensors_{};
   std::map<uint8_t, sensor::Sensor *> hour_sensors_{};
   sensor::Sensor *status_sensor_{nullptr};
-  std::map<uint8_t, binary_sensor::BinarySensor *> status_bits_{};
+  std::map<uint16_t, binary_sensor::BinarySensor *> status_bits_{};
   std::map<std::pair<uint8_t, uint8_t>, sensor::Sensor *> bank_sensors_{};
 
   // Update scheduling
