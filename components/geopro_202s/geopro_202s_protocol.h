@@ -6,6 +6,7 @@
 #include "esphome/core/hal.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
+#include "frame.h"
 #include <map>
 #include <utility>
 
@@ -13,16 +14,6 @@ namespace esphome {
 namespace geopro_202s {
 
 static const char *const TAG = "geopro_202s";
-
-// Protocol constants
-static const uint8_t MSG_START = 0x02;
-static const uint8_t CMD_READ = 0x81;
-static const uint8_t CMD_LEN = 0x02;
-
-// Message types in responses
-static const uint8_t TYPE_VALVE = 0x03;
-static const uint8_t TYPE_TEMP = 0x04;
-static const uint8_t TYPE_BANK = 0x21;
 
 // Status word bit masks
 static const uint8_t BITMASK_DIGI1 = 0x01;
@@ -76,10 +67,8 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
 
  protected:
   // Message handling
-  void handle_char_(uint8_t c);
-  void process_message_();
+  void handle_frame_(const Frame &frame);
   void send_request_(uint8_t id);
-  uint8_t calculate_crc_(const uint8_t *data, uint8_t len);
 
   // Processing different response types
   void process_temperature_(uint8_t id, const uint8_t *data);
@@ -88,10 +77,7 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
   void update_bank_sensor(uint8_t bank_id, uint8_t offset, int8_t value);
   void update_bank_sensor(uint8_t bank_id, uint8_t offset, uint8_t value);
 
-  // Message buffer
-  std::vector<uint8_t> rx_buffer_;
-  bool message_started_{false};
-  uint32_t last_byte_time_{0};
+  FrameDecoder decoder_;
 
   // Registered sensors
   std::map<uint8_t, sensor::Sensor *> temp_sensors_{};

@@ -65,11 +65,23 @@ See `example/geopro202s.yaml` for a complete configuration example with all avai
 
 ## Protocol Documentation
 
-The component implements the Geopro 202S serial protocol with the following message types:
+Every frame, request or reply, has the same shape:
 
-- **0x04 messages** - Temperature readings and status values
-- **0x03 messages** - Valve positions
-- **0x21 messages** - Configuration bank readings (banks 0x0C, 0x2C, 0x0B)
+```
+02 <command> <length> <address hi> <address lo> <data...> <checksum>
+```
+
+- `02` is the start byte. The protocol does not escape it, so 0x02 can also appear in the address, data or checksum.
+- `<length>` counts the address and data bytes, so a frame is `length + 4` bytes long. Valid lengths are 0x02 to 0x21.
+- `<checksum>` is the low byte of the sum of every byte from the command byte up to the checksum.
+
+A read request is `02 81 02 <address hi> <address lo> <checksum>`. The reply's data length depends on what was read:
+
+- **1 byte** - Valve positions
+- **2 bytes** - Temperature readings and status values
+- **31 bytes** - Configuration bank readings (banks 0x0C, 0x2C, 0x0B)
+
+The wire format lives in `frame.h`/`frame.cpp`, which have no ESPHome dependencies. Run their host tests with `make test`.
 
 The component automatically polls sensors every 10 seconds and configuration banks every 60 seconds.
 
