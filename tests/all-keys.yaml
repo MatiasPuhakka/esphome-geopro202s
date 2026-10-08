@@ -1,0 +1,112 @@
+# Loads the component from this checkout and sets every config key it accepts.
+# `make check-config` validates it; `esphome compile` builds it.
+esphome:
+  name: geopro-all-keys
+
+external_components:
+  - source:
+      type: local
+      path: ../components
+    components: [geopro_202s]
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  baud_rate: 0
+
+uart:
+  tx_pin: GPIO4
+  rx_pin: GPIO16
+  baud_rate: 4800
+
+geopro_202s:
+  id: geopro
+  outside_temp:
+    name: "outside_temp"
+  l1_room:
+    name: "l1_room"
+  l1_supply:
+    name: "l1_supply"
+  free_measurement:
+    name: "free_measurement"
+  tank_top_in:
+    name: "tank_top_in"
+  tank_top:
+    name: "tank_top"
+  tank_middle:
+    name: "tank_middle"
+  tank_bottom:
+    name: "tank_bottom"
+  brine:
+    name: "brine"
+  valve_l1:
+    name: "valve_l1"
+  valve_dhw:
+    name: "valve_dhw"
+  hours_eh:
+    name: "hours_eh"
+  hours_comp:
+    name: "hours_comp"
+  status_word:
+    name: "status_word"
+  compressor:
+    name: "compressor"
+  el_heater:
+    name: "el_heater"
+  digi1:
+    name: "digi1"
+  digi2:
+    name: "digi2"
+  digi3:
+    name: "digi3"
+  l1_minus20:
+    name: "l1_minus20"
+  l1_zero:
+    name: "l1_zero"
+  l1_plus20:
+    name: "l1_plus20"
+  l1_min_limit:
+    name: "l1_min_limit"
+  l1_max_limit:
+    name: "l1_max_limit"
+  l1_night_effect:
+    name: "l1_night_effect"
+  l1_autumn_dry:
+    name: "l1_autumn_dry"
+  l1_out_temp_delay:
+    name: "l1_out_temp_delay"
+  l1_pre_increase:
+    name: "l1_pre_increase"
+  l1_summer_close:
+    name: "l1_summer_close"
+  winter_temp:
+    name: "winter_temp"
+  summer_temp:
+    name: "summer_temp"
+  bottom_diff:
+    name: "bottom_diff"
+  top_diff:
+    name: "top_diff"
+  tank_min:
+    name: "tank_min"
+  delay_time:
+    name: "delay_time"
+  top_eh_diff:
+    name: "top_eh_diff"
+  extra_heating:
+    name: "extra_heating"
+  extra_time:
+    name: "extra_time"
+  hp_mode:
+    name: "hp_mode"
+  brine_alert:
+    name: "brine_alert"
+  dhw_pre:
+    name: "dhw_pre"
+  dhw_lock:
+    name: "dhw_lock"
+  comp_lock:
+    name: "comp_lock"
