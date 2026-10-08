@@ -53,6 +53,21 @@ _REGISTER_METHODS = {
 
 
 @dataclass(frozen=True)
+class DecodeRule:
+    """How the hub turns a value's bytes into a number. Mirrors DecodeRule in value_decoder.h."""
+
+    width: int  # bytes, big-endian
+    signed: bool
+
+    def __post_init__(self):
+        assert self.width in (1, 2), "width must be 1 or 2 bytes"
+
+
+S8 = DecodeRule(width=1, signed=True)
+U8 = DecodeRule(width=1, signed=False)
+
+
+@dataclass(frozen=True)
 class Value:
     key: str
     kind: Kind
@@ -62,6 +77,7 @@ class Value:
     bank: Optional[int] = None
     offset: Optional[int] = None
     mask: Optional[int] = None
+    decode: Optional[DecodeRule] = None
     # Entity options. None leaves the ESPHome default in place.
     unit: Optional[str] = None
     device_class: Optional[str] = None
@@ -74,6 +90,7 @@ class Value:
             assert self.address is not None, f"{self.key} needs an address"
         if self.kind is Kind.BANK:
             assert self.bank is not None and self.offset is not None, f"{self.key} needs a bank and offset"
+            assert self.decode is not None, f"{self.key} needs a decode rule"
         if self.kind is Kind.STATUS_BIT:
             assert self.mask is not None and 0 < self.mask <= 0xFFFF, f"{self.key} mask must fit the 16-bit status word"
 
@@ -81,7 +98,7 @@ class Value:
     def register_args(self):
         """Arguments passed to the hub's register method, before the entity."""
         if self.kind is Kind.BANK:
-            return (self.bank, self.offset)
+            return (self.bank, self.offset, self.decode)
         if self.kind is Kind.STATUS_BIT:
             return (HexInt(self.mask),)
         if self.kind is Kind.STATUS_WORD:
@@ -128,9 +145,9 @@ def _status_bit(key, mask, icon):
     return Value(key, Kind.STATUS_BIT, mask=mask, device_class=DEVICE_CLASS_RUNNING, icon=icon)
 
 
-def _bank(key, bank, offset, unit, device_class, icon):
+def _bank(key, bank, offset, unit, device_class, icon, decode=S8):
     return Value(
-        key, Kind.BANK, bank=bank, offset=offset,
+        key, Kind.BANK, bank=bank, offset=offset, decode=decode,
         unit=unit, device_class=device_class,
         state_class=STATE_CLASS_MEASUREMENT, accuracy=0, icon=icon,
     )
@@ -187,9 +204,9 @@ VALUES = (
     _bank("extra_heating", 0x0B, 8, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON),
     _bank("extra_time", 0x0B, 9, UNIT_HOUR, DEVICE_CLASS_DURATION, "mdi:clock"),
     _bank("hp_mode", 0x0B, 10, None, None, "mdi:gauge"),
-    _bank("brine_alert", 0x0B, 11, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON),
+    _bank("brine_alert", 0x0B, 11, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON, decode=S8),
     _bank("dhw_pre", 0x0B, 12, UNIT_PERCENT, None, "mdi:valve"),
-    _bank("dhw_lock", 0x0B, 13, UNIT_SECOND, DEVICE_CLASS_DURATION, "mdi:clock"),
+    _bank("dhw_lock", 0x0B, 13, UNIT_SECOND, DEVICE_CLASS_DURATION, "mdi:clock", decode=U8),
     _bank("comp_lock", 0x0B, 14, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:thermometer-off"),
 )
 

@@ -18,8 +18,8 @@ void Geopro202sComponent::setup() {
     this->scheduler_.add_value_address(sensor.first);
   if (this->status_sensor_ != nullptr || !this->status_bits_.empty())
     this->scheduler_.add_value_address(STATUS_WORD_ADDRESS);
-  for (const auto &sensor : this->bank_sensors_)
-    this->scheduler_.add_bank_address(sensor.first.first);
+  for (const auto &value : this->bank_values_)
+    this->scheduler_.add_bank_address(value.address);
 }
 
 void Geopro202sComponent::loop() {
@@ -60,7 +60,11 @@ void Geopro202sComponent::handle_frame_(const Frame &frame) {
       break;
 
     case BANK_DATA_LENGTH:
-      this->process_bank_(id, data);
+      for (const auto &result : decode_values(frame.address, frame.data, this->bank_values_)) {
+        const Registration &value = this->bank_values_[result.index];
+        ESP_LOGD(TAG, "Bank 0x%02X offset %u: %.0f", value.address, value.offset, result.value);
+        this->bank_sensors_[result.index]->publish_state(result.value);
+      }
       break;
 
     default:
@@ -122,94 +126,6 @@ void Geopro202sComponent::send_request_(uint16_t address) {
   this->write_array(request.data(), request.size());
 }
 
-void Geopro202sComponent::process_bank_(uint8_t bank_id, const uint8_t *data) {
-  // data holds the bank's 31 data bytes; offset 0 = data[0]
-
-  // Bank 0x0C - Heating Circuit Settings
-  if (bank_id == 0x0C) {
-    ESP_LOGD(TAG, "Processing bank 0x0C");
-
-    // L1 -20°C point (bytes[5], offset 0)
-    update_bank_sensor(0x0C, 0, (int8_t)data[0]);
-    // L1 0°C point (bytes[6], offset 1)
-    update_bank_sensor(0x0C, 1, (int8_t)data[1]);
-    // L1 +20°C point (bytes[7], offset 2)
-    update_bank_sensor(0x0C, 2, (int8_t)data[2]);
-    // L1 Min limit (bytes[8], offset 3)
-    update_bank_sensor(0x0C, 3, (int8_t)data[3]);
-    // L1 Max limit (bytes[9], offset 4)
-    update_bank_sensor(0x0C, 4, (int8_t)data[4]);
-    // L1 Night effect (bytes[10], offset 5)
-    update_bank_sensor(0x0C, 5, (int8_t)data[5]);
-    // L1 Autumn dry (bytes[19], offset 14)
-    update_bank_sensor(0x0C, 14, (int8_t)data[14]);
-    // L1 Outside temp delay (bytes[24], offset 19)
-    update_bank_sensor(0x0C, 19, (int8_t)data[19]);
-    // L1 Pre-increase (bytes[28], offset 23)
-    update_bank_sensor(0x0C, 23, (int8_t)data[23]);
-  }
-  // Bank 0x2C - L1 Settings
-  else if (bank_id == 0x2C) {
-    ESP_LOGD(TAG, "Processing bank 0x2C");
-
-    // L1 Summer close (bytes[13], offset 8)
-    update_bank_sensor(0x2C, 8, (int8_t)data[8]);
-  }
-  // Bank 0x0B - Heat Pump Settings
-  else if (bank_id == 0x0B) {
-    ESP_LOGD(TAG, "Processing bank 0x0B");
-
-    // Tank top winter (bytes[6], offset 1)
-    update_bank_sensor(0x0B, 1, (int8_t)data[1]);
-    // Tank top summer (bytes[7], offset 2)
-    update_bank_sensor(0x0B, 2, (int8_t)data[2]);
-    // Tank bottom diff (bytes[8], offset 3)
-    update_bank_sensor(0x0B, 3, (int8_t)data[3]);
-    // Tank top diff (bytes[9], offset 4)
-    update_bank_sensor(0x0B, 4, (int8_t)data[4]);
-    // Tank bottom min (bytes[10], offset 5)
-    update_bank_sensor(0x0B, 5, (int8_t)data[5]);
-    // EH delay (bytes[11], offset 6)
-    update_bank_sensor(0x0B, 6, (int8_t)data[6]);
-    // Tank top EH diff (bytes[12], offset 7)
-    update_bank_sensor(0x0B, 7, (int8_t)data[7]);
-    // Extra heating (bytes[13], offset 8)
-    update_bank_sensor(0x0B, 8, (int8_t)data[8]);
-    // Extra heating time (bytes[14], offset 9)
-    update_bank_sensor(0x0B, 9, (int8_t)data[9]);
-    // Control mode (bytes[15], offset 10)
-    update_bank_sensor(0x0B, 10, (int8_t)data[10]);
-    // Brine alert (bytes[16], offset 11)
-    update_bank_sensor(0x0B, 11, (int8_t)data[11]);
-    // DHW pre-open (bytes[17], offset 12)
-    update_bank_sensor(0x0B, 12, (int8_t)data[12]);
-    // DHW lock time (bytes[18], offset 13, uint8_t)
-    update_bank_sensor(0x0B, 13, (uint8_t)data[13]);
-    // Compressor lock time (bytes[19], offset 14)
-    update_bank_sensor(0x0B, 14, (int8_t)data[14]);
-  }
-}
-
-void Geopro202sComponent::update_bank_sensor(uint8_t bank_id, uint8_t offset, int8_t value) {
-  auto it = this->bank_sensors_.find(std::make_pair(bank_id, offset));
-  if (it != this->bank_sensors_.end()) {
-    ESP_LOGD(TAG, "Bank 0x%02X offset %d: %d", bank_id, offset, value);
-    it->second->publish_state(value);
-  } else {
-    ESP_LOGV(TAG, "Bank 0x%02X offset %d: %d (not registered)", bank_id, offset, value);
-  }
-}
-
-void Geopro202sComponent::update_bank_sensor(uint8_t bank_id, uint8_t offset, uint8_t value) {
-  auto it = this->bank_sensors_.find(std::make_pair(bank_id, offset));
-  if (it != this->bank_sensors_.end()) {
-    ESP_LOGD(TAG, "Bank 0x%02X offset %d: %d", bank_id, offset, value);
-    it->second->publish_state(value);
-  } else {
-    ESP_LOGV(TAG, "Bank 0x%02X offset %d: %d (not registered)", bank_id, offset, value);
-  }
-}
-
 void Geopro202sComponent::dump_config() {
   ESP_LOGCONFIG(TAG, "Geopro 202S:");
   ESP_LOGCONFIG(TAG, "  Temperature sensors: %d", this->temp_sensors_.size());
@@ -221,8 +137,9 @@ void Geopro202sComponent::dump_config() {
   // Log registered bank sensors for debugging
   if (!this->bank_sensors_.empty()) {
     ESP_LOGCONFIG(TAG, "  Registered bank sensors:");
-    for (const auto &sensor : this->bank_sensors_) {
-      ESP_LOGCONFIG(TAG, "    Bank 0x%02X, offset %d", sensor.first.first, sensor.first.second);
+    for (const auto &value : this->bank_values_) {
+      ESP_LOGCONFIG(TAG, "    Bank 0x%02X, offset %u, %u byte(s), %s", value.address, value.offset, value.rule.width,
+                    value.rule.is_signed ? "signed" : "unsigned");
     }
   }
 }

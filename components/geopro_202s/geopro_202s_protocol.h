@@ -8,8 +8,9 @@
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "frame.h"
 #include "poll_scheduler.h"
+#include "value_decoder.h"
 #include <map>
-#include <utility>
+#include <vector>
 
 namespace esphome {
 namespace geopro_202s {
@@ -55,9 +56,10 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
     this->status_bits_[mask] = sensor;
   }
 
-  // Register bank sensors
-  void register_bank_sensor(uint8_t bank_id, uint8_t offset, sensor::Sensor *sensor) {
-    this->bank_sensors_[std::make_pair(bank_id, offset)] = sensor;
+  // Register a value read from a configuration bank
+  void register_bank_sensor(uint8_t bank_id, uint8_t offset, DecodeRule rule, sensor::Sensor *sensor) {
+    this->bank_values_.push_back(Registration{bank_id, offset, rule});
+    this->bank_sensors_.push_back(sensor);
   }
 
  protected:
@@ -68,9 +70,6 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
   // Processing different response types
   void process_temperature_(uint8_t id, const uint8_t *data);
   void process_valve_(uint8_t id, const uint8_t *data);
-  void process_bank_(uint8_t bank_id, const uint8_t *data);
-  void update_bank_sensor(uint8_t bank_id, uint8_t offset, int8_t value);
-  void update_bank_sensor(uint8_t bank_id, uint8_t offset, uint8_t value);
 
   FrameDecoder decoder_;
   PollScheduler scheduler_;
@@ -81,7 +80,9 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
   std::map<uint8_t, sensor::Sensor *> hour_sensors_{};
   sensor::Sensor *status_sensor_{nullptr};
   std::map<uint16_t, binary_sensor::BinarySensor *> status_bits_{};
-  std::map<std::pair<uint8_t, uint8_t>, sensor::Sensor *> bank_sensors_{};
+  // Bank values and their sensors, matched by index
+  std::vector<Registration> bank_values_{};
+  std::vector<sensor::Sensor *> bank_sensors_{};
 };
 
 } // namespace geopro_202s
