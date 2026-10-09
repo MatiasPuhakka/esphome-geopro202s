@@ -2,6 +2,8 @@
 
 Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
 
+The machine's default `gh` account can't see this repo. Run every `gh` command as MatiasPuhakka by prefixing it with `GH_TOKEN=$(gh auth token --user MatiasPuhakka)`, and pass the same prefix on to any subagent that uses `gh`. Git pushes already use that account through the repo's credential helper.
+
 ## Conventions
 
 - **Create an issue**: `gh issue create --title "..." --body "..."`. Use a heredoc for multi-line bodies.

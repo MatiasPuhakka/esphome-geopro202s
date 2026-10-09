@@ -1,0 +1,11 @@
+# The all-keys config built with the Arduino framework, whose C++11 toolchain
+# is stricter than ESP-IDF's. `make compile` builds both.
+packages:
+  all_keys: !include all-keys.yaml
+
+esphome:
+  name: geopro-all-keys-arduino
+
+esp32:
+  framework:
+    type: arduino

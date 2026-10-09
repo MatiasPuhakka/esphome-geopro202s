@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  host-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make test
+
+  esphome:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Pinned to the version the component is developed against; bump deliberately.
+      - run: pip install esphome==2025.2.2
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            tests/.esphome
+          key: esphome-2025.2.2-${{ hashFiles('tests/*.yaml') }}
+          restore-keys: esphome-2025.2.2-
+      - run: make check-config
+      - run: make compile
