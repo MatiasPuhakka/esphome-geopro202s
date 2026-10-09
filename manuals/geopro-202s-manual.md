@@ -332,7 +332,7 @@ Starttitoiminnassa säädin:
 Geopro 202S hälyttää poikkeavissa tilanteissa:
 - Hälytysääni
 - Hälytysilmoitus näytössä
-- Hälytysreleen kosketin sulkeutuu
+- Hälytysreleen kosketin sulkeutuu (riviliittimet 31 ja 32)
 - GSM-viesti (jos modeemi kytketty)
 
 ### Hälytystyypit:
@@ -821,57 +821,76 @@ Windows-ympäristössä toimiva sarjaliikenneajuri Geopro 202 laitteille on vapa
 
 ## YLEISET KYTKENTÄOHJEET
 
+Riviliittimet kytkentäkaavion (Käsikirja s. 39, YLEISKYTKENTÄKAAVIO) mukaan.
+
+**Varoitus:** Riviliittimissä 83–84 on säätimen 230 VAC verkkojännite (N/L). Releliittimet 71–75 kytkevät maalämpökojeen 230 VAC piirejä.
+
 ### Antureiden kytkentä:
 
-| Riviliittimet | Anturi | Tyyppi | Kaapeli |
-|---------------|--------|--------|---------|
-| T1 (1-2) | Ulkolämpö (M1) | TMO | 2x0.8 |
-| T2 (3-4) | L1 Menovesi (M2) | TMW/TMS | 2x0.8 |
-| T3 (5-6) | L1 Huone | TMR | 2x0.8 |
-| T4 (7-8) | VaraajaKeski (M4) | TMW/TMS | 2x0.8 |
-| T5 (9-10) | L2 Menovesi (M5) | TMW/TMS | 2x0.8 |
-| T6 (11-12) | Mittaus 6 | TMS | 2x0.8 |
-| T7 (21-22) | Yläosa tulo (M7) | TME | 2x0.8 |
-| T8 (23-24) | Maaliuos (M8) | TME | 2x0.8 |
-| T9 (25-26) | VaraajaYlä (M9) | TME | 2x0.8 |
-| T10 (31-32) | VaraajaAla (M10) | TME | 2x0.8 |
-| T11 (41-42) | Kompr.käynti | Dig.tulo | 2x0.8 |
+Jokaisella mittauksella on oma riviliitin ja oma maaliitin (⊥).
+
+| Riviliitin | Mittaus | Anturi | Tyyppi | Kaapeli |
+|------------|---------|--------|--------|---------|
+| 1 + ⊥ | T1 (Mitt.1) | Ulkolämpö (M1) | TMO | 2x0.8 |
+| 2 + ⊥ | T2 (Mitt.2) | L1 Menovesi (M2) | TMW/TMS | 2x0.8 |
+| 3 + ⊥ | T3 (Mitt.3) | L1 Huone | TMR | 2x0.8 |
+| 4 + ⊥ | T4 (Mitt.4) | VaraajaKeski (M4) | TMW/TMS | 2x0.8 |
+| 5 + ⊥ | T5 (Mitt.5) | L2 Menovesi (M5) | TMW/TMS | 2x0.8 |
+| 6 + ⊥ | T6 (Mitt.6) | Vapaa mittaus | TMW/TMS | 2x0.8 |
+| 7 + ⊥ | T7 (Mitt.7) | Yläosa tulo (M7) | TME | 2x0.8 |
+| 8 + ⊥ | T8 (Mitt.8) | Maaliuos (M8) | TMS | 2x0.8 |
+| 9 + ⊥ | T9 (Mitt.9) | VaraajaYlä (M9) | TME | 2x0.8 |
+| 10 + ⊥ | T10 (Mitt.10) | VaraajaAla (M10) | TME | 2x0.8 |
+| 11 + ⊥ | T11 (Mitt.11) | Kompr.käynti (potentiaalivapaa kosketin) | Dig.tulo | 2x0.8 |
 
 ### Venttiilimoottorien kytkentä:
 
+Moottorikaapeli 3x0.8.
+
 **3-tilaohjattu moottori (24 VAC):**
-- M1 (L1): Liittimet 51-52 (auki), 53-54 (kiinni)
-- M2 (L2): Liittimet 55-56 (auki), 57-58 (kiinni)
-- M3 (JV): Liittimet 59-60 (auki), 61-62 (kiinni)
+- M1 (L1): Liittimet 51 (auki), 52 (⊥), 53 (kiinni)
+- M2 (L2): Liittimet 55 (auki), 56 (⊥), 57 (kiinni)
+- M3 (JV): Liittimet 59 (auki, tulistimelle), 60 (⊥), 61 (kiinni, varaajaan)
 
 **Jänniteohjattu moottori (0-10V tai 2-10V):**
-- M1 (L1): Liittimet 51-52
-- M2 (L2): Liittimet 55-56
-- M3 (JV): Liittimet 59-60
-- 24 VAC syöttö: Liittimet 71-72
+- M1 (L1): Liittimet 51 (24 VAC), 52 (⊥), 54 (ohjausjännite)
+- M2 (L2): Liittimet 55 (24 VAC), 56 (⊥), 58 (ohjausjännite)
+- M3 (JV): Liittimet 59 (24 VAC), 60 (⊥), 62 (ohjausjännite)
 
 ### Releohjaukset:
 
-**Rele 1 (Kompressori):**
+**Rele 1 (RE 1, Sähkövastus):**
 - Liittimet 73-74-75
 - 230 VAC, 6(1) A
 - Vaihtokosk. rele
+- Kaapeli 3x1.5 N
 
-**Rele 2 (Sähkövastus):**
-- Liittimet 81-82
+**Rele 2 (RE 2, Kompressori):**
+- Liittimet 71-72
 - 230 VAC, 6(1) A
 - Sulkeutuva kosketin
+- Kaapeli 2x1.5 N
 
-**Hälytysrele:**
-- Liittimet 83-84
-- 24 VAC, 1 A
-- Sulkeutuva kosketin
+**Hälytyskosketin (K1):**
+- Liittimet 31-32
+- Max. 46 V, 1 A (kytkentäkaavio s. 39; tekstiosassa 24 VAC / 1 A)
+- Sulkeutuva kosketin, kytketään kiinteistön hälytyskeskukseen
+- Kaapeli 2x0.8
+
+### Muut liittimet:
+
+- 24 VAC lähtö (AC): Liittimet 41-42
+- Väyläliitäntä (NET): Liittimet A, B, C, D, kaapeli DATAJAMAK 2x(2+1)x0,24
+- Suojamaa (PE): Liitin 81
+- Virransyöttö 230 VAC 50 Hz: Liittimet 83 (N) ja 84 (L), kaapeli 3x1.5 S
 
 ### Digitaalitulot:
 
-- Dig 1: Lisälämpöpainike (potentiaalivapaa kosketin)
-- Dig 2: Kompressorin ylivirtaussuoja (sulkeutuva)
-- Dig 3: Sähkövastuksen ylikuumenemissuoja (sulkeutuva)
+Kaapeli 2x0.8.
+
+- Dig 1 (X1), liittimet 21-22: Lisälämpöpainike (potentiaalivapaa kosketin)
+- Dig 2 (X2), liittimet 23-24: Kompressorin ylivirtaussuoja (sulkeutuva)
+- Dig 3 (X3), liittimet 25-26: Sähkövastuksen ylikuumenemissuoja (sulkeutuva)
 
 ---
 
