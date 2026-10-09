@@ -11,6 +11,8 @@ PURE_MODULES := frame poll_scheduler value_decoder
 PURE_SRCS := $(addprefix $(COMPONENT_DIR)/,$(addsuffix .cpp,$(PURE_MODULES)))
 TEST_SRCS := $(wildcard tests/*.cpp)
 TEST_BIN := $(BUILD_DIR)/tests
+# A raw trace from the Node that tests/trace_test.cpp replays; the test gets its absolute path.
+NODE_TRACE := tests/traces/node-2026-10-09.log
 
 .PHONY: test pure-check check-config compile clean
 
@@ -25,7 +27,7 @@ pure-check:
 
 $(TEST_BIN): $(TEST_SRCS) $(PURE_SRCS) $(wildcard $(COMPONENT_DIR)/*.h) tests/doctest.h
 	@mkdir -p $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -I$(COMPONENT_DIR) -Itests -o $@ $(TEST_SRCS) $(PURE_SRCS)
+	$(CXX) $(CXXFLAGS) -DNODE_TRACE='"$(CURDIR)/$(NODE_TRACE)"' -I$(COMPONENT_DIR) -Itests -o $@ $(TEST_SRCS) $(PURE_SRCS)
 
 # Validates a config that loads the component from this checkout and sets every key.
 check-config:
