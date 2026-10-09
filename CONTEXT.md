@@ -19,7 +19,7 @@ _Avoid_: module, YAML protocol copy (the older implementation in `geopro.yaml`)
 ## Wire protocol
 
 **Frame**:
-One unit on the serial bus: start byte 0x02, command byte, Length byte, a 16-bit Address followed by data, and a Checksum.
+One unit on the serial bus: start byte 0x02, Command byte, Length byte, a 16-bit Address followed by data, and a Checksum. 0x02 is never escaped, so it can appear anywhere in a Frame, and only the Length byte marks where the Frame ends.
 _Avoid_: message, packet
 
 **Read request**:
@@ -30,12 +30,16 @@ _Avoid_: query, poll
 The Frame the Controller sends back for a Read request, carrying the Address and its data.
 _Avoid_: response, answer
 
+**Command byte**:
+The second byte of a Frame: 0x81 in a Read request, 0x06 in a Reply.
+_Avoid_: ACK byte, opcode
+
 **Length byte**:
 The third byte of a Frame: the number of Address and data bytes that follow.
 _Avoid_: message type, type byte
 
 **Checksum**:
-The last byte of a Frame: the low byte of the sum of every byte from the command byte up to the Checksum.
+The last byte of a Frame: the low byte of the sum of every byte from the Command byte up to the Checksum.
 _Avoid_: CRC
 
 **Address**:

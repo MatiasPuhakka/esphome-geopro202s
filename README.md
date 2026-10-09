@@ -87,6 +87,7 @@ Every frame, request or reply, has the same shape:
 ```
 
 - `02` is the start byte. The protocol does not escape it, so 0x02 can also appear in the address, data or checksum.
+- `<command>` is 0x81 in a read request and 0x06 in a reply.
 - `<length>` counts the address and data bytes, so a frame is `length + 4` bytes long. Valid lengths are 0x02 to 0x21.
 - `<checksum>` is the low byte of the sum of every byte from the command byte up to the checksum.
 

@@ -27,7 +27,7 @@ const PollGroup BANK = PollGroup::BANK;
 
 // Wraps data bytes in a checksummed read reply from `address`.
 std::vector<uint8_t> reply(uint16_t address, const std::vector<uint8_t> &data) {
-  std::vector<uint8_t> bytes = {0x02, 0x81, static_cast<uint8_t>(data.size() + 2), static_cast<uint8_t>(address >> 8),
+  std::vector<uint8_t> bytes = {0x02, 0x06, static_cast<uint8_t>(data.size() + 2), static_cast<uint8_t>(address >> 8),
                                 static_cast<uint8_t>(address & 0xFF)};
   bytes.insert(bytes.end(), data.begin(), data.end());
   bytes.push_back(frame_checksum(bytes.data() + 1, bytes.size() - 1));

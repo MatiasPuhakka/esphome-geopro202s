@@ -9,7 +9,8 @@ namespace esphome {
 namespace geopro_202s {
 
 // Wire format: 02 <command> <length> <address hi> <address lo> <data...> <checksum>
-// where length counts the address and data bytes.
+// where length counts the address and data bytes. The command byte is 0x81 in a
+// read request and 0x06 in a reply; the decoder accepts any value there.
 static const uint8_t FRAME_START = 0x02;
 static const uint8_t FRAME_CMD_READ = 0x81;
 static const uint8_t FRAME_MIN_LENGTH = 0x02;
