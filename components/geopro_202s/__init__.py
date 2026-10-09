@@ -4,7 +4,7 @@ from esphome.components import binary_sensor, sensor, uart
 from esphome.const import CONF_ID
 from esphome.core import HexInt
 
-from .value_table import VALUES
+from .register_map import VALUES
 
 DEPENDENCIES = ['uart']
 AUTO_LOAD = ['sensor', 'binary_sensor']

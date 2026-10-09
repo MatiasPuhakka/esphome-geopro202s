@@ -8,7 +8,7 @@ This is an ESPHome component for communicating with Ouman Geopro 202S heat pump 
 - **Valve Positions** - L1 and DHW (domestic hot water) valve positions
 - **Operating Hours** - Electric heater and compressor runtime counters
 - **Status Indicators** - Binary sensors for compressor and electric heater status
-- **Configuration Banks** - Read-only sensors for all 24 configuration parameters:
+- **Configuration Banks** - Read-only sensors for all 24 configuration values:
   - Bank 0x0C: Heating circuit settings (L1 curve points, limits, delays)
   - Bank 0x2C: L1 settings (summer close temperature)
   - Bank 0x0B: Heat pump settings (tank temperatures, delays, lock times)
@@ -89,7 +89,7 @@ The wire format lives in `frame.h`/`frame.cpp`, which have no ESPHome dependenci
 
 ### Register map
 
-Every config key is one row in `value_table.py`: the address to read (for a setting, its bank), where the value starts in the reply's data, and a decode rule. The rule gives the width (1 or 2 bytes, big-endian), whether the value is signed, a divisor, and, for a status bit, a mask. Current rules:
+Every config key is one row in the Register map, `register_map.py`: the address to read (for a setting, its bank), where the value starts in the reply's data, and a decode rule. The rule gives the width (1 or 2 bytes, big-endian), whether the value is signed, a divisor, and, for a status bit, a mask. Current rules:
 
 - **Temperatures** - signed 16-bit, divided by 100
 - **Valve positions** - unsigned 8-bit
@@ -103,7 +103,7 @@ Adding a value takes one row and no C++ change. The hub registers each row with 
 
 ### Polling
 
-The component reads every configured address once at startup, then reads values (temperatures, valves, hour counters, the status word) every `value_interval` (default 10 s) and configuration banks every `bank_interval` (default 60 s). Both take an ESPHome time period such as `30s` or `5min` and must be greater than zero. Each address is read once per cycle, however many sensors share it.
+The component reads every configured address once at startup, then reads values (temperatures, valves, hour counters, the status word) every `value_interval` (default 10 s) and configuration banks every `bank_interval` (default 60 s). Both take an ESPHome time period such as `30s` or `5min` and must be greater than zero. Each address is read once per cycle, however many values share it.
 
 Only one request is on the bus at a time. The next request goes out 50 ms after the previous one got its reply. A request with no reply within 500 ms is sent once more; if that also goes unanswered, the component moves on and tries the address again next cycle. A reply only counts if it is for the address that was asked for.
 
