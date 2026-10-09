@@ -14,7 +14,7 @@ _Avoid_: device, ESP
 
 **Component**:
 The `geopro_202s` ESPHome external component that the Node runs.
-_Avoid_: module, YAML protocol copy (the older implementation in `geopro.yaml`)
+_Avoid_: module, YAML protocol copy (the older implementation in YAML that the Component replaced)
 
 ## Wire protocol
 
