@@ -14,19 +14,24 @@ jobs:
 
   esphome:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The version the component was developed against, and the version the
+        # Home Assistant add-on builds the Node with. Bump deliberately.
+        esphome: ["2025.2.2", "2026.9.1"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      # Pinned to the version the component is developed against; bump deliberately.
-      - run: pip install esphome==2025.2.2
+      - run: pip install esphome==${{ matrix.esphome }}
       - uses: actions/cache@v4
         with:
           path: |
             ~/.platformio
             tests/.esphome
-          key: esphome-2025.2.2-${{ hashFiles('tests/*.yaml') }}
-          restore-keys: esphome-2025.2.2-
+          key: esphome-${{ matrix.esphome }}-${{ hashFiles('tests/*.yaml') }}
+          restore-keys: esphome-${{ matrix.esphome }}-
       - run: make check-config
       - run: make compile
