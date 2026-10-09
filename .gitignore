@@ -7,3 +7,4 @@ secrets.yaml
 .scratch/
 .env
 *.elf
+__pycache__/
