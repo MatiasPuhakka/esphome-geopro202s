@@ -5,7 +5,7 @@ This is an ESPHome component for communicating with Ouman Geopro 202S heat pump 
 ## Supported Features
 
 - **Temperature Sensors** - 9 sensors including outside, supply, tank, and brine temperatures
-- **Valve Positions** - L1 and DHW (domestic hot water) valve positions
+- **Valve Positions** - L1 and DHW (domestic hot water) valve positions (voltage-controlled motors only, see [Valve positions](#valve-positions))
 - **Operating Hours** - Electric heater and compressor runtime counters
 - **Status Indicators** - Binary sensors for compressor and electric heater status
 - **Configuration Banks** - Read-only sensors for all 24 configuration values:
@@ -65,7 +65,18 @@ geopro_202s:
     name: "Tank Summer Temperature"
 ```
 
-See `example/geopro202s.yaml` for a complete configuration example with all available sensors.
+See `example/geopro202s.yaml` for a complete configuration example. It lists every sensor, with the valve positions commented out.
+
+### Valve positions
+
+`valve_l1` (address 0x31) and `valve_dhw` (address 0x33) only report a real position if that valve's motor is voltage-controlled (0-10 V or 2-10 V). A 3-point motor is pulsed open or closed, and the controller doesn't know where it is, so the value always reads 0 %. The manual's display legend matches this: it shows a 0-100 % bar for a voltage-controlled motor and only ▲/▼ arrows for a 3-point one.
+
+Check each motor separately:
+
+- **L1** - Huoltotila → Moottorivalinta shows the motor type for each circuit: 3-tila/aika, 0-10V or 2-10V.
+- **DHW (JV)** - In Huoltotila → JV ohjaustapa → Käsiajo sähk., a 3-point motor shows only the drive direction, with no percentage.
+
+Leave out the key for any valve with a 3-point motor. The example config has both keys commented out for this reason.
 
 ## Protocol Documentation
 

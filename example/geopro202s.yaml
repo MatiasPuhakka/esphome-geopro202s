@@ -46,11 +46,12 @@ geopro_202s:
   brine:
     name: "Maaliuos"
 
-  # Valve positions
-  valve_l1:
-    name: "L1 Venttiili"
-  valve_dhw:
-    name: "JV Venttiili"
+  # Valve positions. Only meaningful with 0-10 V or 2-10 V valve motors;
+  # a 3-point motor always reads 0 %. See "Valve positions" in the README.
+  # valve_l1:
+  #   name: "L1 Venttiili"
+  # valve_dhw:
+  #   name: "JV Venttiili"
 
   # Operating hours
   hours_eh:

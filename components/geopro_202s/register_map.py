@@ -102,6 +102,7 @@ def _temperature(key, address):
 
 
 def _valve(key, address):
+    # Only 0-10 V / 2-10 V motors report a position; a 3-point motor reads 0 %.
     return Value(
         key, address, U8,
         unit=UNIT_PERCENT, state_class=STATE_CLASS_MEASUREMENT, accuracy=0, icon="mdi:valve",
