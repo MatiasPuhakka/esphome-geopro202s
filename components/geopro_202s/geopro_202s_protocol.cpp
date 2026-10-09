@@ -5,17 +5,16 @@
 namespace esphome {
 namespace geopro_202s {
 
-void Geopro202sComponent::add_value_(PollGroup group, const Registration &registration, const Target &target) {
+void Geopro202sComponent::add_value_(const Registration &registration, const Target &target) {
   this->registrations_.push_back(registration);
-  this->groups_.push_back(group);
   this->targets_.push_back(target);
 }
 
 void Geopro202sComponent::setup() {
   ESP_LOGCONFIG(TAG, "Setting up Geopro 202S...");
   // The scheduler keeps each address once, however many values share it.
-  for (size_t i = 0; i < this->registrations_.size(); i++)
-    this->scheduler_.add_address(this->groups_[i], this->registrations_[i].address);
+  for (const Registration &registration : this->registrations_)
+    this->scheduler_.add_address(registration.group, registration.address);
 }
 
 void Geopro202sComponent::loop() {
@@ -70,7 +69,7 @@ void Geopro202sComponent::dump_config() {
   for (size_t i = 0; i < this->registrations_.size(); i++) {
     const Registration &value = this->registrations_[i];
     ESP_LOGCONFIG(TAG, "    %s 0x%04X, offset %u, %u byte(s), %s, divisor %u, mask 0x%04X",
-                  this->groups_[i] == PollGroup::BANK ? "Bank" : "Address", value.address, value.offset,
+                  value.group == PollGroup::BANK ? "Bank" : "Address", value.address, value.offset,
                   value.rule.width, value.rule.is_signed ? "signed" : "unsigned", value.rule.divisor,
                   value.rule.mask);
   }

@@ -14,6 +14,7 @@ using esphome::geopro_202s::DecodeRule;
 using esphome::geopro_202s::Frame;
 using esphome::geopro_202s::FrameDecoder;
 using esphome::geopro_202s::frame_checksum;
+using esphome::geopro_202s::PollGroup;
 using esphome::geopro_202s::PollScheduler;
 using esphome::geopro_202s::Registration;
 
@@ -21,6 +22,8 @@ namespace {
 
 const DecodeRule S8 = {1, true};
 const DecodeRule U8 = {1, false};
+const PollGroup VALUE = PollGroup::VALUE;
+const PollGroup BANK = PollGroup::BANK;
 
 // Wraps data bytes in a checksummed read reply from `address`.
 std::vector<uint8_t> reply(uint16_t address, const std::vector<uint8_t> &data) {
@@ -41,15 +44,16 @@ Frame receive(const std::vector<uint8_t> &bytes) {
 }  // namespace
 
 TEST_CASE("full bank 0x0B frame decodes every key") {
-  // Bank 0x0B rows from value_table.py.
+  // Bank 0x0B rows from register_map.py.
   const std::vector<std::string> keys = {
       "winter_temp", "summer_temp",   "bottom_diff", "top_diff", "tank_min", "delay_time", "top_eh_diff",
       "extra_heating", "extra_time", "hp_mode",     "brine_alert", "dhw_pre", "dhw_lock",  "comp_lock",
   };
   const std::vector<Registration> registrations = {
-      {0x0B, 1, S8},  {0x0B, 2, S8},  {0x0B, 3, S8},  {0x0B, 4, S8},  {0x0B, 5, S8},
-      {0x0B, 6, S8},  {0x0B, 7, S8},  {0x0B, 8, S8},  {0x0B, 9, S8},  {0x0B, 10, S8},
-      {0x0B, 11, S8}, {0x0B, 12, S8}, {0x0B, 13, U8}, {0x0B, 14, S8},
+      {0x0B, 1, S8, BANK},  {0x0B, 2, S8, BANK},  {0x0B, 3, S8, BANK},  {0x0B, 4, S8, BANK},
+      {0x0B, 5, S8, BANK},  {0x0B, 6, S8, BANK},  {0x0B, 7, S8, BANK},  {0x0B, 8, S8, BANK},
+      {0x0B, 9, S8, BANK},  {0x0B, 10, S8, BANK}, {0x0B, 11, S8, BANK}, {0x0B, 12, S8, BANK},
+      {0x0B, 13, U8, BANK}, {0x0B, 14, S8, BANK},
   };
   REQUIRE(keys.size() == registrations.size());
 
@@ -86,7 +90,8 @@ TEST_CASE("full bank 0x0B frame decodes every key") {
 }
 
 TEST_CASE("registration past the end of the data produces nothing") {
-  const std::vector<Registration> registrations = {{0x0B, 30, S8}, {0x0B, 31, S8}, {0x0B, 30, {2, false}}};
+  const std::vector<Registration> registrations = {
+      {0x0B, 30, S8, BANK}, {0x0B, 31, S8, BANK}, {0x0B, 30, {2, false}, BANK}};
   std::vector<uint8_t> data(31, 0x01);
 
   auto results = decode_values(0x0B, data, registrations);
@@ -95,8 +100,17 @@ TEST_CASE("registration past the end of the data produces nothing") {
   CHECK(results[0].value == 1);
 }
 
+TEST_CASE("a reply with the wrong data length produces nothing") {
+  // A Bank registration only decodes from a full Bank reply.
+  CHECK(decode_values(0x0B, std::vector<uint8_t>(30, 0x01), {{0x0B, 1, S8, BANK}}).empty());
+  CHECK(decode_values(0x0B, std::vector<uint8_t>(32, 0x01), {{0x0B, 1, S8, BANK}}).empty());
+  // A single value only decodes from a reply exactly as long as the value.
+  CHECK(decode_values(0x2D, {0x00, 0x10, 0x00}, {{0x2D, 0, {2, false}, VALUE}}).empty());
+  CHECK(decode_values(0x31, {0x64, 0x00}, {{0x31, 0, U8, VALUE}}).empty());
+}
+
 TEST_CASE("registrations for other addresses are skipped") {
-  const std::vector<Registration> registrations = {{0x0C, 0, S8}, {0x0B, 0, S8}, {0x2C, 0, S8}};
+  const std::vector<Registration> registrations = {{0x0C, 0, S8, VALUE}, {0x0B, 0, S8, VALUE}, {0x2C, 0, S8, VALUE}};
   auto results = decode_values(0x0B, {0x80}, registrations);
   REQUIRE(results.size() == 1);
   CHECK(results[0].index == 1);
@@ -104,7 +118,7 @@ TEST_CASE("registrations for other addresses are skipped") {
 }
 
 TEST_CASE("two-byte values are big-endian") {
-  const std::vector<Registration> registrations = {{0x12, 0, {2, true}}, {0x3A, 0, {2, false}}};
+  const std::vector<Registration> registrations = {{0x12, 0, {2, true}, VALUE}, {0x3A, 0, {2, false}, VALUE}};
   auto signed_results = decode_values(0x12, {0xFE, 0x0C}, registrations);
   REQUIRE(signed_results.size() == 1);
   CHECK(signed_results[0].value == -500);
@@ -116,14 +130,14 @@ TEST_CASE("two-byte values are big-endian") {
 
 namespace {
 
-// Decode rules as value_table.py builds them for single-address rows.
+// Decode rules as register_map.py builds them for single-address rows.
 const DecodeRule CENTI_S16 = {2, true, 100};
 const DecodeRule U16 = {2, false};
 DecodeRule status_bit(uint16_t mask) { return DecodeRule(2, false, 1, mask); }
 
 const uint16_t STATUS_WORD = 0x2D;
 
-// The status-word bits in value_table.py.
+// The status-word bits in register_map.py.
 struct StatusBit {
   const char *key;
   uint16_t mask;
@@ -133,7 +147,7 @@ const std::vector<StatusBit> STATUS_BITS = {
 };
 
 float decode_single(uint16_t address, const std::vector<uint8_t> &data, DecodeRule rule) {
-  const std::vector<Registration> registrations = {{address, 0, rule}};
+  const std::vector<Registration> registrations = {{address, 0, rule, VALUE}};
   Frame frame = receive(reply(address, data));
   auto results = decode_values(frame.address, frame.data, registrations);
   REQUIRE(results.size() == 1);
@@ -171,7 +185,7 @@ TEST_CASE("status bits are read and published without the status-word sensor") {
   // Only bit rows registered, as when status_word is left out of the config.
   std::vector<Registration> registrations;
   for (const StatusBit &bit : STATUS_BITS)
-    registrations.push_back({STATUS_WORD, 0, status_bit(bit.mask)});
+    registrations.push_back({STATUS_WORD, 0, status_bit(bit.mask), VALUE});
 
   PollScheduler scheduler;
   for (const Registration &registration : registrations)
@@ -195,9 +209,9 @@ TEST_CASE("status bits are read and published without the status-word sensor") {
 TEST_CASE("rows sharing an address are requested once and decode from one reply") {
   // A temperature, the status-word sensor and every status bit, as the hub
   // registers them from the table.
-  std::vector<Registration> registrations = {{0x12, 0, CENTI_S16}, {STATUS_WORD, 0, U16}};
+  std::vector<Registration> registrations = {{0x12, 0, CENTI_S16, VALUE}, {STATUS_WORD, 0, U16, VALUE}};
   for (const StatusBit &bit : STATUS_BITS)
-    registrations.push_back({STATUS_WORD, 0, status_bit(bit.mask)});
+    registrations.push_back({STATUS_WORD, 0, status_bit(bit.mask), VALUE});
 
   PollScheduler scheduler;
   for (const Registration &registration : registrations)
@@ -228,5 +242,5 @@ TEST_CASE("rows sharing an address are requested once and decode from one reply"
 }
 
 TEST_CASE("a zero divisor produces nothing") {
-  CHECK(decode_values(0x12, {0x00, 0x01}, {{0x12, 0, {2, true, 0}}}).empty());
+  CHECK(decode_values(0x12, {0x00, 0x01}, {{0x12, 0, {2, true, 0}, VALUE}}).empty());
 }

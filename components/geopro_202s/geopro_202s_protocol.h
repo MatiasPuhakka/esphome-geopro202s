@@ -34,11 +34,11 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
   // bank for settings), where it starts in the reply, and how to decode it.
   // A sensor publishes the decoded number, a binary sensor whether it is non-zero.
   void register_value(PollGroup group, uint16_t address, uint8_t offset, DecodeRule rule, sensor::Sensor *sensor) {
-    this->add_value_(group, Registration{address, offset, rule}, Target{sensor, nullptr});
+    this->add_value_(Registration{address, offset, rule, group}, Target{sensor, nullptr});
   }
   void register_value(PollGroup group, uint16_t address, uint8_t offset, DecodeRule rule,
                       binary_sensor::BinarySensor *binary_sensor) {
-    this->add_value_(group, Registration{address, offset, rule}, Target{nullptr, binary_sensor});
+    this->add_value_(Registration{address, offset, rule, group}, Target{nullptr, binary_sensor});
   }
 
  protected:
@@ -48,16 +48,16 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
     binary_sensor::BinarySensor *binary_sensor;
   };
 
-  void add_value_(PollGroup group, const Registration &registration, const Target &target);
+  void add_value_(const Registration &registration, const Target &target);
   void handle_frame_(const Frame &frame);
   void send_request_(uint16_t address);
 
   FrameDecoder decoder_;
   PollScheduler scheduler_;
 
-  // Registered values, their poll groups and where they publish, matched by index.
+  // Registered values and where each one publishes, matched by index. They stay
+  // apart because decode_values() is pure and reports results by registration index.
   std::vector<Registration> registrations_{};
-  std::vector<PollGroup> groups_{};
   std::vector<Target> targets_{};
 };
 
