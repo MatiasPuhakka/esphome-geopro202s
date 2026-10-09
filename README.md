@@ -8,7 +8,7 @@ This is an ESPHome component for communicating with Ouman Geopro 202S heat pump 
 - **Valve Positions** - L1 and DHW (domestic hot water) valve positions
 - **Operating Hours** - Electric heater and compressor runtime counters
 - **Status Indicators** - Binary sensors for compressor and electric heater status
-- **Configuration Banks** - Read-only sensors for all 25 configuration parameters:
+- **Configuration Banks** - Read-only sensors for all 24 configuration values:
   - Bank 0x0C: Heating circuit settings (L1 curve points, limits, delays)
   - Bank 0x2C: L1 settings (summer close temperature)
   - Bank 0x0B: Heat pump settings (tank temperatures, delays, lock times)
@@ -40,6 +40,10 @@ uart:
 geopro_202s:
   id: geopro
 
+  # Poll intervals (optional, defaults shown)
+  value_interval: 10s
+  bank_interval: 60s
+
   # Temperature sensors (all optional - only include what you need)
   outside_temp:
     name: "Outside Temperature"
@@ -65,13 +69,45 @@ See `example/geopro202s.yaml` for a complete configuration example with all avai
 
 ## Protocol Documentation
 
-The component implements the Geopro 202S serial protocol with the following message types:
+Every frame, request or reply, has the same shape:
 
-- **0x04 messages** - Temperature readings and status values
-- **0x03 messages** - Valve positions
-- **0x21 messages** - Configuration bank readings (banks 0x0C, 0x2C, 0x0B)
+```
+02 <command> <length> <address hi> <address lo> <data...> <checksum>
+```
 
-The component automatically polls sensors every 10 seconds and configuration banks every 60 seconds.
+- `02` is the start byte. The protocol does not escape it, so 0x02 can also appear in the address, data or checksum.
+- `<length>` counts the address and data bytes, so a frame is `length + 4` bytes long. Valid lengths are 0x02 to 0x21.
+- `<checksum>` is the low byte of the sum of every byte from the command byte up to the checksum.
+
+A read request is `02 81 02 <address hi> <address lo> <checksum>`. The reply's data length depends on what was read:
+
+- **1 byte** - Valve positions
+- **2 bytes** - Temperature readings and status values
+- **31 bytes** - Configuration bank readings (banks 0x0C, 0x2C, 0x0B)
+
+The wire format lives in `frame.h`/`frame.cpp`, which have no ESPHome dependencies. Run their host tests with `make test`.
+
+### Register map
+
+Every config key is one row in the Register map, `register_map.py`: the address to read (for a setting, its bank), where the value starts in the reply's data, and a decode rule. The rule gives the width (1 or 2 bytes, big-endian), whether the value is signed, a divisor, and, for a status bit, a mask. Current rules:
+
+- **Temperatures** - signed 16-bit, divided by 100
+- **Valve positions** - unsigned 8-bit
+- **Hour counters and the status word** - unsigned 16-bit
+- **Status bits** - the status word (0x2D) masked, published as a binary sensor
+- **Bank settings** - one byte at the setting's offset, signed unless noted
+
+Several rows can share an address. The status word sensor and the five status bits all read 0x2D, which is requested once per cycle and decoded for every row from one reply. Status bits work without the `status_word` sensor.
+
+Adding a value takes one row and no C++ change. The hub registers each row with `register_value()` and passes every reply to the decoder in `value_decoder.h`/`value_decoder.cpp`, which has no ESPHome dependencies and is covered by `make test`.
+
+### Polling
+
+The component reads every configured address once at startup, then reads values (temperatures, valves, hour counters, the status word) every `value_interval` (default 10 s) and configuration banks every `bank_interval` (default 60 s). Both take an ESPHome time period such as `30s` or `5min` and must be greater than zero. Each address is read once per cycle, however many values share it.
+
+Only one request is on the bus at a time. The next request goes out 50 ms after the previous one got its reply. A request with no reply within 500 ms is sent once more; if that also goes unanswered, the component moves on and tries the address again next cycle. A reply only counts if it is for the address that was asked for.
+
+This logic lives in `poll_scheduler.h`/`poll_scheduler.cpp`, which also have no ESPHome dependencies and are covered by `make test`.
 
 ## Contributing
 

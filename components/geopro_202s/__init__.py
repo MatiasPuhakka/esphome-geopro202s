@@ -1,43 +1,64 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import uart
+from esphome.components import binary_sensor, sensor, uart
 from esphome.const import CONF_ID
+from esphome.core import HexInt
+
+from .register_map import VALUES
 
 DEPENDENCIES = ['uart']
 AUTO_LOAD = ['sensor', 'binary_sensor']
 
-# Component namespace
 geopro_202s_ns = cg.esphome_ns.namespace('geopro_202s')
 Geopro202sComponent = geopro_202s_ns.class_('Geopro202sComponent', cg.Component, uart.UARTDevice)
+DecodeRuleStruct = geopro_202s_ns.struct('DecodeRule')
+PollGroup = geopro_202s_ns.enum('PollGroup', is_class=True)
 
-# Configuration schema
-CONF_GEOPRO_202S_ID = 'geopro_202s_id'
 
-GEOPRO_202S_COMPONENT_SCHEMA = cv.Schema({
-    cv.GenerateID(): cv.declare_id(Geopro202sComponent),
-}).extend(cv.COMPONENT_SCHEMA).extend(uart.UART_DEVICE_SCHEMA)
+def _decode_rule(rule):
+    # A constructor call, not designated initializers: those are standard only
+    # from C++20, and ESPHome's Arduino ESP32 builds use C++11.
+    return DecodeRuleStruct(rule.width, rule.signed, rule.divisor, HexInt(rule.mask))
 
-# Import and merge schemas from sub-modules
-from . import sensor
-from . import binary_sensor
-from . import bank_sensor
 
-# Merge all schemas - each module extends GEOPRO_202S_COMPONENT_SCHEMA,
-# so we need to start from base and extend with each module's additions
-CONFIG_SCHEMA = GEOPRO_202S_COMPONENT_SCHEMA
+CONF_VALUE_INTERVAL = 'value_interval'
+CONF_BANK_INTERVAL = 'bank_interval'
 
-# Each module's CONFIG_SCHEMA already includes the base, so we need to extract just the additions
-# We'll merge by extending with each module's schema which will add their options
-CONFIG_SCHEMA = sensor.CONFIG_SCHEMA
-CONFIG_SCHEMA = CONFIG_SCHEMA.extend(binary_sensor.CONFIG_SCHEMA)
-CONFIG_SCHEMA = CONFIG_SCHEMA.extend(bank_sensor.CONFIG_SCHEMA)
+# A zero interval would poll without pause, so require more than zero.
+_poll_interval = cv.All(cv.positive_not_null_time_period, cv.positive_time_period_milliseconds)
+
+
+def _entity_schema(value):
+    if value.is_binary:
+        return binary_sensor.binary_sensor_schema(**value.schema_options)
+    return sensor.sensor_schema(**value.schema_options)
+
+
+CONFIG_SCHEMA = (
+    cv.Schema({
+        cv.GenerateID(): cv.declare_id(Geopro202sComponent),
+        cv.Optional(CONF_VALUE_INTERVAL, default='10s'): _poll_interval,
+        cv.Optional(CONF_BANK_INTERVAL, default='60s'): _poll_interval,
+        **{cv.Optional(value.key): _entity_schema(value) for value in VALUES},
+    })
+    .extend(cv.COMPONENT_SCHEMA)
+    .extend(uart.UART_DEVICE_SCHEMA)
+)
+
 
 async def to_code(config):
-    var = cg.new_Pvariable(config[CONF_ID])
-    await cg.register_component(var, config)
-    await uart.register_uart_device(var, config)
+    hub = cg.new_Pvariable(config[CONF_ID])
+    await cg.register_component(hub, config)
+    await uart.register_uart_device(hub, config)
+    cg.add(hub.set_value_interval(config[CONF_VALUE_INTERVAL]))
+    cg.add(hub.set_bank_interval(config[CONF_BANK_INTERVAL]))
 
-    # Call to_code functions from sub-modules to register sensors
-    await sensor.to_code(config)
-    await binary_sensor.to_code(config)
-    await bank_sensor.to_code(config)
+    for value in VALUES:
+        if value.key not in config:
+            continue
+        if value.is_binary:
+            entity = await binary_sensor.new_binary_sensor(config[value.key])
+        else:
+            entity = await sensor.new_sensor(config[value.key])
+        group = getattr(PollGroup, value.group.value)
+        cg.add(hub.register_value(group, HexInt(value.address), value.offset, _decode_rule(value.decode), entity))
