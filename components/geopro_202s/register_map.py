@@ -170,7 +170,8 @@ VALUES = (
     _bank("l1_night_effect", 0x0C, 5, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON),
     _bank("l1_autumn_dry", 0x0C, 14, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON),
     _bank("l1_out_temp_delay", 0x0C, 19, UNIT_HOUR, DEVICE_CLASS_DURATION, "mdi:clock"),
-    _bank("l1_pre_increase", 0x0C, 23, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON),
+    # The service menu's Esikorotus duration (0-5 h), not the user menu's amount in °C.
+    _bank("l1_pre_increase", 0x0C, 23, UNIT_HOUR, DEVICE_CLASS_DURATION, "mdi:clock"),
 
     # Bank 0x2C: L1 settings
     _bank("l1_summer_close", 0x2C, 8, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON),
