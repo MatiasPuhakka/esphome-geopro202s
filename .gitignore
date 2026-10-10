@@ -8,3 +8,5 @@ secrets.yaml
 .env
 *.elf
 __pycache__/
+# A local copy of the Node's pre-Component config; it holds old credentials
+manuals/geopro.yaml

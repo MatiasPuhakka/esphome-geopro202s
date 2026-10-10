@@ -1,0 +1,2 @@
+# The manuals are PDFs; don't diff or merge them as text.
+*.pdf binary
