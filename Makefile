@@ -39,15 +39,18 @@ check-secrets:
 	fi
 
 # Validates a config that loads the component from this checkout and sets every key.
+# ESPHome prints config errors on stdout, so both config checks keep it in $(BUILD_DIR)
+# and print it on failure. Secrets appear there only as their !secret names.
 check-config:
-	$(ESPHOME) config $(CONFIG_TEST) > /dev/null
+	@mkdir -p $(BUILD_DIR)
+	$(ESPHOME) config $(CONFIG_TEST) > $(BUILD_DIR)/config.out || { cat $(BUILD_DIR)/config.out; exit 1; }
 
 # Validates the Node's config and fails on deprecation warnings, so an option ESPHome is
 # about to remove fails here before it breaks a build. Needs secrets.yaml next to
 # geopro.yaml (CI writes a dummy one) and ESPHome 2026.9.1 or newer.
 check-node-config:
 	@mkdir -p $(BUILD_DIR)
-	$(ESPHOME) config $(NODE_CONFIG) > /dev/null 2> $(BUILD_DIR)/node-config.log || { cat $(BUILD_DIR)/node-config.log; exit 1; }
+	$(ESPHOME) config $(NODE_CONFIG) > $(BUILD_DIR)/node-config.out 2> $(BUILD_DIR)/node-config.log || { cat $(BUILD_DIR)/node-config.out $(BUILD_DIR)/node-config.log; exit 1; }
 	@if grep -qi deprecat $(BUILD_DIR)/node-config.log; then cat $(BUILD_DIR)/node-config.log; exit 1; fi
 
 # Builds firmware for both ESP32 frameworks. Slow on the first run (toolchain download).
