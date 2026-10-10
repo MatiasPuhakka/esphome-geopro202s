@@ -2,7 +2,7 @@
 
 Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
 
-The machine's default `gh` account can't see this repo. Run every `gh` command as MatiasPuhakka by prefixing it with `GH_TOKEN=$(gh auth token --user MatiasPuhakka)`, and pass the same prefix on to any subagent that uses `gh`. Git pushes already use that account through the repo's credential helper.
+The machine's default `gh` account isn't MatiasPuhakka, so anything it creates here would carry the wrong name. Run every `gh` command as MatiasPuhakka by prefixing it with `GH_TOKEN=$(gh auth token --user MatiasPuhakka)`, and pass the same prefix on to any subagent that uses `gh`. Git pushes already use that account through the repo's credential helper.
 
 ## Conventions
 

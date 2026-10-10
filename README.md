@@ -7,11 +7,11 @@ This is an ESPHome component for communicating with Ouman Geopro 202S heat pump 
 - **Temperature Sensors** - 9 sensors including outside, supply, tank, and brine temperatures
 - **Valve Positions** - L1 and DHW (domestic hot water) valve positions (voltage-controlled motors only, see [Valve positions](#valve-positions))
 - **Operating Hours** - Electric heater and compressor runtime counters
-- **Status Indicators** - Binary sensors for compressor and electric heater status
+- **Status Indicators** - Binary sensors for compressor and electric heater status, and for the `digi1`-`digi3` bits of the status word
 - **Configuration Banks** - Read-only sensors for all 24 configuration values:
   - Bank 0x0C: Heating circuit settings (L1 curve points, limits, delays)
   - Bank 0x2C: L1 settings (summer close temperature)
-  - Bank 0x0B: Heat pump settings (tank temperatures, delays, lock times)
+  - Bank 0x0B: Heat pump settings (tank temperatures, delays, the compressor stop temperature, the valve lock time)
 - **Default Icons** - All sensors come with appropriate Material Design Icons
 
 ## Installation
@@ -65,7 +65,7 @@ geopro_202s:
     name: "Tank Summer Temperature"
 ```
 
-See `example/geopro202s.yaml` for a complete configuration example. It lists every sensor, with the valve positions commented out.
+See `example/geopro202s.yaml` for a complete configuration example. It lists every sensor, with the valve positions and the `digi1`-`digi3` bits commented out.
 
 ### Valve positions
 

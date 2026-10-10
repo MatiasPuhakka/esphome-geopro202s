@@ -68,9 +68,15 @@ geopro_202s:
     name: "Kompressori"
   el_heater:
     name: "Sähkövastus"
+  # The digi1-digi3 bits of the status word. What they report isn't verified yet.
+  # digi1:
+  #   name: "Digi 1"
+  # digi2:
+  #   name: "Digi 2"
+  # digi3:
+  #   name: "Digi 3"
 
   # Bank 0x0C - Heating Circuit Settings (read-only sensors)
-  # For writable controls, see number controls below
   l1_minus20:
     name: "L1 -20°C"
   l1_zero:
