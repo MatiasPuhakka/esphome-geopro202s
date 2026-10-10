@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: make check-secrets
       - run: make test
 
   esphome:
@@ -34,4 +35,9 @@ jobs:
           key: esphome-${{ matrix.esphome }}-${{ hashFiles('tests/*.yaml') }}
           restore-keys: esphome-${{ matrix.esphome }}-
       - run: make check-config
+      # geopro.yaml uses the Ethernet clk: block, which 2025.2.2 doesn't know.
+      - if: matrix.esphome != '2025.2.2'
+        run: |
+          printf 'api_encryption_key: "%s"\nota_password: ci\n' "$(head -c 32 /dev/urandom | base64)" > secrets.yaml
+          make check-node-config
       - run: make compile
