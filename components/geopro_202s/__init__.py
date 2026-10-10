@@ -45,6 +45,17 @@ CONFIG_SCHEMA = (
     .extend(uart.UART_DEVICE_SCHEMA)
 )
 
+# The Controller's bus runs at 4800 baud, 8N1, and the hub both sends and receives.
+FINAL_VALIDATE_SCHEMA = uart.final_validate_device_schema(
+    'geopro_202s',
+    baud_rate=4800,
+    require_tx=True,
+    require_rx=True,
+    data_bits=8,
+    parity='NONE',
+    stop_bits=1,
+)
+
 
 async def to_code(config):
     hub = cg.new_Pvariable(config[CONF_ID])
