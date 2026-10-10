@@ -26,7 +26,7 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
   void dump_config() override;
   float get_setup_priority() const override { return setup_priority::DATA; }
 
-  // Poll intervals, in milliseconds. Leaving them unset keeps the scheduler's defaults.
+  // Poll intervals, in milliseconds. Codegen always sets both from the config (default 10 s and 60 s).
   void set_value_interval(uint32_t interval_ms) { this->scheduler_.set_value_interval(interval_ms); }
   void set_bank_interval(uint32_t interval_ms) { this->scheduler_.set_bank_interval(interval_ms); }
 
