@@ -20,21 +20,33 @@ jobs:
       fail-fast: false
       matrix:
         # The version the Home Assistant add-on builds the Node with. When the
-        # add-on moves, bump this in the same change (docs/adr/0002).
+        # add-on moves to a new series, bump this and SUPPORTED_ESPHOME in the
+        # Makefile in the same change (docs/adr/0002).
         esphome: ["2026.9.1"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
+        id: python
         with:
           python-version: "3.12"
       - run: pip install esphome==${{ matrix.esphome }}
+      # ESPHome downloads the ESP-IDF framework and toolchains into ~/.cache/esphome on
+      # the first compile, with a venv built from this job's Python. They change only
+      # with the ESPHome version and that Python, which the key names, so a saved key
+      # never needs saving again.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/esphome
+          key: esphome-idf-${{ matrix.esphome }}-${{ runner.os }}-python-${{ steps.python.outputs.python-version }}
+      # The build directories, so a compile only rebuilds what changed. A new key saves
+      # them whenever a config or the Component changes.
       - uses: actions/cache@v4
         with:
           path: |
-            ~/.platformio
+            .esphome
             tests/.esphome
-          key: esphome-${{ matrix.esphome }}-${{ hashFiles('tests/*.yaml') }}
-          restore-keys: esphome-${{ matrix.esphome }}-
+          key: esphome-build-${{ matrix.esphome }}-${{ hashFiles('*.yaml', 'tests/*.yaml', 'components/**') }}
+          restore-keys: esphome-build-${{ matrix.esphome }}-
       - run: make check-config
       - run: |
           printf 'api_encryption_key: "%s"\nota_password: ci\n' "$(head -c 32 /dev/urandom | base64)" > secrets.yaml
@@ -43,3 +55,4 @@ jobs:
       # Reuses the secrets.yaml written above.
       - run: make check-contract
       - run: make compile
+      - run: make compile-node
