@@ -27,7 +27,7 @@ The ML circuit's settings, as listed on p. 21. The last column is what the Contr
 | JV Esto | huoltotila | 60 s | 30–240 s | 13 | 60 s |
 | Kompr.esto | huoltotila | 55 °C | 45–55 °C | 14 | 48 °C |
 
-**Observed:** ML Ohjaustapa 0 is Kompr.+sähköv.; the display showed that while the Value read 0 (#10). The other codes are unverified (#31).
+**Observed:** ML Ohjaustapa 0 is Kompr.+sähköv.; the display showed that while the Value read 0 (#10). Home Assistant history shows code 2 on 2026-10-09 (#26), and nobody has matched it to the display. The `hp_mode` row in `components/geopro_202s/register_map.py` keeps the codes seen.
 
 ### Factory values that contradict each other
 
@@ -99,7 +99,7 @@ The Status word is the Value at Address 0x2D. The manual doesn't describe it; ev
 - During compressor runs it read 0xFE17. Bit 0x10 was the only bit that changed (Node logs from 2026-10-07, not in the repo).
 - There's no alarm bit. Between the short runs of 2026-10-07, including the 5-minute Poikkeamahälytys lockouts, it read 0xFE07.
 - Bit 0x08 went on when S1 joined a compressor run, reading 0xFE1F (Node log from 2026-10-08 10:16–10:19, not in the repo).
-- Bits 0x01, 0x02 and 0x04 (`digi1`–`digi3`) are on at idle. Which Dig input each one reports is unverified (#31).
+- Bits 0x01, 0x02 and 0x04 (`digi1`–`digi3`) are on at idle. Which Dig input each one reports is unverified.
 
 ## Inputs and relays
 
@@ -122,4 +122,5 @@ From the wiring diagram on p. 39 and the alarm list on p. 20.
 - Whether VaraajaYlä uses M1 or the averaged outdoor temperature.
 - How the tank-top and tank-bottom calls combine, and whether the 5-minute wait also applies to tank-top starts.
 - Which factory values for VaraajaAlaEro and VaraajaYläEro are right.
-- The ML Ohjaustapa codes other than 0, and which Dig input each of `digi1`–`digi3` reports (#31).
+- The ML Ohjaustapa codes other than 0, and which Dig input each of `digi1`–`digi3` reports.
+- What the Bank bytes without a row hold. The end of `components/geopro_202s/register_map.py` lists them with their 2026-10-09 values.
