@@ -2,7 +2,7 @@
 
 Host tests and CI cover building and decoding. The Node on the real bus covers the rest. Verify any change that alters what the Node runs: the Component, `geopro.yaml` or the ESPHome version. Ask the owner before flashing.
 
-The steps below are manual, with a script from `tools/` for some of them (see `tools/README.md`). A flash check (#46) is planned to replace them.
+The flash check in `tools/flash_check.py` runs the checks in three phases: `before`, `after` and `overnight`. Each phase prints a report and exits with status 1 when a check fails. See `tools/README.md`.
 
 ## Setup
 
@@ -19,23 +19,33 @@ The steps below are manual, with a script from `tools/` for some of them (see `t
 
 ## Before flashing
 
-Snapshot Home Assistant's states, so the after check has something to compare with:
-
 ```
-curl -s -H "Authorization: Bearer $ACCESS_TOKEN" "$HA_URL/api/states" > .scratch/states-before.json
+python3 tools/flash_check.py before
 ```
 
-`$HA_URL` is Home Assistant's address, for example `http://<host>:8123`. Keep the file in `.scratch/`. It lists every `sensor.geopro_*` and `binary_sensor.geopro_*` entity with its state; entity IDs are a contract ([ADR 0004](../adr/0004-entity-ids-stay-stable.md)).
+This saves Home Assistant's states to `.scratch/flash-check/states-before.json` and starts a new check. Its notes list any Node entity Home Assistant doesn't have yet, such as one the flash adds. Entity IDs are a contract ([ADR 0004](../adr/0004-entity-ids-stay-stable.md)), recorded in `tests/entity-contract.txt`.
 
 ## After flashing
 
-1. **Running build.** Confirm the Node runs what you built. Home Assistant's device page for the Node shows the firmware's compile time, and so does `tools/device_info.py`; compare it with the time of your build.
-2. **Entities still exist.** Fetch `/api/states` again and compare the two snapshots with `python3 tools/compare_entities.py`. Every `sensor.geopro_*` and `binary_sensor.geopro_*` entity from the snapshot is present and none reads `unavailable` or `unknown`. A missing entity means a rename or a changed kind, which orphans its history.
-3. **Every entity still publishes.** Check live, not in history: Home Assistant's ESPHome integration skips a state that didn't change, so a flat history proves nothing. Run `tools/count_states.py 75` with the Python that has ESPHome installed: it connects to the Node's API with the key from `secrets.yaml` and counts state messages for 75 s. The subscription starts with a dump of every current state and the counts include it, so a sensor's count of 1 means no update. At the default intervals Values publish every 10 s and Banks every 60 s, and each sensor should publish again within its interval. A binary sensor may publish only when its bit changes; its entry in the dump is enough.
+```
+.scratch/esphome-2026.9.1/bin/python tools/flash_check.py after
+```
+
+Run it with the Python that has ESPHome installed, since it talks to the Node's API; the path above is the venv in this checkout, relative to the repo root. It listens to the Node for 75 s, then saves Home Assistant's states to `.scratch/flash-check/states-after.json`, and fails on any of these:
+
+1. **Running build.** The Node's Component revision (the `component_revision` sensor) isn't the one you flashed. By default it expects what a local build of this checkout stamps, `-dirty` included. After an add-on install, which builds `main`, run `git fetch` and pass `--revision origin/main`. The add-on may build from a cached copy of `main` up to a day old ([ADR 0005](../adr/0005-node-is-built-from-main.md)), so a failure right after a merge can mean the install built the commit before it; pass that commit to check. A `-dirty` revision matches any build of the same commit with uncommitted changes. The report starts with the Node's ESPHome version and compile time.
+2. **Entities still exist.** An entity in the contract is missing from Home Assistant under its recorded ID, reads `unavailable` or `unknown`, or has another unit, device class or state class. A missing entity means a rename or a changed kind, which orphans its history. Home Assistant can show a duration or a temperature in another unit than the Node sends (after #11 it showed the Node's 2 h as 120.0 min); the report notes that and doesn't fail on it.
+3. **Every entity still publishes.** A sensor sends no state message in the 75 s besides the one sent on subscribing, or the Node has an entity the contract lacks. This is checked live, not in history: Home Assistant's ESPHome integration skips a state that didn't change, so a flat history proves nothing. At the default intervals Values publish every 10 s and Banks every 60 s. A binary sensor may publish only when its bit changes, and the revision only at boot, so the state each sends on subscribing is enough.
+
+Its notes list the Geopro entities gone since the before snapshot, and each unit or class that changed.
 
 ## The next morning
 
-Review a day of Home Assistant history for each entity since the flash (`/api/history/period/<flash time>?filter_entity_id=<ids>&minimal_response`). Look for `unavailable` and `unknown`; there should be none. A Bank setting nobody touched can show a single state for the whole day, so a flat history is fine.
+```
+python3 tools/flash_check.py overnight
+```
+
+This summarises each entity's history from the after phase until now: state changes, unavailable or unknown states, and the first and last value. It fails on any unavailable or unknown state. A Bank setting nobody touched can show a single state for the whole night, so a flat history is fine. `--start` and `--end` set another window.
 
 ## Capturing a raw bus trace
 

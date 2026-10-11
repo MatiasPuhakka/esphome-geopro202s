@@ -21,21 +21,24 @@ def geopro_ids(states):
     return sorted(s["entity_id"] for s in states if s["entity_id"].split(".", 1)[1].startswith("geopro_"))
 
 
+def report(history):
+    """The summary of a History, and the number of unavailable or unknown states per entity ID."""
+    lines = ["window " + history.window()]
+    missing = {}
+    for entity_id in sorted(history.series):
+        values = [row["state"] for row in history.series[entity_id]]
+        missing[entity_id] = sum(v in MISSING_STATES for v in values)
+        lines.append("%-44s changes %4d  unavailable %d  %s -> %s"
+                     % (entity_id, len(values) - 1, missing[entity_id], values[0][:8], values[-1][:8]))
+    lines.append("entities: %d | unavailable/unknown states: %d" % (len(history.series), sum(missing.values())))
+    return "\n".join(lines) + "\n", missing
+
+
 def summary(client, start, end=None):
     ids = geopro_ids(client.states())
     if not ids:
         raise SystemExit("Home Assistant has no geopro_ entities.")
-    history = client.history(ids, start, end)
-    lines = ["window " + history.window()]
-    missing_total = 0
-    for entity_id in sorted(history.series):
-        values = [row["state"] for row in history.series[entity_id]]
-        missing = sum(v in MISSING_STATES for v in values)
-        missing_total += missing
-        lines.append("%-44s changes %4d  unavailable %d  %s -> %s"
-                     % (entity_id, len(values) - 1, missing, values[0][:8], values[-1][:8]))
-    lines.append("entities: %d | unavailable/unknown states: %d" % (len(history.series), missing_total))
-    return "\n".join(lines) + "\n"
+    return report(client.history(ids, start, end))[0]
 
 
 def main(argv=None):
