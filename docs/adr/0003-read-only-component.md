@@ -1,0 +1,5 @@
+# The Component only reads
+
+The Component sends Read requests and never changes a setting on the Controller. It once had write support. 3b5ef5a removed it with `SAFETY_WARNING.md`, which called Command byte 0x82 and the Frame `[0x02, 0x82, 0x03, bank_id, offset, value, crc]` assumed and "NOT CONFIRMED". The command was a guess from the read pattern (0x81), the code was never tested on a Controller, and no write was ever confirmed on the bus. The guess also uses a one-byte address, where CONTEXT.md defines a 16-bit Address. The warning named the risk of wrong values in safety-critical settings such as temperatures and limits, so the Component publishes what the Controller reports and sends nothing else.
+
+Revisit this when a feature needs a write path (#24 does). The deleted warning set the bar: Ouman's documentation of the write command, or a write captured on the bus, before the Component sends one. Anything beyond that is the owner's call. Lifting this also changes the "never changes a setting" line in CONTEXT.md, and ADR 0001 asks for a second look at the transport port if the hub gains write support.
