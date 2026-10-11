@@ -1,0 +1,39 @@
+# The entity IDs Home Assistant has for the Node's entities, recorded 2026-10-11
+# from GET /api/states by `python3 tests/entity_contract.py record-ids NODE_OUT`.
+# entity ID<TAB>friendly name
+binary_sensor.geopro_kompressori	Geopro Kompressori
+binary_sensor.geopro_s_hk_vastus	Geopro Sähkövastus
+sensor.geopro_kompressori_tunnit	Geopro Kompressori tunnit
+sensor.geopro_l1_0_c	Geopro L1 0°C
+sensor.geopro_l1_20_c	Geopro L1 -20°C
+sensor.geopro_l1_20_c_2	Geopro L1 +20°C
+sensor.geopro_l1_esikorotus	Geopro L1 Esikorotus
+sensor.geopro_l1_maksimiraja	Geopro L1 Maksimiraja
+sensor.geopro_l1_menovesi	Geopro L1 menovesi
+sensor.geopro_l1_minimiraja	Geopro L1 Minimiraja
+sensor.geopro_l1_syyskuivaus	Geopro L1 Syyskuivaus
+sensor.geopro_l1_ulkol_mp_tilan_hidastus	Geopro L1 Ulkolämpötilan hidastus
+sensor.geopro_l1_venttiilin_kes_sulku	Geopro L1 venttiilin kesäsulku
+sensor.geopro_l1_y_alennus_vaikutus	Geopro L1 Yöalennus vaikutus
+sensor.geopro_maaliuos	Geopro Maaliuos
+sensor.geopro_ml_jv_esiavaus	Geopro ML JV esiavaus
+sensor.geopro_ml_jv_esto	Geopro ML JV Esto
+sensor.geopro_ml_kompuran_esto	Geopro ML Kompuran esto
+sensor.geopro_ml_lis_l_mmitys	Geopro ML Lisälämmitys
+sensor.geopro_ml_lis_l_mmitys_aika	Geopro ML Lisälämmitys aika
+sensor.geopro_ml_maaliuos_h_lytys	Geopro ML Maaliuos hälytys
+sensor.geopro_ml_ohjaustapa	Geopro ML Ohjaustapa
+sensor.geopro_ml_sv_viiveaika	Geopro ML SV_viiveaika
+sensor.geopro_ml_varaajaalaero	Geopro ML VaraajaAlaEro
+sensor.geopro_ml_varaajaalamin	Geopro ML VaraajaAlaMin
+sensor.geopro_ml_varaajayl_ero	Geopro ML VaraajaYläEro
+sensor.geopro_ml_varyl_kes	Geopro ML VarYlä Kesä
+sensor.geopro_ml_varyl_talvi	Geopro ML VarYlä Talvi
+sensor.geopro_ml_varylaerosv	Geopro ML VarYlaEroSV
+sensor.geopro_s_hk_vastus_tunnit	Geopro Sähkövastus tunnit
+sensor.geopro_tila_muuttuja	Geopro Tila Muuttuja
+sensor.geopro_ulkol_mp_tila	Geopro Ulkolämpötila
+sensor.geopro_varaaja_ala	Geopro Varaaja ala
+sensor.geopro_varaaja_keski	Geopro Varaaja keski
+sensor.geopro_varaaja_yl	Geopro Varaaja ylä
+sensor.geopro_varaaja_yl_tulo	Geopro Varaaja ylä tulo

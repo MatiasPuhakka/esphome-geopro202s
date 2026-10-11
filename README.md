@@ -113,7 +113,19 @@ Every config key is one row in the Register map, `register_map.py`: the address 
 
 Several rows can share an address. The status word sensor and the five status bits all read 0x2D, which is requested once per cycle and decoded for every row from one reply. Status bits work without the `status_word` sensor.
 
-Adding a value takes one row and no C++ change. The hub registers each row with `register_value()` and passes every reply to the decoder in `value_decoder.h`/`value_decoder.cpp`, which has no ESPHome dependencies and is covered by `make test`.
+Adding a value takes one row, a key in `tests/all-keys.yaml` and a contract update (see below), and no C++ change. The hub registers each row with `register_value()` and passes every reply to the decoder in `value_decoder.h`/`value_decoder.cpp`, which has no ESPHome dependencies and is covered by `make test`.
+
+### Home Assistant entity contract
+
+Home Assistant keys each entity on its platform (sensor or binary sensor) and name, and keeps long-term statistics in its unit and state class. Change one of those and the old entity loses its history or Home Assistant raises a statistics repair. `tests/entity-contract.txt` records, for every key in `tests/all-keys.yaml`, the platform, unit, device class, state class, accuracy, icon and entity category, and for every entity in `geopro.yaml`, its name and the entity ID Home Assistant has for it.
+
+`make check-contract` rebuilds the file from `esphome config` and fails with a diff when it changed. If the change is deliberate, run `make update-contract` and commit the new file, so the migration gets reviewed. Both need ESPHome 2026.9, a `secrets.yaml` next to `geopro.yaml`, and the Python that has ESPHome installed, for example `make check-contract ESPHOME=venv/bin/esphome PYTHON=venv/bin/python`.
+
+The entity IDs come from `tests/ha-entity-ids.txt`, a snapshot of Home Assistant's `/api/states` that keeps only each Node entity's ID and friendly name. An entity with no ID there, such as a new or renamed one, shows in the contract as `(no entity ID recorded)`. After a flash that changes entity IDs, record them again:
+
+1. Put `HA_URL` (such as `http://homeassistant.local:8123`) and a long-lived `ACCESS_TOKEN` in the environment, for example from the gitignored `.env` with `set -a; . ./.env; set +a`.
+2. Run `make check-node-config`, then `python3 tests/entity_contract.py record-ids build/node-config.out`.
+3. Run `make update-contract`.
 
 ### Polling
 

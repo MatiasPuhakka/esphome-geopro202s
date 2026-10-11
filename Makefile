@@ -3,6 +3,9 @@ CXXFLAGS ?= -std=c++17 -Wall -Wextra -O1
 COMPONENT_DIR := components/geopro_202s
 BUILD_DIR := build
 ESPHOME ?= esphome
+# check-contract and update-contract import register_map.py, so they need the Python
+# that has ESPHome installed, such as the python next to $(ESPHOME) in a venv.
+PYTHON ?= python3
 CONFIG_TEST := tests/all-keys.yaml
 CONFIG_ARDUINO := tests/all-keys-arduino.yaml
 NODE_CONFIG := geopro.yaml
@@ -15,10 +18,11 @@ TEST_BIN := $(BUILD_DIR)/tests
 # A raw trace from the Node that tests/trace_test.cpp replays; the test gets its absolute path.
 NODE_TRACE := tests/traces/node-2026-10-09.log
 
-.PHONY: test pure-check check-secrets check-config check-node-config compile clean
+.PHONY: test pure-check check-secrets check-config check-node-config check-contract update-contract compile clean
 
 test: pure-check $(TEST_BIN)
 	./$(TEST_BIN)
+	$(PYTHON) -m unittest discover -s tests -p '*_test.py'
 
 # The pure sources also run on the device, whose Arduino ESP32 build is C++11.
 # Host tests use C++17, so check the pure sources on their own.
@@ -52,6 +56,15 @@ check-node-config:
 	@mkdir -p $(BUILD_DIR)
 	$(ESPHOME) config $(NODE_CONFIG) > $(BUILD_DIR)/node-config.out 2> $(BUILD_DIR)/node-config.log || { cat $(BUILD_DIR)/node-config.out $(BUILD_DIR)/node-config.log; exit 1; }
 	@if grep -qi deprecat $(BUILD_DIR)/node-config.log; then cat $(BUILD_DIR)/node-config.log; exit 1; fi
+
+# The Home Assistant entity contract, tests/entity-contract.txt: each key's platform and
+# entity options, and the Node's entity names and IDs, taken from both config checks'
+# output. check-contract fails with a diff when it changed; update-contract rewrites it.
+check-contract: check-config check-node-config
+	$(PYTHON) tests/entity_contract.py check $(BUILD_DIR)/config.out $(BUILD_DIR)/node-config.out
+
+update-contract: check-config check-node-config
+	$(PYTHON) tests/entity_contract.py update $(BUILD_DIR)/config.out $(BUILD_DIR)/node-config.out
 
 # Builds firmware for both ESP32 frameworks. Slow on the first run (toolchain download).
 compile:
