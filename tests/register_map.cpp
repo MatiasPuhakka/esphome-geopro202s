@@ -2,6 +2,7 @@
 
 #include "doctest.h"
 
+using esphome::geopro_202s::AddressKind;
 using esphome::geopro_202s::DecodeRule;
 using esphome::geopro_202s::PollGroup;
 using esphome::geopro_202s::Registration;

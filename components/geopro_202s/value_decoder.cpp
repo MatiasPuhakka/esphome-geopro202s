@@ -4,7 +4,7 @@ namespace esphome {
 namespace geopro_202s {
 
 static size_t expected_data_length(const Registration &registration) {
-  if (registration.group == PollGroup::BANK)
+  if (registration.kind == AddressKind::BANK)
     return BANK_DATA_LENGTH;
   return static_cast<size_t>(registration.offset) + registration.rule.width;
 }

@@ -19,6 +19,7 @@ geopro_202s_ns = cg.esphome_ns.namespace('geopro_202s')
 Geopro202sComponent = geopro_202s_ns.class_('Geopro202sComponent', cg.Component, uart.UARTDevice)
 DecodeRuleStruct = geopro_202s_ns.struct('DecodeRule')
 PollGroup = geopro_202s_ns.enum('PollGroup', is_class=True)
+AddressKind = geopro_202s_ns.enum('AddressKind', is_class=True)
 
 
 def _decode_rule(rule):
@@ -89,4 +90,5 @@ async def to_code(config):
         else:
             entity = await sensor.new_sensor(config[value.key])
         group = getattr(PollGroup, value.group.value)
-        cg.add(hub.register_value(group, HexInt(value.address), value.offset, _decode_rule(value.decode), entity))
+        kind = getattr(AddressKind, value.address_kind.value)
+        cg.add(hub.register_value(group, kind, HexInt(value.address), value.offset, _decode_rule(value.decode), entity))

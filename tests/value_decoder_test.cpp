@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+using esphome::geopro_202s::AddressKind;
 using esphome::geopro_202s::decode_values;
 using esphome::geopro_202s::DecodedValue;
 using esphome::geopro_202s::DecodeRule;
@@ -23,8 +24,8 @@ namespace {
 
 const DecodeRule S8 = {1, true};
 const DecodeRule U8 = {1, false};
-const PollGroup VALUE = PollGroup::VALUE;
-const PollGroup BANK = PollGroup::BANK;
+const AddressKind SINGLE_VALUE = AddressKind::SINGLE_VALUE;
+const AddressKind BANK = AddressKind::BANK;
 
 // Wraps data bytes in a checksummed read reply from `address`.
 std::vector<uint8_t> reply(uint16_t address, const std::vector<uint8_t> &data) {
@@ -98,12 +99,13 @@ TEST_CASE("a reply with the wrong data length produces nothing") {
   CHECK(decode_values(0x0B, std::vector<uint8_t>(30, 0x01), {{0x0B, 1, S8, BANK}}).empty());
   CHECK(decode_values(0x0B, std::vector<uint8_t>(32, 0x01), {{0x0B, 1, S8, BANK}}).empty());
   // A single value only decodes from a reply exactly as long as the value.
-  CHECK(decode_values(0x2D, {0x00, 0x10, 0x00}, {{0x2D, 0, {2, false}, VALUE}}).empty());
-  CHECK(decode_values(0x31, {0x64, 0x00}, {{0x31, 0, U8, VALUE}}).empty());
+  CHECK(decode_values(0x2D, {0x00, 0x10, 0x00}, {{0x2D, 0, {2, false}, SINGLE_VALUE}}).empty());
+  CHECK(decode_values(0x31, {0x64, 0x00}, {{0x31, 0, U8, SINGLE_VALUE}}).empty());
 }
 
 TEST_CASE("registrations for other addresses are skipped") {
-  const std::vector<Registration> registrations = {{0x0C, 0, S8, VALUE}, {0x0B, 0, S8, VALUE}, {0x2C, 0, S8, VALUE}};
+  const std::vector<Registration> registrations = {
+      {0x0C, 0, S8, SINGLE_VALUE}, {0x0B, 0, S8, SINGLE_VALUE}, {0x2C, 0, S8, SINGLE_VALUE}};
   auto results = decode_values(0x0B, {0x80}, registrations);
   REQUIRE(results.size() == 1);
   CHECK(results[0].index == 1);
@@ -111,7 +113,8 @@ TEST_CASE("registrations for other addresses are skipped") {
 }
 
 TEST_CASE("two-byte values are big-endian") {
-  const std::vector<Registration> registrations = {{0x12, 0, {2, true}, VALUE}, {0x3A, 0, {2, false}, VALUE}};
+  const std::vector<Registration> registrations = {{0x12, 0, {2, true}, SINGLE_VALUE},
+                                                   {0x3A, 0, {2, false}, SINGLE_VALUE}};
   auto signed_results = decode_values(0x12, {0xFE, 0x0C}, registrations);
   REQUIRE(signed_results.size() == 1);
   CHECK(signed_results[0].value == -500);
@@ -130,7 +133,7 @@ const DecodeRule U16 = {2, false};
 const uint16_t STATUS_WORD = 0x2D;
 
 float decode_single(uint16_t address, const std::vector<uint8_t> &data, DecodeRule rule) {
-  const std::vector<Registration> registrations = {{address, 0, rule, VALUE}};
+  const std::vector<Registration> registrations = {{address, 0, rule, SINGLE_VALUE}};
   Frame frame = receive(reply(address, data));
   auto results = decode_values(frame.address, frame.data, registrations);
   REQUIRE(results.size() == 1);
@@ -240,6 +243,23 @@ TEST_CASE("rows sharing an address are requested once and decode from one reply"
   CHECK(decode_rows(STATUS_WORD, {0x80, 0x19}, rows) == expected);
 }
 
+TEST_CASE("a Bank row moved to the value cadence still decodes") {
+  // comp_lock as the Register map has it, but read every value interval.
+  register_map::Row row = register_map::rows_named({"comp_lock"})[0];
+  row.group = PollGroup::VALUE;
+
+  PollScheduler scheduler;
+  scheduler.add_address(row.group, row.registration.address);
+  uint16_t address;
+  REQUIRE(scheduler.next_request(0, address));
+  CHECK(address == 0x0B);
+
+  // The Reply is still a full Bank, with comp_lock at offset 14.
+  std::vector<uint8_t> data(31, 0x00);
+  data[14] = 0xFB;
+  CHECK(decode_rows(0x0B, data, {row}) == std::map<std::string, float>{{"comp_lock", -5}});
+}
+
 TEST_CASE("a zero divisor produces nothing") {
-  CHECK(decode_values(0x12, {0x00, 0x01}, {{0x12, 0, {2, true, 0}, VALUE}}).empty());
+  CHECK(decode_values(0x12, {0x00, 0x01}, {{0x12, 0, {2, true, 0}, SINGLE_VALUE}}).empty());
 }
