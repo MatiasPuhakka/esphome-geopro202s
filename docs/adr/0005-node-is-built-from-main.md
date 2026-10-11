@@ -1,0 +1,5 @@
+# Merging to main releases the Node's firmware
+
+The Home Assistant ESPHome add-on builds the Node from `/config/esphome/geopro-202s.yaml`, a hand-kept copy of `geopro.yaml` whose Component source is `github://MatiasPuhakka/esphome-geopro202s@main` (`geopro.yaml` uses the local checkout). We chose that source over copying `components/geopro_202s` into the add-on's `/config/esphome/components/` (#11). The cost is that `main` is the release: a merge there changes what the next install from the add-on builds and flashes. ESPHome caches `github://` sources for `refresh: 1d` by default, so a build may not see a merge until the cache expires.
+
+`main` is protected: changes reach it only through pull requests (a GitHub ruleset with no bypass), and CI builds the Component and validates `geopro.yaml` on each one. CI can't see the add-on's copy, so a change to `geopro.yaml` is also made there by hand ("Change both together", `geopro.yaml:6-7`). #47 would shrink the copy to a short entry point. Whether the add-on pins a ref or follows `main` with a refresh setting is undecided, and #47 records the choice here.
