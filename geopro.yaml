@@ -2,7 +2,7 @@
 # Entity names match the YAML protocol copy this file used to hold, so Home Assistant
 # keeps the entity IDs and their history.
 # The API key and OTA password come from secrets.yaml next to this file (gitignored).
-# Built with ESPHome 2026.9.1; 2025.2.2 doesn't know the Ethernet clk: block.
+# Built with ESPHome 2026.9.1, the Home Assistant add-on's version.
 # The Home Assistant ESPHome add-on builds a copy of this file as geopro-202s.yaml, with
 # the source set to github://MatiasPuhakka/esphome-geopro202s@main. Change both together.
 

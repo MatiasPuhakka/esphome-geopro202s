@@ -16,6 +16,8 @@ This is an ESPHome component for communicating with Ouman Geopro 202S heat pump 
 
 ## Installation
 
+This needs ESPHome 2026.9.x. CI builds against the version the Home Assistant add-on uses; see [ADR 0002](docs/adr/0002-supported-esphome-versions.md).
+
 In your ESPHome configuration, add:
 
 ```yaml
