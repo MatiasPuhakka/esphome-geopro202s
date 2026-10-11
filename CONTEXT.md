@@ -68,7 +68,7 @@ The M10 temperature at which the Controller always stops the compressor.
 _Avoid_: compressor lock
 
 **ML Ohjaustapa**:
-Which heat sources the ML circuit may use: Kompr.+sähköv., Kompressori or Sähkövastus. The manual's menu is ML Ohjaustavat (p. 21); this is its singular.
+Which heat sources the ML circuit may use: Kompr.+sähköv. (0), Kompressori (1) or Sähkövastus (2). The manual's menu is ML Ohjaustavat (p. 21); this is its singular.
 _Avoid_: heat pump mode
 
 ## Wire protocol

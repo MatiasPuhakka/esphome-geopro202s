@@ -27,7 +27,7 @@ The ML circuit's settings, as listed on p. 21. The last column is what the Contr
 | JV Esto | huoltotila | 60 s | 30–240 s | 13 | 60 s |
 | Kompr.esto | huoltotila | 55 °C | 45–55 °C | 14 | 48 °C |
 
-**Observed:** ML Ohjaustapa 0 is Kompr.+sähköv.; the display showed that while the Value read 0 (#10). Home Assistant history shows code 2 on 2026-10-09 (#26), and nobody has matched it to the display. The `hp_mode` row in `components/geopro_202s/register_map.py` keeps the codes seen.
+**Observed:** the ML Ohjaustapa codes follow the menu order: 0 Kompr.+sähköv., 1 Kompressori, 2 Sähkövastus. The owner confirmed them on 2026-10-11; 0 also matched the display in #10.
 
 ### Factory values that contradict each other
 
@@ -122,5 +122,5 @@ From the wiring diagram on p. 39 and the alarm list on p. 20.
 - Whether VaraajaYlä uses M1 or the averaged outdoor temperature.
 - How the tank-top and tank-bottom calls combine, and whether the 5-minute wait also applies to tank-top starts.
 - Which factory values for VaraajaAlaEro and VaraajaYläEro are right.
-- The ML Ohjaustapa codes other than 0, and which Dig input each of `digi1`–`digi3` reports.
+- Which Dig input each of `digi1`–`digi3` reports.
 - What the Bank bytes without a row hold. The end of `components/geopro_202s/register_map.py` lists them with their 2026-10-09 values.

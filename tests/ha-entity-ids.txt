@@ -3,6 +3,7 @@
 # entity ID<TAB>friendly name
 binary_sensor.geopro_kompressori	Geopro Kompressori
 binary_sensor.geopro_s_hk_vastus	Geopro Sähkövastus
+sensor.geopro_komponentin_versio	Geopro Komponentin versio
 sensor.geopro_kompressori_tunnit	Geopro Kompressori tunnit
 sensor.geopro_l1_0_c	Geopro L1 0°C
 sensor.geopro_l1_20_c	Geopro L1 -20°C
