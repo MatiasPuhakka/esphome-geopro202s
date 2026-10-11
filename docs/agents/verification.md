@@ -2,7 +2,7 @@
 
 Host tests and CI cover building and decoding. The Node on the real bus covers the rest. Verify any change that alters what the Node runs: the Component, `geopro.yaml` or the ESPHome version. Ask the owner before flashing.
 
-The steps below are manual. A tools module (#42), a revision stamp in the firmware (#45) and a flash check (#46) are planned to replace them.
+The steps below are manual, with a script from `tools/` for some of them (see `tools/README.md`). A flash check (#46) is planned to replace them.
 
 ## Setup
 
@@ -29,9 +29,9 @@ curl -s -H "Authorization: Bearer $ACCESS_TOKEN" "$HA_URL/api/states" > .scratch
 
 ## After flashing
 
-1. **Running build.** Confirm the Node runs what you built. Home Assistant's device page for the Node shows the firmware's compile time; compare it with the time of your build.
-2. **Entities still exist.** Fetch `/api/states` again. Every `sensor.geopro_*` and `binary_sensor.geopro_*` entity from the snapshot is present and none reads `unavailable` or `unknown`. A missing entity means a rename or a changed kind, which orphans its history.
-3. **Every entity still publishes.** Check live, not in history: Home Assistant's ESPHome integration skips a state that didn't change, so a flat history proves nothing. Connect to the Node's API with `aioesphomeapi` (installed with ESPHome), using the key from `secrets.yaml`, and subscribe to states for about 75 s. The subscription starts with a dump of every current state, so count the updates after it. At the default intervals Values publish every 10 s and Banks every 60 s, and each sensor should publish again within its interval. A binary sensor may publish only when its bit changes; its entry in the dump is enough.
+1. **Running build.** Confirm the Node runs what you built. Home Assistant's device page for the Node shows the firmware's compile time, and so does `tools/device_info.py`; compare it with the time of your build.
+2. **Entities still exist.** Fetch `/api/states` again and compare the two snapshots with `python3 tools/compare_entities.py`. Every `sensor.geopro_*` and `binary_sensor.geopro_*` entity from the snapshot is present and none reads `unavailable` or `unknown`. A missing entity means a rename or a changed kind, which orphans its history.
+3. **Every entity still publishes.** Check live, not in history: Home Assistant's ESPHome integration skips a state that didn't change, so a flat history proves nothing. Run `tools/count_states.py 75` with the Python that has ESPHome installed: it connects to the Node's API with the key from `secrets.yaml` and counts state messages for 75 s. The subscription starts with a dump of every current state and the counts include it, so a sensor's count of 1 means no update. At the default intervals Values publish every 10 s and Banks every 60 s, and each sensor should publish again within its interval. A binary sensor may publish only when its bit changes; its entry in the dump is enough.
 
 ## The next morning
 

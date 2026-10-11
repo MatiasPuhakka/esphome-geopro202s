@@ -1,0 +1,4 @@
+18:50:00 watching: Controller calling since 18:40:55, compressor drawing current (7.1/7.1/7.1 A), M7 59.3, M9 48.5, M10 48.2, brine 6.1; 0 current breaks before this watch started (HA history); Kompr.esto in HA: 51
+18:50:56 10 min into the call, 0 current breaks so far (the JV-at-0 runs chattered from minute 7-8), M7 59.5, M9 48.9, M10 48.6, brine 6.1
+18:53:16 tank bottom passed 49 °C, 0 current breaks so far, M7 59.9, M9 50.1, M10 49.0, brine 6.1
+18:55:16 run ended: call 18:40:55-18:55:16 (14 min 20 s), 0 current breaks during the call; M9 48.2->51.4, M10 47.9->49.2, M7 max 60.4, brine min 6.1

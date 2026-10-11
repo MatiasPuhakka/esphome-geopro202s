@@ -1,0 +1,37 @@
+Kompressori                        1
+Kompressori tunnit                 9
+L1 +20°C                           2
+L1 -20°C                           2
+L1 0°C                             2
+L1 Esikorotus                      2
+L1 Maksimiraja                     2
+L1 Minimiraja                      2
+L1 Syyskuivaus                     2
+L1 Ulkolämpötilan hidastus         2
+L1 Yöalennus vaikutus              2
+L1 menovesi                        9
+L1 venttiilin kesäsulku            2
+ML JV Esto                         2
+ML JV esiavaus                     2
+ML Kompuran esto                   2
+ML Lisälämmitys                    2
+ML Lisälämmitys aika               2
+ML Maaliuos hälytys                2
+ML Ohjaustapa                      2
+ML SV_viiveaika                    2
+ML VarYlaEroSV                     2
+ML VarYlä Kesä                     2
+ML VarYlä Talvi                    2
+ML VaraajaAlaEro                   2
+ML VaraajaAlaMin                   2
+ML VaraajaYläEro                   2
+Maaliuos                           9
+Sähkövastus                        1
+Sähkövastus tunnit                 9
+Tila Muuttuja                      9
+Ulkolämpötila                      9
+Varaaja ala                        9
+Varaaja keski                      9
+Varaaja ylä                        9
+Varaaja ylä tulo                   9
+entities: 36 | with no state message: none

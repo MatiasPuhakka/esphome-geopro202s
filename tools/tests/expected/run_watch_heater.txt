@@ -1,0 +1,6 @@
+10:31:30 watching: Controller idle since 09:25:33, compressor not drawing (9.4/1.2/1.1 A), M7 115.1, M9 45.7, M10 47.8, brine 7.2; Kompr.esto in HA: 48
+10:31:58 heater off, M7 43.4, M9 45.7, M10 45.8, brine 22.0
+10:32:06 Controller call started, M7 43.7, M9 46.0, M10 46.1, brine 22.1
+10:32:16 heater ON, M7 42.1, M9 46.0, M10 46.1, brine 21.9
+10:38:36 heater off, M7 65.0, M9 51.3, M10 45.4, brine 6.1
+10:38:36 run ended: call 10:32:06-10:38:36 (6 min 30 s), 0 current breaks during the call; M9 46.0->51.3, M10 46.1->45.4, M7 max 65.0, brine min 5.9
