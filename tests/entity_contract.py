@@ -104,6 +104,16 @@ def _entities(config_text):
     ]
 
 
+def _platform(platforms, key):
+    try:
+        return platforms[key]
+    except KeyError:
+        raise ValueError(
+            f"geopro_202s: {key} isn't in the Register map, so its platform is unknown. "
+            "Add it to _platforms() in tests/entity_contract.py."
+        ) from None
+
+
 def key_lines(config_text, platforms):
     """One line per key: its platform and entity options. The config must set every key."""
     entities = _entities(config_text)
@@ -113,7 +123,7 @@ def key_lines(config_text, platforms):
     lines = []
     for key, options in entities:
         fields = " ".join(f"{field}={options.get(option, '-')}" for field, option in _OPTIONS)
-        lines.append(f"{key}: {platforms[key]} {fields}")
+        lines.append(f"{key}: {_platform(platforms, key)} {fields}")
     return lines
 
 
@@ -157,7 +167,7 @@ def node_lines(config_text, platforms, entity_ids):
     by_name = {(entity_id.split(".")[0], name): entity_id for entity_id, name in entity_ids}
     lines = []
     for key, options in _entities(config_text):
-        platform = platforms[key]
+        platform = _platform(platforms, key)
         name = options["name"]
         full_name = f"{node_name} {name}" if node_name else name
         entity_id = by_name.get((platform, full_name), "(no entity ID recorded)")
@@ -250,4 +260,7 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except ValueError as error:
+        sys.exit(f"entity_contract.py: {error}")

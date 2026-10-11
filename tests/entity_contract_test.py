@@ -49,6 +49,10 @@ class KeyContractTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "hours_comp"):
             entity_contract.key_lines(KEYS_CONFIG, platforms)
 
+    def test_fails_on_an_entity_key_with_no_known_platform(self):
+        with self.assertRaisesRegex(ValueError, "compressor"):
+            entity_contract.key_lines(KEYS_CONFIG, {"outside_temp": "sensor"})
+
 
 NODE_CONFIG = """\
 esphome:
