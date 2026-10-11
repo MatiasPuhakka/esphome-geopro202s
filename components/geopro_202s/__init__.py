@@ -1,13 +1,19 @@
+import logging
+from pathlib import Path
+
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import binary_sensor, sensor, uart
-from esphome.const import CONF_ID
+from esphome.components import binary_sensor, sensor, text_sensor, uart
+from esphome.const import CONF_ID, ENTITY_CATEGORY_DIAGNOSTIC
 from esphome.core import HexInt
 
 from .register_map import VALUES
+from .revision import UNKNOWN, component_revision
+
+_LOGGER = logging.getLogger(__name__)
 
 DEPENDENCIES = ['uart']
-AUTO_LOAD = ['sensor', 'binary_sensor']
+AUTO_LOAD = ['sensor', 'binary_sensor', 'text_sensor']
 
 geopro_202s_ns = cg.esphome_ns.namespace('geopro_202s')
 Geopro202sComponent = geopro_202s_ns.class_('Geopro202sComponent', cg.Component, uart.UARTDevice)
@@ -23,6 +29,7 @@ def _decode_rule(rule):
 
 CONF_VALUE_INTERVAL = 'value_interval'
 CONF_BANK_INTERVAL = 'bank_interval'
+CONF_COMPONENT_REVISION = 'component_revision'
 
 # A zero interval would poll without pause, so require more than zero.
 _poll_interval = cv.All(cv.positive_not_null_time_period, cv.positive_time_period_milliseconds)
@@ -39,6 +46,8 @@ CONFIG_SCHEMA = (
         cv.GenerateID(): cv.declare_id(Geopro202sComponent),
         cv.Optional(CONF_VALUE_INTERVAL, default='10s'): _poll_interval,
         cv.Optional(CONF_BANK_INTERVAL, default='60s'): _poll_interval,
+        cv.Optional(CONF_COMPONENT_REVISION): text_sensor.text_sensor_schema(
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC, icon='mdi:source-commit'),
         **{cv.Optional(value.key): _entity_schema(value) for value in VALUES},
     })
     .extend(cv.COMPONENT_SCHEMA)
@@ -63,6 +72,16 @@ async def to_code(config):
     await uart.register_uart_device(hub, config)
     cg.add(hub.set_value_interval(config[CONF_VALUE_INTERVAL]))
     cg.add(hub.set_bank_interval(config[CONF_BANK_INTERVAL]))
+
+    # This file's own checkout: the repository for a local build, ESPHome's clone
+    # for a github:// source.
+    revision = component_revision(Path(__file__).resolve().parent)
+    if revision == UNKNOWN:
+        _LOGGER.warning("Could not read the geopro_202s git revision; the firmware reports '%s'", UNKNOWN)
+    cg.add(hub.set_component_revision(revision))
+    if CONF_COMPONENT_REVISION in config:
+        entity = await text_sensor.new_text_sensor(config[CONF_COMPONENT_REVISION])
+        cg.add(hub.set_component_revision_text_sensor(entity))
 
     for value in VALUES:
         if value.key not in config:

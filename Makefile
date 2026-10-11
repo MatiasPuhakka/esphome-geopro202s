@@ -19,6 +19,7 @@ NODE_TRACE := tests/traces/node-2026-10-09.log
 
 test: pure-check $(TEST_BIN)
 	./$(TEST_BIN)
+	python3 -m unittest discover -s tests -p 'test_*.py'
 
 # The pure sources also run on the device, whose Arduino ESP32 build is C++11.
 # Host tests use C++17, so check the pure sources on their own.
