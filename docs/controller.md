@@ -45,6 +45,8 @@ The manual doesn't say whether the outdoor value is M1 itself or the average set
 
 With Var.ylä kesä 50 °C and Var.ylä talvi 55 °C, the formula gives 52.1 °C at +3 °C outside. **Observed:** on 2026-10-10 at +3 to +5 °C, M9 cycled between 49.0 and 52.2 °C (#24 Notes), which fits a start at VaraajaYlä − VaraajaYläEro (3 °C) and a stop at VaraajaYlä.
 
+**Observed:** `tools/controller.py` replays this formula with M1 against the recorded day in `tools/tests/fixtures/history_2026-10-09_day.json`. With M1 steady, it switches within 2 s of the Status bit. From 20:59 on 2026-10-09 to 01:20 on 2026-10-10, while M1 fell from 8.7 to 5.4 °C, it switched 40 to 60 s apart from the Controller: the Controller started at M9 48.2 and 48.6 °C, where the formula gives start thresholds of 48.41 and 48.82 °C, and stopped at 51.4 and 51.8 °C, below the formula's 51.41 and 51.86 °C. A lagging outdoor value, such as an average of M1, would explain both.
+
 ## Compressor
 
 All rules are on p. 23 unless noted. "L1 setpoint" is the supply temperature the Controller computes for heating circuit L1 (säätimen määräämä menoveden lämpötila L1); the Component doesn't read it. Every rule that uses the L1 setpoint has the same clause for L2.
