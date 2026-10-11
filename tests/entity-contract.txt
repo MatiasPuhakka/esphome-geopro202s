@@ -51,7 +51,7 @@ comp_lock: sensor unit=°C device_class=temperature state_class=measurement accu
 
 # Every entity in geopro.yaml: platform, name and the entity ID Home Assistant has
 # for it, from tests/ha-entity-ids.txt.
-component_revision: text_sensor "Komponentin versio" (no entity ID recorded)
+component_revision: text_sensor "Komponentin versio" sensor.geopro_komponentin_versio
 outside_temp: sensor "Ulkolämpötila" sensor.geopro_ulkol_mp_tila
 l1_supply: sensor "L1 menovesi" sensor.geopro_l1_menovesi
 tank_top_in: sensor "Varaaja ylä tulo" sensor.geopro_varaaja_yl_tulo
