@@ -137,6 +137,18 @@ Only one request is on the bus at a time. The next request goes out 50 ms after 
 
 This logic lives in `poll_scheduler.h`/`poll_scheduler.cpp`, which also have no ESPHome dependencies and are covered by `make test`.
 
+### Component revision
+
+Each build records the git commit the component was built from, so you can tell which code the flashed firmware runs. A `github://` source gives the commit ESPHome cloned; a local source gives the checkout's commit, with `-dirty` appended when a file in `components/geopro_202s` has uncommitted changes. If git isn't available, or the component's directory isn't tracked in a git repository, the build logs a warning and records `unknown`.
+
+`dump_config` logs the revision at the CONFIG log level. The optional `component_revision` key also publishes it to Home Assistant as a diagnostic text sensor:
+
+```yaml
+geopro_202s:
+  component_revision:
+    name: "Component Revision"
+```
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
