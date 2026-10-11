@@ -127,6 +127,8 @@ The entity IDs come from `tests/ha-entity-ids.txt`, a snapshot of Home Assistant
 2. Run `make check-node-config`, then `python3 tests/entity_contract.py record-ids build/node-config.out`.
 3. Run `make update-contract`.
 
+The host tests decode with the Register map's own rows. Whenever `register_map.py` changes, `make test` runs `tests/export_register_map.py` with plain `python3` to write every row's key, address, offset, poll group and decode rule to `build/register_map_rows.inc`, so a wrong offset in any row the tests decode fails `make test`.
+
 ### Polling
 
 The component reads every configured address once at startup, then reads values (temperatures, valves, hour counters, the status word) every `value_interval` (default 10 s) and configuration banks every `bank_interval` (default 60 s). Both take an ESPHome time period such as `30s` or `5min` and must be greater than zero. Each address is read once per cycle, however many values share it.

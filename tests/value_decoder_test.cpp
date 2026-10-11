@@ -2,6 +2,7 @@
 
 #include "frame.h"
 #include "poll_scheduler.h"
+#include "register_map.h"
 #include "value_decoder.h"
 
 #include <map>
@@ -44,18 +45,10 @@ Frame receive(const std::vector<uint8_t> &bytes) {
 }  // namespace
 
 TEST_CASE("full bank 0x0B frame decodes every key") {
-  // Bank 0x0B rows from register_map.py.
-  const std::vector<std::string> keys = {
-      "winter_temp", "summer_temp",   "bottom_diff", "top_diff", "tank_min", "delay_time", "top_eh_diff",
-      "extra_heating", "extra_time", "hp_mode",     "brine_alert", "dhw_pre", "dhw_lock",  "comp_lock",
-  };
-  const std::vector<Registration> registrations = {
-      {0x0B, 1, S8, BANK},  {0x0B, 2, S8, BANK},  {0x0B, 3, S8, BANK},  {0x0B, 4, S8, BANK},
-      {0x0B, 5, S8, BANK},  {0x0B, 6, S8, BANK},  {0x0B, 7, S8, BANK},  {0x0B, 8, S8, BANK},
-      {0x0B, 9, S8, BANK},  {0x0B, 10, S8, BANK}, {0x0B, 11, S8, BANK}, {0x0B, 12, S8, BANK},
-      {0x0B, 13, U8, BANK}, {0x0B, 14, S8, BANK},
-  };
-  REQUIRE(keys.size() == registrations.size());
+  // Every Register map row for Bank 0x0B. The data bytes below sit at offsets written out by
+  // hand, so a row with a wrong offset decodes the wrong byte.
+  const auto rows = register_map::rows_at(0x0B);
+  const auto registrations = register_map::registrations(rows);
 
   std::vector<uint8_t> data(31, 0x00);
   data[1] = 55;    // winter_temp
@@ -78,7 +71,7 @@ TEST_CASE("full bank 0x0B frame decodes every key") {
 
   std::map<std::string, float> decoded;
   for (const DecodedValue &result : results)
-    decoded[keys.at(result.index)] = result.value;
+    decoded[rows.at(result.index).key] = result.value;
 
   const std::map<std::string, float> expected = {
       {"winter_temp", 55}, {"summer_temp", 50}, {"bottom_diff", 5}, {"top_diff", 3},     {"tank_min", 40},
@@ -130,21 +123,11 @@ TEST_CASE("two-byte values are big-endian") {
 
 namespace {
 
-// Decode rules as register_map.py builds them for single-address rows.
+// Decode rules for the decode-math tests below.
 const DecodeRule CENTI_S16 = {2, true, 100};
 const DecodeRule U16 = {2, false};
-DecodeRule status_bit(uint16_t mask) { return DecodeRule(2, false, 1, mask); }
 
 const uint16_t STATUS_WORD = 0x2D;
-
-// The status-word bits in register_map.py.
-struct StatusBit {
-  const char *key;
-  uint16_t mask;
-};
-const std::vector<StatusBit> STATUS_BITS = {
-    {"compressor", 0x10}, {"el_heater", 0x08}, {"digi1", 0x01}, {"digi2", 0x02}, {"digi3", 0x04},
-};
 
 float decode_single(uint16_t address, const std::vector<uint8_t> &data, DecodeRule rule) {
   const std::vector<Registration> registrations = {{address, 0, rule, VALUE}};
@@ -152,6 +135,25 @@ float decode_single(uint16_t address, const std::vector<uint8_t> &data, DecodeRu
   auto results = decode_values(frame.address, frame.data, registrations);
   REQUIRE(results.size() == 1);
   return results[0].value;
+}
+
+// The Register map's Status bits: every row on the Status word with a mask.
+std::vector<register_map::Row> status_bit_rows() {
+  std::vector<register_map::Row> rows;
+  for (const register_map::Row &row : register_map::rows_at(STATUS_WORD))
+    if (row.registration.rule.mask != 0)
+      rows.push_back(row);
+  return rows;
+}
+
+// Decodes a Reply from `address` with `rows` and returns each decoded Value by key.
+std::map<std::string, float> decode_rows(uint16_t address, const std::vector<uint8_t> &data,
+                                         const std::vector<register_map::Row> &rows) {
+  Frame frame = receive(reply(address, data));
+  std::map<std::string, float> decoded;
+  for (const DecodedValue &result : decode_values(frame.address, frame.data, register_map::registrations(rows)))
+    decoded[rows.at(result.index).key] = result.value;
+  return decoded;
 }
 
 }  // namespace
@@ -172,46 +174,49 @@ TEST_CASE("hour counter above 32767 stays positive") {
   CHECK(decode_single(0x3A, {0xFF, 0xFF}, U16) == 65535);
 }
 
-TEST_CASE("every status bit decodes from the status word") {
-  for (const StatusBit &bit : STATUS_BITS) {
-    CAPTURE(bit.key);
+TEST_CASE("every status bit decodes its own bit of the status word") {
+  // The bit each Status bit reports, written out by hand to check the masks in register_map.py.
+  const std::map<std::string, uint8_t> masks = {
+      {"compressor", 0x10}, {"el_heater", 0x08}, {"digi1", 0x01}, {"digi2", 0x02}, {"digi3", 0x04},
+  };
+  const auto rows = status_bit_rows();
+  for (const auto &bit : masks) {
+    CAPTURE(bit.first);
+    std::map<std::string, float> only_this, all_but_this;
+    for (const auto &other : masks) {
+      only_this[other.first] = other.first == bit.first;
+      all_but_this[other.first] = other.first != bit.first;
+    }
     // Only this bit set, then every bit but this one.
-    CHECK(decode_single(STATUS_WORD, {0x00, static_cast<uint8_t>(bit.mask)}, status_bit(bit.mask)) == 1);
-    CHECK(decode_single(STATUS_WORD, {0xFF, static_cast<uint8_t>(~bit.mask)}, status_bit(bit.mask)) == 0);
+    CHECK(decode_rows(STATUS_WORD, {0x00, bit.second}, rows) == only_this);
+    CHECK(decode_rows(STATUS_WORD, {0xFF, static_cast<uint8_t>(~bit.second)}, rows) == all_but_this);
   }
 }
 
 TEST_CASE("status bits are read and published without the status-word sensor") {
   // Only bit rows registered, as when status_word is left out of the config.
-  std::vector<Registration> registrations;
-  for (const StatusBit &bit : STATUS_BITS)
-    registrations.push_back({STATUS_WORD, 0, status_bit(bit.mask), VALUE});
+  const auto rows = status_bit_rows();
 
   PollScheduler scheduler;
-  for (const Registration &registration : registrations)
-    scheduler.add_value_address(registration.address);
+  for (const register_map::Row &row : rows)
+    scheduler.add_value_address(row.registration.address);
   uint16_t address;
   REQUIRE(scheduler.next_request(0, address));
   CHECK(address == STATUS_WORD);
 
   // compressor and digi2 on.
-  auto results = decode_values(STATUS_WORD, {0x00, 0x12}, registrations);
-  REQUIRE(results.size() == STATUS_BITS.size());
-  std::map<std::string, float> decoded;
-  for (const DecodedValue &result : results)
-    decoded[STATUS_BITS.at(result.index).key] = result.value;
   const std::map<std::string, float> expected = {
       {"compressor", 1}, {"el_heater", 0}, {"digi1", 0}, {"digi2", 1}, {"digi3", 0},
   };
-  CHECK(decoded == expected);
+  CHECK(decode_rows(STATUS_WORD, {0x00, 0x12}, rows) == expected);
 }
 
 TEST_CASE("rows sharing an address are requested once and decode from one reply") {
   // A temperature, the status-word sensor and every status bit, as the hub
-  // registers them from the table.
-  std::vector<Registration> registrations = {{0x12, 0, CENTI_S16, VALUE}, {STATUS_WORD, 0, U16, VALUE}};
-  for (const StatusBit &bit : STATUS_BITS)
-    registrations.push_back({STATUS_WORD, 0, status_bit(bit.mask), VALUE});
+  // registers them from the Register map.
+  const auto rows =
+      register_map::rows_named({"outside_temp", "status_word", "compressor", "el_heater", "digi1", "digi2", "digi3"});
+  const auto registrations = register_map::registrations(rows);
 
   PollScheduler scheduler;
   for (const Registration &registration : registrations)
@@ -229,16 +234,10 @@ TEST_CASE("rows sharing an address are requested once and decode from one reply"
   CHECK(sent == std::vector<uint16_t>{0x12, STATUS_WORD});
 
   // One status-word reply feeds the word and all five bits, and nothing else.
-  Frame frame = receive(reply(STATUS_WORD, {0x80, 0x19}));
-  auto results = decode_values(frame.address, frame.data, registrations);
-  REQUIRE(results.size() == 1 + STATUS_BITS.size());
-  CHECK(results[0].index == 1);
-  CHECK(results[0].value == 0x8019);
-  const std::vector<float> bits = {1, 1, 1, 0, 0};  // compressor, el_heater, digi1, digi2, digi3
-  for (size_t i = 0; i < bits.size(); i++) {
-    CHECK(results[i + 1].index == i + 2);
-    CHECK(results[i + 1].value == bits[i]);
-  }
+  const std::map<std::string, float> expected = {
+      {"status_word", 0x8019}, {"compressor", 1}, {"el_heater", 1}, {"digi1", 1}, {"digi2", 0}, {"digi3", 0},
+  };
+  CHECK(decode_rows(STATUS_WORD, {0x80, 0x19}, rows) == expected);
 }
 
 TEST_CASE("a zero divisor produces nothing") {

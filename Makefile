@@ -9,6 +9,7 @@ PYTHON ?= python3
 CONFIG_TEST := tests/all-keys.yaml
 CONFIG_ARDUINO := tests/all-keys-arduino.yaml
 NODE_CONFIG := geopro.yaml
+TRACE_CONFIG := geopro-trace.yaml
 
 # Component sources with no ESPHome dependency, built and tested on the host.
 PURE_MODULES := frame poll_scheduler value_decoder
@@ -17,8 +18,11 @@ TEST_SRCS := $(wildcard tests/*.cpp)
 TEST_BIN := $(BUILD_DIR)/tests
 # A raw trace from the Node that tests/trace_test.cpp replays; the test gets its absolute path.
 NODE_TRACE := tests/traces/node-2026-10-09.log
+# The Register map's rows for the host tests, rewritten whenever register_map.py changes.
+# The export runs on plain python3 without ESPHome.
+REGISTER_MAP_ROWS := $(BUILD_DIR)/register_map_rows.inc
 
-.PHONY: test pure-check check-secrets check-config check-node-config check-contract update-contract compile clean
+.PHONY: test pure-check tools-test check-secrets check-config check-node-config check-trace-config check-contract update-contract compile clean
 
 test: pure-check $(TEST_BIN)
 	./$(TEST_BIN)
@@ -30,9 +34,17 @@ pure-check:
 	@! grep -l '#include "esphome/' $(PURE_SRCS) $(PURE_SRCS:.cpp=.h)
 	$(CXX) -std=c++11 -pedantic -Wall -Wextra -fsyntax-only -I$(COMPONENT_DIR) $(PURE_SRCS)
 
-$(TEST_BIN): $(TEST_SRCS) $(PURE_SRCS) $(wildcard $(COMPONENT_DIR)/*.h) tests/doctest.h
+$(REGISTER_MAP_ROWS): $(COMPONENT_DIR)/register_map.py tests/export_register_map.py
 	@mkdir -p $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -DNODE_TRACE='"$(CURDIR)/$(NODE_TRACE)"' -I$(COMPONENT_DIR) -Itests -o $@ $(TEST_SRCS) $(PURE_SRCS)
+	$(PYTHON) tests/export_register_map.py $< $@
+
+$(TEST_BIN): $(TEST_SRCS) $(PURE_SRCS) $(wildcard $(COMPONENT_DIR)/*.h) $(wildcard tests/*.h) $(REGISTER_MAP_ROWS)
+	@mkdir -p $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -DNODE_TRACE='"$(CURDIR)/$(NODE_TRACE)"' -I$(COMPONENT_DIR) -Itests -I$(BUILD_DIR) -o $@ $(TEST_SRCS) $(PURE_SRCS)
+
+# Runs the Python tools' tests offline against recorded Home Assistant JSON, with the stdlib only.
+tools-test:
+	python3 -I -m unittest discover -t . -s tools/tests
 
 # Credentials live in the gitignored secrets.yaml and reach configs through !secret.
 # Prints file:line only, so a leaked value stays out of the CI log.
@@ -43,7 +55,7 @@ check-secrets:
 	fi
 
 # Validates a config that loads the component from this checkout and sets every key.
-# ESPHome prints config errors on stdout, so both config checks keep it in $(BUILD_DIR)
+# ESPHome prints config errors on stdout, so the config checks keep it in $(BUILD_DIR)
 # and print it on failure. Secrets appear there only as their !secret names.
 check-config:
 	@mkdir -p $(BUILD_DIR)
@@ -56,6 +68,13 @@ check-node-config:
 	@mkdir -p $(BUILD_DIR)
 	$(ESPHOME) config $(NODE_CONFIG) > $(BUILD_DIR)/node-config.out 2> $(BUILD_DIR)/node-config.log || { cat $(BUILD_DIR)/node-config.out $(BUILD_DIR)/node-config.log; exit 1; }
 	@if grep -qi deprecat $(BUILD_DIR)/node-config.log; then cat $(BUILD_DIR)/node-config.log; exit 1; fi
+
+# Validates the trace-capture overlay, which includes geopro.yaml. Same needs as
+# check-node-config.
+check-trace-config:
+	@mkdir -p $(BUILD_DIR)
+	$(ESPHOME) config $(TRACE_CONFIG) > $(BUILD_DIR)/trace-config.out 2> $(BUILD_DIR)/trace-config.log || { cat $(BUILD_DIR)/trace-config.out $(BUILD_DIR)/trace-config.log; exit 1; }
+	@if grep -qi deprecat $(BUILD_DIR)/trace-config.log; then cat $(BUILD_DIR)/trace-config.log; exit 1; fi
 
 # The Home Assistant entity contract, tests/entity-contract.txt: each key's platform and
 # entity options, and the Node's entity names and IDs, taken from both config checks'

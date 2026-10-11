@@ -1,0 +1,24 @@
+# Trace capture overlay: the Node's config plus ESPHome's UART debug logging.
+# Flash it temporarily to record the raw bus; docs/agents/verification.md has the steps.
+# It holds no credentials: geopro.yaml reads them through !secret from secrets.yaml.
+#
+# The debug option logs every chunk the Node sends (">>>") and receives ("<<<") as hex,
+# in the same format as tests/traces/node-2026-10-09.log. A chunk ends after 100 ms of
+# silence on the bus or 150 bytes, so a Frame (at most 37 bytes) is not split.
+# The debug lines log at DEBUG and ESPHome rejects a tag that is more verbose than the
+# global level, so the whole logger goes to DEBUG. That includes the Component's own
+# "Received frame" lines.
+
+packages:
+  node: !include geopro.yaml
+
+logger:
+  level: DEBUG
+
+uart:
+  debug:
+    direction: BOTH
+    after:
+      timeout: 100ms
+    sequence:
+      - lambda: UARTDebug::log_hex(direction, bytes, ' ');
