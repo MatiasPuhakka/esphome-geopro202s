@@ -1,0 +1,81 @@
+[
+ [
+  {
+   "entity_id": "binary_sensor.geopro_kompressori",
+   "state": "off",
+   "attributes": {},
+   "last_changed": "2026-10-09T16:21:30+00:00",
+   "last_updated": "2026-10-09T16:21:30+00:00"
+  },
+  {
+   "state": "on",
+   "last_changed": "2026-10-09T17:59:51.527628+00:00"
+  },
+  {
+   "state": "off",
+   "last_changed": "2026-10-09T18:17:42.386918+00:00"
+  },
+  {
+   "state": "on",
+   "last_changed": "2026-10-09T20:07:07.471284+00:00"
+  },
+  {
+   "state": "off",
+   "last_changed": "2026-10-09T20:27:58.255597+00:00"
+  },
+  {
+   "state": "unavailable",
+   "last_changed": "2026-10-10T06:03:57.714868+00:00"
+  },
+  {
+   "state": "off",
+   "last_changed": "2026-10-10T14:33:44.655047+00:00"
+  }
+ ],
+ [
+  {
+   "entity_id": "sensor.geopro_maaliuos",
+   "state": "15.8000001907349",
+   "attributes": {},
+   "last_changed": "2026-10-09T16:21:30+00:00",
+   "last_updated": "2026-10-09T16:21:30+00:00"
+  },
+  {
+   "state": "15.8999996185303",
+   "last_changed": "2026-10-09T16:22:36.604443+00:00"
+  },
+  {
+   "state": "16.2000007629395",
+   "last_changed": "2026-10-09T16:22:46.759073+00:00"
+  },
+  {
+   "state": "17.6000003814697",
+   "last_changed": "2026-10-10T15:05:45.792759+00:00"
+  }
+ ],
+ [
+  {
+   "entity_id": "sensor.geopro_ml_varyl_kes",
+   "state": "50.0",
+   "attributes": {},
+   "last_changed": "2026-10-09T16:21:30+00:00",
+   "last_updated": "2026-10-09T16:21:30+00:00"
+  },
+  {
+   "state": "unavailable",
+   "last_changed": "2026-10-10T06:03:57.715216+00:00"
+  },
+  {
+   "state": "50.0",
+   "last_changed": "2026-10-10T06:04:09.855261+00:00"
+  },
+  {
+   "state": "55.0",
+   "last_changed": "2026-10-10T07:38:01.541921+00:00"
+  },
+  {
+   "state": "53.0",
+   "last_changed": "2026-10-10T07:40:01.535264+00:00"
+  }
+ ]
+]
