@@ -4,6 +4,7 @@
 # unit and state class, so a change here is a Home Assistant migration.
 
 # Every key in tests/all-keys.yaml: platform and entity options (- for unset).
+component_revision: text_sensor unit=- device_class=- state_class=- accuracy=- icon=mdi:source-commit entity_category=diagnostic
 outside_temp: sensor unit=°C device_class=temperature state_class=measurement accuracy=2 icon=mdi:thermometer entity_category=-
 l1_room: sensor unit=°C device_class=temperature state_class=measurement accuracy=2 icon=mdi:thermometer entity_category=-
 l1_supply: sensor unit=°C device_class=temperature state_class=measurement accuracy=2 icon=mdi:thermometer entity_category=-
@@ -50,6 +51,7 @@ comp_lock: sensor unit=°C device_class=temperature state_class=measurement accu
 
 # Every entity in geopro.yaml: platform, name and the entity ID Home Assistant has
 # for it, from tests/ha-entity-ids.txt.
+component_revision: text_sensor "Komponentin versio" (no entity ID recorded)
 outside_temp: sensor "Ulkolämpötila" sensor.geopro_ulkol_mp_tila
 l1_supply: sensor "L1 menovesi" sensor.geopro_l1_menovesi
 tank_top_in: sensor "Varaaja ylä tulo" sensor.geopro_varaaja_yl_tulo

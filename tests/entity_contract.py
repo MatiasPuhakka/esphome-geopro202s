@@ -109,7 +109,7 @@ def _platform(platforms, key):
         return platforms[key]
     except KeyError:
         raise ValueError(
-            f"geopro_202s: {key} isn't in the Register map, so its platform is unknown. "
+            f"geopro_202s: {key} has no known platform. "
             "Add it to _platforms() in tests/entity_contract.py."
         ) from None
 
@@ -160,6 +160,10 @@ def parse_entity_ids(text):
     ]
 
 
+# ESPHome's text sensors are sensors in Home Assistant.
+_HA_DOMAIN = {"text_sensor": "sensor"}
+
+
 def node_lines(config_text, platforms, entity_ids):
     # Home Assistant names a Node's entity "<friendly_name> <name>" and picks its entity ID
     # once, so look the ID up by that name and the entity's platform.
@@ -170,7 +174,8 @@ def node_lines(config_text, platforms, entity_ids):
         platform = _platform(platforms, key)
         name = options["name"]
         full_name = f"{node_name} {name}" if node_name else name
-        entity_id = by_name.get((platform, full_name), "(no entity ID recorded)")
+        domain = _HA_DOMAIN.get(platform, platform)
+        entity_id = by_name.get((domain, full_name), "(no entity ID recorded)")
         lines.append(f"{key}: {platform} {json.dumps(name, ensure_ascii=False)} {entity_id}")
     return lines
 
@@ -205,14 +210,17 @@ def contract_diff(committed, generated):
 
 
 def _platforms():
-    """Each Register map key's platform, as _entity_schema in __init__.py picks it."""
+    """Each entity key's platform: the Register map's, as _entity_schema in __init__.py
+    picks it, plus the hub's own text sensor."""
     spec = importlib.util.spec_from_file_location("register_map", REGISTER_MAP)
     register_map = importlib.util.module_from_spec(spec)
     try:
         spec.loader.exec_module(register_map)
     except ModuleNotFoundError as error:
         sys.exit(f"{error}. Run this with the Python that has ESPHome installed (make PYTHON=...).")
-    return {value.key: "binary_sensor" if value.is_binary else "sensor" for value in register_map.VALUES}
+    platforms = {value.key: "binary_sensor" if value.is_binary else "sensor" for value in register_map.VALUES}
+    platforms["component_revision"] = "text_sensor"
+    return platforms
 
 
 def _read(path):

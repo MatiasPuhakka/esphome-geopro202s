@@ -92,6 +92,21 @@ class NodeContractTest(unittest.TestCase):
             ],
         )
 
+    def test_looks_up_a_text_sensor_among_home_assistants_sensors(self):
+        config = (
+            "esphome:\n"
+            "  name: geopro-202s\n"
+            "  friendly_name: Geopro\n"
+            "geopro_202s:\n"
+            "  component_revision:\n"
+            "    name: Komponentin versio\n"
+        )
+        entity_ids = [("sensor.geopro_komponentin_versio", "Geopro Komponentin versio")]
+        self.assertEqual(
+            entity_contract.node_lines(config, {"component_revision": "text_sensor"}, entity_ids),
+            ['component_revision: text_sensor "Komponentin versio" sensor.geopro_komponentin_versio'],
+        )
+
     def test_reads_names_esphome_quotes_or_wraps(self):
         # How ESPHome 2026.9.1 prints these names in `esphome config`.
         config = (
