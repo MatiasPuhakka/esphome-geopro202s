@@ -6,16 +6,16 @@ The steps below are manual. A tools module (#42), a revision stamp in the firmwa
 
 ## Setup
 
-- **ESPHome version.** `geopro.yaml` needs ESPHome 2026.9.x ([ADR 0002](../adr/0002-supported-esphome-versions.md)). The `esphome` on PATH may be older, so run `esphome version` first. Point to a 2026.9.x install with `make check-node-config ESPHOME=/path/to/esphome`, or call that binary directly.
+- **ESPHome version.** `geopro.yaml` needs ESPHome 2026.9.x ([ADR 0002](../adr/0002-supported-esphome-versions.md)). The `esphome` on PATH may be another version. The make targets that run ESPHome stop and say so; point them at a 2026.9.x install with `ESPHOME=/path/to/esphome`, for example `make check-node-config ESPHOME=/path/to/esphome`. When calling ESPHome directly, run `esphome version` first.
 - **Secrets.** `secrets.yaml` sits next to `geopro.yaml`, is gitignored and holds `api_encryption_key` and `ota_password`. Never print it, paste it into a doc or commit it; `make check-secrets` fails on an inline key or password. The Home Assistant token is `ACCESS_TOKEN` in the gitignored `.env`; treat it the same way. Source it into the shell (`set -a; . ./.env; set +a`) so the value stays out of what you type and out of output.
 - **Without a secrets.yaml.** Write a dummy one, as CI does, only when none exists:
   `printf 'api_encryption_key: "%s"\nota_password: ci\n' "$(head -c 32 /dev/urandom | base64)" > secrets.yaml`
-  Then `make check-node-config check-trace-config` validates both configs. A dummy secrets.yaml can't flash anything.
+  Then `make check-node-config check-trace-config` validates both configs and prints ESPHome's warnings, and `make compile-node` builds the Node's firmware. A dummy secrets.yaml can't flash anything.
 
 ## How a change reaches the Node
 
 - **Home Assistant add-on.** It builds `/config/esphome/geopro-202s.yaml`, a copy of `geopro.yaml` whose Component source is `github://MatiasPuhakka/esphome-geopro202s@main`. A change reaches the Node only after it is merged to `main` and the add-on installs it, and the add-on may serve a cached copy of `main` for up to a day ([ADR 0005](../adr/0005-node-is-built-from-main.md)). A change to `geopro.yaml` is also made in the copy by hand.
-- **Local build.** To test before merging, `esphome compile geopro.yaml`, then `esphome upload geopro.yaml --device <Node address>`. The build lands in `.esphome/build/geopro-202s/`. This flashes the checkout's Component, so the Node then runs code that isn't on `main`; the next add-on install replaces it.
+- **Local build.** To test before merging, `make compile-node` (or `esphome compile geopro.yaml`), then `esphome upload geopro.yaml --device <Node address>`. The build lands in `.esphome/build/geopro-202s/`. This flashes the checkout's Component, so the Node then runs code that isn't on `main`; the next add-on install replaces it.
 
 ## Before flashing
 

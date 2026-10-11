@@ -2,9 +2,15 @@ CXXFLAGS ?= -std=c++17 -Wall -Wextra -O1
 
 COMPONENT_DIR := components/geopro_202s
 BUILD_DIR := build
+# The ESPHome install every ESPHome target runs. ADR 0002 supports the 2026.9 series
+# only, and the targets stop when $(ESPHOME) is another version. Then point it at a
+# 2026.9 install: make <target> ESPHOME=/path/to/esphome, or export ESPHOME.
 ESPHOME ?= esphome
+SUPPORTED_ESPHOME := 2026.9
 # check-contract and update-contract import register_map.py, so they need the Python
-# that has ESPHome installed, such as the python next to $(ESPHOME) in a venv.
+# that has ESPHome installed: the python next to $(ESPHOME), as in a venv or CI's
+# setup-python, else python3.
+ESPHOME_PYTHON ?= $(firstword $(wildcard $(dir $(shell command -v $(ESPHOME)))python) python3)
 PYTHON ?= python3
 CONFIG_TEST := tests/all-keys.yaml
 CONFIG_ARDUINO := tests/all-keys-arduino.yaml
@@ -22,7 +28,7 @@ NODE_TRACE := tests/traces/node-2026-10-09.log
 # The export runs on plain python3 without ESPHome.
 REGISTER_MAP_ROWS := $(BUILD_DIR)/register_map_rows.inc
 
-.PHONY: test pure-check tools-test check-secrets check-config check-node-config check-trace-config check-contract update-contract compile clean
+.PHONY: test pure-check tools-test check-secrets esphome-version check-config check-node-config check-trace-config check-contract update-contract compile compile-node clean
 
 test: pure-check $(TEST_BIN)
 	./$(TEST_BIN)
@@ -54,41 +60,62 @@ check-secrets:
 		exit 1; \
 	fi
 
+# Stops with a message unless $(ESPHOME) is a $(SUPPORTED_ESPHOME).x release. Every
+# ESPHome target depends on it.
+esphome-version:
+	@version=$$($(ESPHOME) version 2>/dev/null | sed -n 's/^Version: //p'); \
+	case "$$version" in \
+		$(SUPPORTED_ESPHOME).*) ;; \
+		*) echo "$(ESPHOME) is ESPHome $${version:-(not found)}, but this repo supports $(SUPPORTED_ESPHOME).x only (docs/adr/0002-supported-esphome-versions.md)."; \
+		   echo "Point make at a $(SUPPORTED_ESPHOME).x install: make <target> ESPHOME=/path/to/esphome"; \
+		   exit 1 ;; \
+	esac
+
 # Validates a config that loads the component from this checkout and sets every key.
 # ESPHome prints config errors on stdout, so the config checks keep it in $(BUILD_DIR)
 # and print it on failure. Secrets appear there only as their !secret names.
-check-config:
+check-config: esphome-version
 	@mkdir -p $(BUILD_DIR)
 	$(ESPHOME) config $(CONFIG_TEST) > $(BUILD_DIR)/config.out || { cat $(BUILD_DIR)/config.out; exit 1; }
 
-# Validates the Node's config and fails on deprecation warnings, so an option ESPHome is
-# about to remove fails here before it breaks a build. Needs secrets.yaml next to
-# geopro.yaml (CI writes a dummy one) and ESPHome 2026.9.1 or newer.
-check-node-config:
+# Validates $(1) and fails on deprecation warnings, so an option ESPHome is about to
+# remove fails here before it breaks a build. Writes ESPHome's output to $(2).out and
+# its log to $(2).log in $(BUILD_DIR), and prints the log's warnings when it passes.
+define check_with_warnings
 	@mkdir -p $(BUILD_DIR)
-	$(ESPHOME) config $(NODE_CONFIG) > $(BUILD_DIR)/node-config.out 2> $(BUILD_DIR)/node-config.log || { cat $(BUILD_DIR)/node-config.out $(BUILD_DIR)/node-config.log; exit 1; }
-	@if grep -qi deprecat $(BUILD_DIR)/node-config.log; then cat $(BUILD_DIR)/node-config.log; exit 1; fi
+	$(ESPHOME) config $(1) > $(BUILD_DIR)/$(2).out 2> $(BUILD_DIR)/$(2).log || { cat $(BUILD_DIR)/$(2).out $(BUILD_DIR)/$(2).log; exit 1; }
+	@if grep -qi deprecat $(BUILD_DIR)/$(2).log; then cat $(BUILD_DIR)/$(2).log; exit 1; fi
+	@grep -v '^INFO ' $(BUILD_DIR)/$(2).log || true
+endef
+
+# Validates the Node's config. Needs secrets.yaml next to geopro.yaml (CI writes a dummy
+# one).
+check-node-config: esphome-version
+	$(call check_with_warnings,$(NODE_CONFIG),node-config)
 
 # Validates the trace-capture overlay, which includes geopro.yaml. Same needs as
 # check-node-config.
-check-trace-config:
-	@mkdir -p $(BUILD_DIR)
-	$(ESPHOME) config $(TRACE_CONFIG) > $(BUILD_DIR)/trace-config.out 2> $(BUILD_DIR)/trace-config.log || { cat $(BUILD_DIR)/trace-config.out $(BUILD_DIR)/trace-config.log; exit 1; }
-	@if grep -qi deprecat $(BUILD_DIR)/trace-config.log; then cat $(BUILD_DIR)/trace-config.log; exit 1; fi
+check-trace-config: esphome-version
+	$(call check_with_warnings,$(TRACE_CONFIG),trace-config)
 
 # The Home Assistant entity contract, tests/entity-contract.txt: each key's platform and
 # entity options, and the Node's entity names and IDs, taken from both config checks'
 # output. check-contract fails with a diff when it changed; update-contract rewrites it.
 check-contract: check-config check-node-config
-	$(PYTHON) tests/entity_contract.py check $(BUILD_DIR)/config.out $(BUILD_DIR)/node-config.out
+	$(ESPHOME_PYTHON) tests/entity_contract.py check $(BUILD_DIR)/config.out $(BUILD_DIR)/node-config.out
 
 update-contract: check-config check-node-config
-	$(PYTHON) tests/entity_contract.py update $(BUILD_DIR)/config.out $(BUILD_DIR)/node-config.out
+	$(ESPHOME_PYTHON) tests/entity_contract.py update $(BUILD_DIR)/config.out $(BUILD_DIR)/node-config.out
 
 # Builds firmware for both ESP32 frameworks. Slow on the first run (toolchain download).
-compile:
+compile: esphome-version
 	$(ESPHOME) compile $(CONFIG_TEST)
 	$(ESPHOME) compile $(CONFIG_ARDUINO)
+
+# Builds the Node's firmware into .esphome/build/geopro-202s/. Needs secrets.yaml next to
+# geopro.yaml; CI's dummy one is enough to build, not to flash.
+compile-node: esphome-version
+	$(ESPHOME) compile $(NODE_CONFIG)
 
 clean:
 	rm -rf $(BUILD_DIR)
