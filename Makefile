@@ -14,6 +14,10 @@ TEST_SRCS := $(wildcard tests/*.cpp)
 TEST_BIN := $(BUILD_DIR)/tests
 # A raw trace from the Node that tests/trace_test.cpp replays; the test gets its absolute path.
 NODE_TRACE := tests/traces/node-2026-10-09.log
+# The Register map's rows for the host tests, rewritten whenever register_map.py changes.
+# The export runs on plain python3 without ESPHome.
+PYTHON ?= python3
+REGISTER_MAP_ROWS := $(BUILD_DIR)/register_map_rows.inc
 
 .PHONY: test pure-check check-secrets check-config check-node-config compile clean
 
@@ -26,9 +30,13 @@ pure-check:
 	@! grep -l '#include "esphome/' $(PURE_SRCS) $(PURE_SRCS:.cpp=.h)
 	$(CXX) -std=c++11 -pedantic -Wall -Wextra -fsyntax-only -I$(COMPONENT_DIR) $(PURE_SRCS)
 
-$(TEST_BIN): $(TEST_SRCS) $(PURE_SRCS) $(wildcard $(COMPONENT_DIR)/*.h) tests/doctest.h
+$(REGISTER_MAP_ROWS): $(COMPONENT_DIR)/register_map.py tests/export_register_map.py
 	@mkdir -p $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -DNODE_TRACE='"$(CURDIR)/$(NODE_TRACE)"' -I$(COMPONENT_DIR) -Itests -o $@ $(TEST_SRCS) $(PURE_SRCS)
+	$(PYTHON) tests/export_register_map.py $< $@
+
+$(TEST_BIN): $(TEST_SRCS) $(PURE_SRCS) $(wildcard $(COMPONENT_DIR)/*.h) $(wildcard tests/*.h) $(REGISTER_MAP_ROWS)
+	@mkdir -p $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -DNODE_TRACE='"$(CURDIR)/$(NODE_TRACE)"' -I$(COMPONENT_DIR) -Itests -I$(BUILD_DIR) -o $@ $(TEST_SRCS) $(PURE_SRCS)
 
 # Credentials live in the gitignored secrets.yaml and reach configs through !secret.
 # Prints file:line only, so a leaked value stays out of the CI log.

@@ -1,24 +1,20 @@
 #include "doctest.h"
 
 #include "frame.h"
-#include "poll_scheduler.h"
+#include "register_map.h"
 #include "value_decoder.h"
 
 #include <fstream>
 #include <map>
 #include <sstream>
 #include <string>
-#include <utility>
 #include <vector>
 
 using esphome::geopro_202s::build_read_request;
 using esphome::geopro_202s::decode_values;
 using esphome::geopro_202s::DecodedValue;
-using esphome::geopro_202s::DecodeRule;
 using esphome::geopro_202s::Frame;
 using esphome::geopro_202s::FrameDecoder;
-using esphome::geopro_202s::PollGroup;
-using esphome::geopro_202s::Registration;
 
 // The Makefile passes the trace's absolute path, so the tests find it from any working directory.
 #ifndef NODE_TRACE
@@ -114,35 +110,14 @@ TEST_CASE("node trace: each Reply is one Frame for the requested Address, with C
 }
 
 TEST_CASE("node trace: Values decode to what the Node published") {
-  // Rows as in register_map.py. Expected numbers are what the Node published in the same minute.
-  const DecodeRule CENTI_S16 = {2, true, 100};
-  const DecodeRule S8 = {1, true};
-  const DecodeRule U8 = {1, false};
-  const DecodeRule U16 = {2, false};
-  const PollGroup VALUE = PollGroup::VALUE;
-  const PollGroup BANK = PollGroup::BANK;
-  const std::vector<std::pair<std::string, Registration>> rows = {
-      {"outside_temp", {0x12, 0, CENTI_S16, VALUE}},
-      {"tank_top_in", {0x18, 0, CENTI_S16, VALUE}},
-      {"tank_bottom", {0x22, 0, CENTI_S16, VALUE}},
-      {"brine", {0x19, 0, CENTI_S16, VALUE}},
-      {"valve_dhw", {0x33, 0, U8, VALUE}},
-      {"hours_eh", {0x3A, 0, U16, VALUE}},
-      {"hours_comp", {0x3B, 0, U16, VALUE}},
-      {"status_word", {0x2D, 0, U16, VALUE}},
-      {"compressor", {0x2D, 0, {2, false, 1, 0x10}, VALUE}},
-      {"el_heater", {0x2D, 0, {2, false, 1, 0x08}, VALUE}},
-      {"l1_minus20", {0x0C, 0, S8, BANK}},
-      {"l1_out_temp_delay", {0x0C, 19, S8, BANK}},  // a raw 0x02 on the wire
-      {"l1_pre_increase", {0x0C, 23, S8, BANK}},
-      {"l1_summer_close", {0x2C, 8, S8, BANK}},
-      {"extra_time", {0x0B, 9, S8, BANK}},  // a raw 0x02 on the wire
-      {"brine_alert", {0x0B, 11, S8, BANK}},
-      {"comp_lock", {0x0B, 14, S8, BANK}},
-  };
-  std::vector<Registration> registrations;
-  for (const auto &row : rows)
-    registrations.push_back(row.second);
+  // The Register map's rows for the Values the Node published. Expected numbers are what it
+  // published in the same minute. l1_out_temp_delay and extra_time are a raw 0x02 on the wire.
+  const auto rows = register_map::rows_named({
+      "outside_temp", "tank_top_in", "tank_bottom", "brine", "valve_dhw", "hours_eh",
+      "hours_comp", "status_word", "compressor", "el_heater", "l1_minus20", "l1_out_temp_delay",
+      "l1_pre_increase", "l1_summer_close", "extra_time", "brine_alert", "comp_lock",
+  });
+  const auto registrations = register_map::registrations(rows);
 
   FrameDecoder decoder;
   std::map<std::string, float> decoded;
@@ -151,7 +126,7 @@ TEST_CASE("node trace: Values decode to what the Node published") {
       continue;
     for (const Frame &frame : receive(decoder, line))
       for (const DecodedValue &result : decode_values(frame.address, frame.data, registrations))
-        decoded[rows[result.index].first] = result.value;
+        decoded[rows[result.index].key] = result.value;
   }
 
   const std::map<std::string, float> expected = {
