@@ -6,6 +6,7 @@ ESPHOME ?= esphome
 CONFIG_TEST := tests/all-keys.yaml
 CONFIG_ARDUINO := tests/all-keys-arduino.yaml
 NODE_CONFIG := geopro.yaml
+TRACE_CONFIG := geopro-trace.yaml
 
 # Component sources with no ESPHome dependency, built and tested on the host.
 PURE_MODULES := frame poll_scheduler value_decoder
@@ -15,7 +16,7 @@ TEST_BIN := $(BUILD_DIR)/tests
 # A raw trace from the Node that tests/trace_test.cpp replays; the test gets its absolute path.
 NODE_TRACE := tests/traces/node-2026-10-09.log
 
-.PHONY: test pure-check tools-test check-secrets check-config check-node-config compile clean
+.PHONY: test pure-check tools-test check-secrets check-config check-node-config check-trace-config compile clean
 
 test: pure-check $(TEST_BIN)
 	./$(TEST_BIN)
@@ -43,7 +44,7 @@ check-secrets:
 	fi
 
 # Validates a config that loads the component from this checkout and sets every key.
-# ESPHome prints config errors on stdout, so both config checks keep it in $(BUILD_DIR)
+# ESPHome prints config errors on stdout, so the config checks keep it in $(BUILD_DIR)
 # and print it on failure. Secrets appear there only as their !secret names.
 check-config:
 	@mkdir -p $(BUILD_DIR)
@@ -56,6 +57,13 @@ check-node-config:
 	@mkdir -p $(BUILD_DIR)
 	$(ESPHOME) config $(NODE_CONFIG) > $(BUILD_DIR)/node-config.out 2> $(BUILD_DIR)/node-config.log || { cat $(BUILD_DIR)/node-config.out $(BUILD_DIR)/node-config.log; exit 1; }
 	@if grep -qi deprecat $(BUILD_DIR)/node-config.log; then cat $(BUILD_DIR)/node-config.log; exit 1; fi
+
+# Validates the trace-capture overlay, which includes geopro.yaml. Same needs as
+# check-node-config.
+check-trace-config:
+	@mkdir -p $(BUILD_DIR)
+	$(ESPHOME) config $(TRACE_CONFIG) > $(BUILD_DIR)/trace-config.out 2> $(BUILD_DIR)/trace-config.log || { cat $(BUILD_DIR)/trace-config.out $(BUILD_DIR)/trace-config.log; exit 1; }
+	@if grep -qi deprecat $(BUILD_DIR)/trace-config.log; then cat $(BUILD_DIR)/trace-config.log; exit 1; fi
 
 # Builds firmware for both ESP32 frameworks. Slow on the first run (toolchain download).
 compile:

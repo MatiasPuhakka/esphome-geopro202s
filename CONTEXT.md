@@ -1,6 +1,6 @@
 # Geopro 202S integration
 
-An ESPHome component that reads values from an Ouman Geopro 202S heat pump controller over its serial bus and publishes them to Home Assistant. It only reads; it never changes a setting.
+An ESPHome component that reads values from an Ouman Geopro 202S heat pump controller over its serial bus and publishes them to Home Assistant. It only reads; it never changes a setting ([ADR 0003](docs/adr/0003-read-only-component.md)).
 
 ## Hardware
 
