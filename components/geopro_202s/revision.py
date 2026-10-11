@@ -8,12 +8,15 @@ UNKNOWN = 'unknown'
 def component_revision(directory, git='git'):
     """Return the short commit checked out at `directory`, with '-dirty' appended
     when a file under `directory` is modified or untracked, or 'unknown' when git
-    can't tell (git missing, or `directory` outside a repository).
+    can't tell (git missing, or `directory` not tracked by a repository).
 
     Both build paths are git checkouts: a local build runs from this repository,
     and ESPHome fetches a github:// source with `git clone --depth=1`.
     """
     try:
+        # A copy inside some other repository would report that repository's commit.
+        if not _git(git, directory, 'ls-files', '--', '.'):
+            return UNKNOWN
         commit = _git(git, directory, 'rev-parse', '--short', 'HEAD')
         # Only changes under the Component's directory reach the firmware, and
         # ESPHome compiles untracked source files there too.

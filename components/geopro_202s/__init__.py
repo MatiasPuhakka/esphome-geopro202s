@@ -73,11 +73,9 @@ async def to_code(config):
     cg.add(hub.set_value_interval(config[CONF_VALUE_INTERVAL]))
     cg.add(hub.set_bank_interval(config[CONF_BANK_INTERVAL]))
 
-    # This file's own checkout: the repository for a local build, ESPHome's clone
-    # for a github:// source.
     revision = component_revision(Path(__file__).resolve().parent)
     if revision == UNKNOWN:
-        _LOGGER.warning("Could not read the geopro_202s git revision; the firmware reports '%s'", UNKNOWN)
+        _LOGGER.warning('Could not read the geopro_202s git revision; the firmware reports "%s"', UNKNOWN)
     cg.add(hub.set_component_revision(revision))
     if CONF_COMPONENT_REVISION in config:
         entity = await text_sensor.new_text_sensor(config[CONF_COMPONENT_REVISION])

@@ -125,7 +125,9 @@ This logic lives in `poll_scheduler.h`/`poll_scheduler.cpp`, which also have no 
 
 ### Component revision
 
-Each build records the git commit the component was built from, so you can tell which code a flashed node runs. A `github://` source gives the commit ESPHome cloned; a local source gives the checkout's commit, with `-dirty` appended when a file in `components/geopro_202s` has uncommitted changes. If git isn't available, the build logs a warning and records `unknown`. `dump_config` logs the revision, and the optional `component_revision` key publishes it to Home Assistant as a diagnostic text sensor:
+Each build records the git commit the component was built from, so you can tell which code the flashed firmware runs. A `github://` source gives the commit ESPHome cloned; a local source gives the checkout's commit, with `-dirty` appended when a file in `components/geopro_202s` has uncommitted changes. If git isn't available, or the component's directory isn't tracked in a git repository, the build logs a warning and records `unknown`.
+
+`dump_config` logs the revision at the CONFIG log level. The optional `component_revision` key also publishes it to Home Assistant as a diagnostic text sensor:
 
 ```yaml
 geopro_202s:

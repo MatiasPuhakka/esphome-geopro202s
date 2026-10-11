@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'components' / 'geopro_202s'))
-from revision import component_revision  # noqa: E402
+from revision import UNKNOWN, component_revision  # noqa: E402
 
 GIT_IDENTITY = {
     'GIT_AUTHOR_NAME': 'test',
@@ -76,10 +76,17 @@ class ComponentRevisionTest(unittest.TestCase):
 
     def test_directory_outside_git_is_unknown(self):
         with tempfile.TemporaryDirectory() as outside:
-            self.assertEqual(component_revision(Path(outside)), 'unknown')
+            self.assertEqual(component_revision(Path(outside)), UNKNOWN)
+
+    def test_untracked_copy_inside_another_repo_is_unknown(self):
+        # For example a Home Assistant config kept in git with the Component copied in.
+        copy = self.root / 'esphome' / 'geopro_202s'
+        copy.mkdir(parents=True)
+        (copy / '__init__.py').write_text('a\n')
+        self.assertEqual(component_revision(copy), UNKNOWN)
 
     def test_missing_git_is_unknown(self):
-        self.assertEqual(component_revision(self.component, git='no-such-git'), 'unknown')
+        self.assertEqual(component_revision(self.component, git='no-such-git'), UNKNOWN)
 
 
 if __name__ == '__main__':
