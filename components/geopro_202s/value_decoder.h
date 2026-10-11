@@ -41,7 +41,7 @@ struct Registration {
   uint16_t address;
   uint8_t offset;
   DecodeRule rule;
-  AddressKind kind;
+  AddressKind address_kind;
 };
 
 struct DecodedValue {

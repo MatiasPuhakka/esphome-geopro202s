@@ -124,12 +124,16 @@ One quantity the Component publishes as one Home Assistant entity, such as a tem
 _Avoid_: sensor (an ESPHome entity type), parameter
 
 **Register map**:
-The single table that lists every Value with its config key, Address or Bank offset, Address kind, Decode rule, Poll group and entity metadata. It checks its rows when it loads.
+The single table that lists every Value with its config key, Entity kind, Address or Bank offset, Address kind, Decode rule, Poll group and entity metadata. It checks its rows when it loads.
 _Avoid_: value table, sensor table
 
 **Decode rule**:
-How a Value's bytes become a number or a boolean: byte width, signedness, divisor and Status bit mask.
+How a Value's bytes become a number: byte width, signedness, divisor and Status bit mask. A Status bit decodes to 1 or 0.
 _Avoid_: format, conversion
+
+**Entity kind**:
+The ESPHome platform a Value publishes on: sensor or binary sensor. Each Register map row names its own. Home Assistant knows an entity by its kind and name, so changing a kind orphans the entity's history ([ADR 0004](docs/adr/0004-entity-ids-stay-stable.md)).
+_Avoid_: platform type, entity type
 
 **Poll group**:
 Which reading cycle reads an Address: the value cycle, every value interval, or the bank cycle, every bank interval. It sets cadence only. Banks are in the bank cycle by default, but a Bank read in the value cycle decodes the same.

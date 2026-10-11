@@ -7,13 +7,23 @@ from esphome.components import binary_sensor, sensor, text_sensor, uart
 from esphome.const import CONF_ID, ENTITY_CATEGORY_DIAGNOSTIC
 from esphome.core import HexInt
 
-from .register_map import VALUES
+from .register_map import VALUES, EntityKind
 from .revision import UNKNOWN, component_revision
 
 _LOGGER = logging.getLogger(__name__)
 
+# Each entity kind's ESPHome platform: the schema for its config and the coroutine that
+# creates its entity. Codegen picks a platform here and nowhere else; publish_value() in
+# geopro_202s_protocol.h is the C++ side. The README lists what adding a kind takes.
+_PLATFORMS = {
+    EntityKind.SENSOR: (sensor.sensor_schema, sensor.new_sensor),
+    EntityKind.BINARY_SENSOR: (binary_sensor.binary_sensor_schema, binary_sensor.new_binary_sensor),
+}
+assert set(_PLATFORMS) == set(EntityKind), "every EntityKind needs a platform in _PLATFORMS"
+
 DEPENDENCIES = ['uart']
-AUTO_LOAD = ['sensor', 'binary_sensor', 'text_sensor']
+# Every entity kind's platform, and text_sensor for the component revision.
+AUTO_LOAD = sorted({entity_kind.value for entity_kind in EntityKind} | {'text_sensor'})
 
 geopro_202s_ns = cg.esphome_ns.namespace('geopro_202s')
 Geopro202sComponent = geopro_202s_ns.class_('Geopro202sComponent', cg.Component, uart.UARTDevice)
@@ -37,9 +47,8 @@ _poll_interval = cv.All(cv.positive_not_null_time_period, cv.positive_time_perio
 
 
 def _entity_schema(value):
-    if value.is_binary:
-        return binary_sensor.binary_sensor_schema(**value.schema_options)
-    return sensor.sensor_schema(**value.schema_options)
+    schema, _ = _PLATFORMS[value.entity_kind]
+    return schema(**value.schema_options)
 
 
 CONFIG_SCHEMA = (
@@ -85,10 +94,9 @@ async def to_code(config):
     for value in VALUES:
         if value.key not in config:
             continue
-        if value.is_binary:
-            entity = await binary_sensor.new_binary_sensor(config[value.key])
-        else:
-            entity = await sensor.new_sensor(config[value.key])
+        _, new_entity = _PLATFORMS[value.entity_kind]
+        entity = await new_entity(config[value.key])
         group = getattr(PollGroup, value.group.value)
-        kind = getattr(AddressKind, value.address_kind.value)
-        cg.add(hub.register_value(group, kind, HexInt(value.address), value.offset, _decode_rule(value.decode), entity))
+        address_kind = getattr(AddressKind, value.address_kind.value)
+        cg.add(hub.register_value(
+            group, address_kind, HexInt(value.address), value.offset, _decode_rule(value.decode), entity))

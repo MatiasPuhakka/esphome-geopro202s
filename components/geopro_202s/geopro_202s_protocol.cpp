@@ -49,12 +49,8 @@ void Geopro202sComponent::handle_frame_(const Frame &frame) {
   }
   for (const auto &result : results) {
     const Registration &value = this->registrations_[result.index];
-    const Target &target = this->targets_[result.index];
     ESP_LOGV(TAG, "Address 0x%04X offset %u: %.2f", value.address, value.offset, result.value);
-    if (target.sensor != nullptr)
-      target.sensor->publish_state(result.value);
-    if (target.binary_sensor != nullptr)
-      target.binary_sensor->publish_state(result.value != 0.0f);
+    this->targets_[result.index](result.value);
   }
 }
 
@@ -71,7 +67,7 @@ void Geopro202sComponent::dump_config() {
   for (size_t i = 0; i < this->registrations_.size(); i++) {
     const Registration &value = this->registrations_[i];
     ESP_LOGCONFIG(TAG, "    %s 0x%04X, offset %u, %u byte(s), %s, divisor %u, mask 0x%04X",
-                  value.kind == AddressKind::BANK ? "Bank" : "Address", value.address, value.offset,
+                  value.address_kind == AddressKind::BANK ? "Bank" : "Address", value.address, value.offset,
                   value.rule.width, value.rule.is_signed ? "signed" : "unsigned", value.rule.divisor,
                   value.rule.mask);
   }
