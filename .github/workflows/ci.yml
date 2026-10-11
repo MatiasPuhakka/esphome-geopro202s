@@ -18,9 +18,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # The version the component was developed against, and the version the
-        # Home Assistant add-on builds the Node with. Bump deliberately.
-        esphome: ["2025.2.2", "2026.9.1"]
+        # The version the Home Assistant add-on builds the Node with. When the
+        # add-on moves, bump this in the same change (docs/adr/0002).
+        esphome: ["2026.9.1"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -35,9 +35,7 @@ jobs:
           key: esphome-${{ matrix.esphome }}-${{ hashFiles('tests/*.yaml') }}
           restore-keys: esphome-${{ matrix.esphome }}-
       - run: make check-config
-      # geopro.yaml uses the Ethernet clk: block, which 2025.2.2 doesn't know.
-      - if: matrix.esphome != '2025.2.2'
-        run: |
+      - run: |
           printf 'api_encryption_key: "%s"\nota_password: ci\n' "$(head -c 32 /dev/urandom | base64)" > secrets.yaml
           make check-node-config
       - run: make compile
