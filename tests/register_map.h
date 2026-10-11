@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "poll_scheduler.h"
 #include "value_decoder.h"
 
 // The Register map's rows as codegen registers them, exported from register_map.py.
@@ -12,6 +13,7 @@ namespace register_map {
 struct Row {
   std::string key;
   esphome::geopro_202s::Registration registration;
+  esphome::geopro_202s::PollGroup group;
 };
 
 // Every row, in register_map.py's order.

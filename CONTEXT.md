@@ -101,6 +101,10 @@ _Avoid_: CRC
 The 16-bit number a Read request asks for; either a single Value or a Bank.
 _Avoid_: id, sensor id, register
 
+**Address kind**:
+Whether an Address holds a single Value or a Bank. It sets the Reply's data length: 31 bytes for a Bank, and for a single Value, its offset plus its byte width.
+_Avoid_: address type
+
 **Bank**:
 An Address whose Reply carries 31 data bytes holding many settings at fixed offsets.
 _Avoid_: block, page
@@ -120,7 +124,7 @@ One quantity the Component publishes as one Home Assistant entity, such as a tem
 _Avoid_: sensor (an ESPHome entity type), parameter
 
 **Register map**:
-The single table that lists every Value with its config key, Address or Bank offset, Decode rule and entity metadata.
+The single table that lists every Value with its config key, Address or Bank offset, Address kind, Decode rule, Poll group and entity metadata. It checks its rows when it loads.
 _Avoid_: value table, sensor table
 
 **Decode rule**:
@@ -128,7 +132,7 @@ How a Value's bytes become a number or a boolean: byte width, signedness, diviso
 _Avoid_: format, conversion
 
 **Poll group**:
-Which reading cycle an Address belongs to: Values, read every value interval, or Banks, read every bank interval.
+Which reading cycle reads an Address: the value cycle, every value interval, or the bank cycle, every bank interval. It sets cadence only. Banks are in the bank cycle by default, but a Bank read in the value cycle decodes the same.
 _Avoid_: priority, queue
 
 ## Parts of the Component

@@ -4,8 +4,6 @@
 #include <cstdint>
 #include <vector>
 
-#include "poll_scheduler.h"
-
 namespace esphome {
 namespace geopro_202s {
 
@@ -30,14 +28,20 @@ struct DecodeRule {
 // Data bytes in a Bank reply.
 static const size_t BANK_DATA_LENGTH = 31;
 
+// What an Address holds, which sets its Reply's data length: a single Value's
+// data ends where the value ends, and a Bank's is always BANK_DATA_LENGTH bytes.
+// Mirrors AddressKind in register_map.py.
+enum class AddressKind : uint8_t { SINGLE_VALUE, BANK };
+
 // One configured value: the address whose reply carries it, where it starts in
-// that reply's data, how to decode it, and which poll group reads it. Several
-// registrations can share an address; one reply then feeds them all.
+// that reply's data, how to decode it, and what the address holds. Several
+// registrations can share an address; one reply then feeds them all. The poll
+// group that reads the address stays with the poll scheduler.
 struct Registration {
   uint16_t address;
   uint8_t offset;
   DecodeRule rule;
-  PollGroup group;
+  AddressKind kind;
 };
 
 struct DecodedValue {
@@ -48,8 +52,8 @@ struct DecodedValue {
 
 // Decodes every registration for `address` from that reply's data bytes.
 // A registration produces no result when the reply's data length is not the
-// one its group expects (BANK_DATA_LENGTH for a Bank, offset + width for a
-// single value), when it is for another address, or when its rule has an
+// one its address kind expects (BANK_DATA_LENGTH for a Bank, offset + width for
+// a single value), when it is for another address, or when its rule has an
 // unsupported width or a zero divisor.
 std::vector<DecodedValue> decode_values(uint16_t address, const std::vector<uint8_t> &data,
                                         const std::vector<Registration> &registrations);

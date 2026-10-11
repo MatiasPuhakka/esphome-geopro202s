@@ -1,0 +1,88 @@
+"""Tests the checks register_map.py runs on its rows when it loads.
+
+Plain Python: run with `python3 -m unittest discover -s tests -p '*_test.py'`.
+"""
+
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest import mock
+
+from export_register_map import load_register_map
+
+REGISTER_MAP_PATH = Path(__file__).resolve().parent.parent / "components" / "geopro_202s" / "register_map.py"
+
+
+def load(path=REGISTER_MAP_PATH):
+    # load_register_map() puts an esphome stand-in in sys.modules; keep it out of other tests,
+    # and keep a __pycache__ out of the component directory.
+    with mock.patch.dict(sys.modules), mock.patch.object(sys, "dont_write_bytecode", True):
+        return load_register_map(str(path))
+
+
+register_map = load()
+Value = register_map.Value
+S8, U8, U16 = register_map.S8, register_map.U8, register_map.U16
+BANK, VALUE = register_map.PollGroup.BANK, register_map.PollGroup.VALUE
+
+
+def bank_row(key, offset, decode=S8, group=BANK):
+    return Value(key, 0x0B, decode, offset=offset, address_kind=register_map.AddressKind.BANK, group=group)
+
+
+def check(*rows):
+    register_map.check_rows(rows)
+
+
+class RegisterMapCheckTest(unittest.TestCase):
+    def test_the_register_map_loads(self):
+        self.assertIn("comp_lock", {value.key for value in register_map.VALUES})
+
+    def test_a_bank_row_at_the_last_data_byte_fits(self):
+        check(bank_row("last", 30))
+
+    def test_a_bank_row_in_the_value_poll_group_passes(self):
+        check(bank_row("fast", 14, group=VALUE))
+
+    def test_a_bank_offset_past_the_data_fails(self):
+        message = r"late: offset 31 \+ 1 byte\(s\) runs past the 31 data bytes of Bank 0x0B"
+        with self.assertRaisesRegex(ValueError, message):
+            check(bank_row("late", 31))
+
+    def test_a_two_byte_bank_row_at_the_last_byte_fails(self):
+        with self.assertRaisesRegex(ValueError, r"late: offset 30 \+ 2 byte"):
+            check(bank_row("late", 30, decode=U16))
+
+    def test_single_value_rows_that_disagree_on_reply_length_fail(self):
+        message = "word and low_byte share Address 0x2D but expect 2 and 1 data bytes"
+        with self.assertRaisesRegex(ValueError, message):
+            check(Value("word", 0x2D, U16), Value("low_byte", 0x2D, U8))
+
+    def test_a_bank_row_and_a_single_value_row_at_one_address_fail(self):
+        message = "setting and single share Address 0x0B but expect 31 and 1 data bytes"
+        with self.assertRaisesRegex(ValueError, message):
+            check(bank_row("setting", 0), Value("single", 0x0B, S8))
+
+    def test_rows_that_disagree_on_poll_group_fail(self):
+        message = "slow and fast share Address 0x0B but are in Poll groups BANK and VALUE"
+        with self.assertRaisesRegex(ValueError, message):
+            check(bank_row("slow", 1), bank_row("fast", 2, group=VALUE))
+
+    def test_a_repeated_key_fails(self):
+        with self.assertRaisesRegex(ValueError, "config keys must be unique: twice"):
+            check(bank_row("twice", 1), bank_row("once", 2), bank_row("twice", 3))
+
+    def test_loading_a_register_map_with_a_bank_offset_past_the_data_fails(self):
+        source = REGISTER_MAP_PATH.read_text()
+        broken = source.replace('_bank("comp_lock", 0x0B, 14,', '_bank("comp_lock", 0x0B, 31,')
+        self.assertNotEqual(broken, source)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "register_map.py"
+            path.write_text(broken)
+            with self.assertRaisesRegex(ValueError, "comp_lock: offset 31"):
+                load(path)
+
+
+if __name__ == "__main__":
+    unittest.main()

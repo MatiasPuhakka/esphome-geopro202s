@@ -38,15 +38,17 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
     this->component_revision_text_sensor_ = text_sensor;
   }
 
-  // Registers one value from the Register map: the address read for it (a
-  // bank for settings), where it starts in the reply, and how to decode it.
+  // Registers one value from the Register map: which cycle reads its address,
+  // whether that address is a bank or a single value, the address, where the
+  // value starts in the reply, and how to decode it.
   // A sensor publishes the decoded number, a binary sensor whether it is non-zero.
-  void register_value(PollGroup group, uint16_t address, uint8_t offset, DecodeRule rule, sensor::Sensor *sensor) {
-    this->add_value_(Registration{address, offset, rule, group}, Target{sensor, nullptr});
+  void register_value(PollGroup group, AddressKind kind, uint16_t address, uint8_t offset, DecodeRule rule,
+                      sensor::Sensor *sensor) {
+    this->add_value_(group, Registration{address, offset, rule, kind}, Target{sensor, nullptr});
   }
-  void register_value(PollGroup group, uint16_t address, uint8_t offset, DecodeRule rule,
+  void register_value(PollGroup group, AddressKind kind, uint16_t address, uint8_t offset, DecodeRule rule,
                       binary_sensor::BinarySensor *binary_sensor) {
-    this->add_value_(Registration{address, offset, rule, group}, Target{nullptr, binary_sensor});
+    this->add_value_(group, Registration{address, offset, rule, kind}, Target{nullptr, binary_sensor});
   }
 
  protected:
@@ -56,7 +58,7 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
     binary_sensor::BinarySensor *binary_sensor;
   };
 
-  void add_value_(const Registration &registration, const Target &target);
+  void add_value_(PollGroup group, const Registration &registration, const Target &target);
   void handle_frame_(const Frame &frame);
   void send_request_(uint16_t address);
 

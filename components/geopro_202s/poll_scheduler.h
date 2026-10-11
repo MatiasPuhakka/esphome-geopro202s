@@ -26,8 +26,8 @@ static const uint8_t REQUEST_RETRIES = 1;
 // request, so the controller isn't addressed back to back.
 static const uint32_t REQUEST_GAP_MS = 50;
 
-// Which cycle an address is read in: values every value interval, configuration
-// banks every bank interval.
+// Which cycle an address is read in: VALUE every value interval, BANK every bank
+// interval. It sets cadence only; the reply's data length comes from the address.
 enum class PollGroup : uint8_t { VALUE, BANK };
 
 // Decides which address to read next. It has no clock of its own: the caller

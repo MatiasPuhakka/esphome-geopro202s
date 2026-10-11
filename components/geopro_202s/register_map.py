@@ -30,10 +30,24 @@ from esphome.const import (
 
 
 class PollGroup(Enum):
-    """Which cycle reads a row's address. Mirrors PollGroup in poll_scheduler.h."""
+    """Which cycle reads a row's address; it sets cadence only. Mirrors PollGroup in poll_scheduler.h."""
 
     VALUE = "VALUE"  # every value_interval
     BANK = "BANK"  # every bank_interval
+
+
+# Data bytes in a Bank's Reply. Mirrors BANK_DATA_LENGTH in value_decoder.h.
+BANK_DATA_LENGTH = 31
+
+
+class AddressKind(Enum):
+    """What a row's address holds, which sets its Reply's data length.
+
+    Mirrors AddressKind in value_decoder.h.
+    """
+
+    SINGLE_VALUE = "SINGLE_VALUE"  # the data ends where the value ends
+    BANK = "BANK"  # BANK_DATA_LENGTH bytes of settings
 
 
 @dataclass(frozen=True)
@@ -70,10 +84,12 @@ def status_bit(mask):
 class Value:
     key: str
     # The address read for this value (for settings, the bank), where the value
-    # starts in the reply's data, and how to decode it. Rows may share an address.
+    # starts in the reply's data, how to decode it, what the address holds and
+    # which cycle reads it. Rows may share an address; check_rows() says how.
     address: int
     decode: DecodeRule
     offset: int = 0
+    address_kind: AddressKind = AddressKind.SINGLE_VALUE
     group: PollGroup = PollGroup.VALUE
     # Entity options. None leaves the ESPHome default in place.
     unit: Optional[str] = None
@@ -86,6 +102,18 @@ class Value:
     def is_binary(self):
         """Binary sensor rather than sensor."""
         return self.decode.is_binary
+
+    @property
+    def end(self):
+        """Where the value ends in the Reply's data: its offset plus its width."""
+        return self.offset + self.decode.width
+
+    @property
+    def reply_length(self):
+        """Data bytes in the Reply from this row's address."""
+        if self.address_kind is AddressKind.BANK:
+            return BANK_DATA_LENGTH
+        return self.end
 
     @property
     def schema_options(self):
@@ -137,7 +165,7 @@ def _status_bit(key, mask, icon):
 
 def _bank(key, bank, offset, unit, device_class, icon, decode=S8):
     return Value(
-        key, bank, decode, offset=offset, group=PollGroup.BANK,
+        key, bank, decode, offset=offset, address_kind=AddressKind.BANK, group=PollGroup.BANK,
         unit=unit, device_class=device_class,
         state_class=STATE_CLASS_MEASUREMENT, accuracy=0, icon=icon,
     )
@@ -276,4 +304,37 @@ VALUES = (
 #     12: 0x01 1    15: 0xF1 241/-15            16: 0x4B 75    19: 0x03 3
 #     20: 0x84 132/-124                         24: 0x64 100   28: 0x06 6
 
-assert len({value.key for value in VALUES}) == len(VALUES), "config keys must be unique"
+
+def check_rows(values):
+    """Raises ValueError, naming the rows, when `values` breaks one of these rules.
+
+    Config keys are unique. A Bank row ends within the Bank's data, or it never
+    decodes. Rows that share an address share one Reply, so they agree on its
+    data length; a row that disagrees never decodes. They also agree on their
+    Poll group, so the address is read in one cycle.
+    """
+    keys = [value.key for value in values]
+    repeated = sorted({key for key in keys if keys.count(key) > 1})
+    if repeated:
+        raise ValueError(f"config keys must be unique: {', '.join(repeated)}")
+    first_at = {}
+    for value in values:
+        if value.address_kind is AddressKind.BANK and value.end > BANK_DATA_LENGTH:
+            raise ValueError(
+                f"{value.key}: offset {value.offset} + {value.decode.width} byte(s) runs past "
+                f"the {BANK_DATA_LENGTH} data bytes of Bank 0x{value.address:02X}"
+            )
+        first = first_at.setdefault(value.address, value)
+        if value.reply_length != first.reply_length:
+            raise ValueError(
+                f"{first.key} and {value.key} share Address 0x{value.address:02X} but expect "
+                f"{first.reply_length} and {value.reply_length} data bytes in its Reply"
+            )
+        if value.group is not first.group:
+            raise ValueError(
+                f"{first.key} and {value.key} share Address 0x{value.address:02X} but are in "
+                f"Poll groups {first.group.value} and {value.group.value}"
+            )
+
+
+check_rows(VALUES)
