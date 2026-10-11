@@ -21,7 +21,7 @@ The ML circuit's settings, as listed on p. 21. The last column is what the Contr
 | VarYläEroSv | huoltotila | 3 °C | 0–10 °C | 7 | 5 °C |
 | Lisälämmitys | käyttäjätaso | 50 °C | 40–55 °C | 8 | 50 °C |
 | Lisäläm.aika | käyttäjätaso | 2 h | 0–6 h | 9 | 2 h |
-| ML Ohjaustapa | ML Ohjaustavat screen | not given | Kompr.+sähköv., Kompressori, Sähkövastus | 10 | 0 |
+| ML Ohjaustapa | ML Ohjaustavat screen | Kompr.+sähköv. (p. 29) | Kompr.+sähköv., Kompressori, Sähkövastus | 10 | 0 |
 | Maaliuos häl | huoltotila | −6 °C | −10–0 °C | 11 | −6 °C |
 | JV Esiavaus | huoltotila | 40 % | 25–100 % | 12 | 40 % |
 | JV Esto | huoltotila | 60 s | 30–240 s | 13 | 60 s |
