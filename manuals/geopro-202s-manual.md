@@ -1,15 +1,23 @@
 # Geopro 202S Lämmönsäädin
 ## Käyttö- ja Huolto-opas
 
+This file paraphrases `Geopro 202S Käsikirja.pdf` (in this folder) in condensed Finnish. It leaves out screens, pictures and repeated key instructions, and where it disagrees with the PDF, the PDF is right. Each section names the PDF pages it comes from as "s. N". These are PDF page indexes counted from 1, which in the Käsikirja equal the printed page numbers.
+
+The Controller's control rules (compressor, electric heater, JV) are not repeated here; `docs/controller.md` has them, each with its page.
+
 ---
 
 ## ALUKSI
+
+*Käsikirja s. 3*
 
 Onnittelut erinomaisesta valinnastanne! Olet hankkinut monipuolisen uuden sukupolven asuin- ja liikerakennusten lämmönsäätimen - huipputuotteen joka soveltuu mitä erilaisimpiin käyttökohteisiin ja lämmitysjärjestelmiin.
 
 ---
 
 ## KÄYTTÖPANEELI
+
+*Käsikirja s. 3*
 
 ### Näppäimet:
 
@@ -19,6 +27,8 @@ Onnittelut erinomaisesta valinnastanne! Olet hankkinut monipuolisen uuden sukupo
 - **OK** - Hyväksyntänäppäin
 - **Ryhmänvaihto** - Siirtyminen säätöpiiristä toiseen (L1, L2, ML)
 - **INFO** - Toimintaohjeet ja lisätiedot
+
+Perusnäytössä **+**-näppäin näyttää vuorotellen kaikki mittaustulokset.
 
 ### Säätöpiirit:
 
@@ -30,44 +40,55 @@ Onnittelut erinomaisesta valinnastanne! Olet hankkinut monipuolisen uuden sukupo
 
 - **▲** - Säädin ohjaa 3-tilaohjattua moottoria auki
 - **▼** - Säädin ohjaa 3-tilaohjattua moottoria kiinni
-- **Pylväs (0-100%)** - Jänniteohjatun venttiilimoottorin asento
+- **Pylväs (0-100%)** - Jänniteohjatun venttiilimoottorin asento (0 % = 0 V tai 2 V, 100 % = 10 V)
 
 ---
 
 ## SISÄLTÖ
 
+*Käsikirja s. 5*
+
 ### Käyttäjäopas:
-- Säätökäyrien asetukset (s. 6-7)
-- Asetusarvot (s. 8-9)
-- Mittaukset (s. 10-11)
+- Säätökäyrien asetukset (s. 6)
+- Asetusarvot (s. 8)
+- Mittaukset (s. 10)
+- Tietoa mittauksista ja anturikytkennöistä (s. 11)
 - Menovesi-info (s. 12)
 - Ohjaustavat (s. 13)
-- Kellotoiminnat (s. 14-15)
+- Kellotoiminnat (s. 14)
 - Kielivalinta/Tyyppitiedot (s. 16)
 - Starttitoiminta (s. 17)
-- Hälytykset (s. 18-19)
+- Hälytykset (s. 18)
 - GSM-toiminnot (s. 19)
-- Maalämmitystoiminnot (s. 20-23)
+- Maalämmitystoiminnot (s. 20)
 
 ### Huolto-opas:
-- Huoltotilaan siirtyminen (s. 24)
+- Ohjeet huoltotilaan siirtymisestä (s. 24)
 - Viritysarvot (s. 25)
-- Asetusarvot (s. 26)
+- Huoltotilan asetusarvot (s. 26)
 - Trendit (s. 27)
 - Moottorivalinta (s. 28)
 - Jakoventtiilin ohjaustapa (s. 28)
-- Erikoishuolto (s. 29-37)
+- Erikoishuolto: tehdasasetusten palautus (s. 29), erikoishuoltotilan asetusarvot (s. 30), mittauksen 6 asetus (s. 31), tuuli-/aurinkomittaus (s. 32), LON-kenttäväylä (s. 33), väylämittaukset (s. 34), tekstiviestiyhteys modeemin kautta (s. 35) ja väylän kautta (s. 36), selainkäyttö (s. 37), datayhteys suoraan tietokoneeseen (s. 38)
+- Huolto-ohje (s. 38)
+- Yleiskytkentäohje (s. 39)
+- Lisävarusteet (s. 40)
+- Hakusanat (s. 41; ei toistettu tässä)
 - Tekniset tiedot (s. 42)
 
 ---
 
 ## SÄÄTÖKÄYRIEN ASETUKSET
 
+*Käsikirja s. 6–7*
+
 Tasaisen huonelämmön perusta on juuri oikean muotoinen säätökäyrä. Geopro 202S:ssa säätökäyrää voidaan muokata kolmesta pisteestä:
 
 1. Ulkolämpötilassa -20°C
 2. Ulkolämpötilassa 0°C
 3. Ulkolämpötilassa +20°C
+
+Säädin estää väärän muotoisten käyrien asettamisen ja tekee korjausehdotuksen. Jos ulkoanturia ei ole kytketty tai se on poikki, säädin olettaa ulkolämmöksi 0°C.
 
 ### Säätökäyrän asettaminen:
 
@@ -94,43 +115,51 @@ Tasaisen huonelämmön perusta on juuri oikean muotoinen säätökäyrä. Geopro
 
 - Aseta maksimirajoitus välille +35 … +40°C
 - Aseta minimirajoitus välille +20 … +25°C
-- Menovesiputkeen on asennettava mekaaninen termostaatti (esim. Ouman C01A)
+- Menovesiputkeen on asennettava mekaaninen termostaatti, joka pysäyttää kiertovesipumpun ylikuumenemistilanteessa (esim. pintatermostaatti C01A)
 - Aseta termostaatin asetusarvo 40-45°C
 
-**Esimerkkikäyrä lattialämmitykselle:**
-- -20°C: 30°C
-- 0°C: 27°C
-- +20°C: 20°C
+**Esimerkkikäyrät (s. 7):**
+
+| Ulkolämpö | a) Lattialämmitys (L1) | b) Lattialämmitys, kosteat tilat (L2:n tehdasasetus) |
+|-----------|------------------------|------------------------------------------------------|
+| -20°C | 32°C | 30°C |
+| 0°C | 26°C | 27°C |
+| +20°C | 19°C | 20°C |
 
 ---
 
 ## ASETUSARVOT
+
+*Käsikirja s. 8–9; ML-piiri myös s. 21*
 
 ### L1 ja L2 Lämmityspiirit:
 
 | Asetusarvo | Merkitys | Tehdasasetus | Vaihteluväli |
 |------------|----------|--------------|--------------|
 | Huonelämpö | Käyttäjän asettama huonelämpötila | 21.5°C | 5...45°C |
-| Yöalennus vaikutus | Menoveden lämpötilan pudotus | 0°C | 0...35°C |
+| Yöalennus v. | Menoveden lämpötilan pudotus | 0°C | 0...35°C |
 | Minimiraja | Menoveden alin sallittu lämpötila | 15°C | 5...95°C |
 | Maksimiraja | Menoveden korkein sallittu lämpötila | 70°C | 15...125°C |
-| Huonekomp.suhde | Huonekompensointisuhde | 4 | 0...7°C |
+| Huonekomp.s | Huonekompensointisuhde | 4.0 | 0.0...7.0°C |
 | Tuulikomp.s | Tuulikompensointisuhde | 0 | 0...7°C |
-| Aurinkokomp. | Aurinkokompensointisuhde | 0 | 0...7°C |
-| Esikorotus | Yöpudotuksen jälkeinen esikorotus | 0 | 0...20°C |
+| Aurinkokomp.s | Aurinkokompensointisuhde | 0 | 0...-7°C |
+| Esikorotus | Yöpudotuksen jälkeinen esikorotus | 0°C | 0...20°C |
 | Syyskuivaus | Syysajan kuivauksen vaikutus | 2°C | 0...15°C |
-| Vent.kesäsulk | Venttiilin kesäsulkeutumisraja | 25°C | 5...50°C |
+| Vent.kesäsulk | Ulkolämpötilaraja, jossa L1-piirin venttiili sulkeutuu | 30°C | 5...50°C |
+
+Vent.kesäsulk on 30°C sivuilla 8, 9 ja 29. Asennusohje (s. 16) sanoo tehdasasetukseksi +19°C.
 
 ### ML Maalämmityspiiri:
 
 | Asetusarvo | Merkitys | Tehdasasetus | Vaihteluväli |
 |------------|----------|--------------|--------------|
 | VaraajaAlaMin | Varaajan alaosan minimilämpötila | 30°C | 30...55°C |
-| SV_viiveaika | Sähkövastuksen kytkennän viive | 30 min | 0...120 min |
-| Var.ylä kesä | Varaajan yläosa +20°C ulkolämpötilassa | 55°C | 30...75°C |
-| Var.ylä talvi | Varaajan yläosa -20°C ulkolämpötilassa | 65°C | 30...75°C |
-| Lisälämmitys | Lisälämmityksen asetusarvo | 50°C | 40...55°C |
-| Lisäläm.aika | Lisälämmityksen kesto | 2 h | 0...6 h |
+| SV_viiveaika | Kompressorin käyntiaika, jonka jälkeen varaajan keskiosa (M4) voi kytkeä sähkövastuksen | 30 min | 0...120 min |
+| Var.ylä kesä | Varaajan yläosan asetusarvo, kun ulkolämpö ≥ +20°C | 55°C | 30...75°C |
+| Var.ylä talvi | Varaajan yläosan asetusarvo, kun ulkolämpö ≤ -20°C | 65°C | 30...75°C |
+| VaraajaYlä | Laskennallinen, Var.ylä kesä ja Var.ylä talvi -arvoista | - | - |
+| Lisälämmitys | VaraajaAlaMin-arvo lisälämpöpainikkeen painamisen jälkeen | 50°C | 40...55°C |
+| Lisäläm.aika | Lisälämmitys-arvon voimassaoloaika | 2 h | 0...6 h |
 
 ### Asetusarvojen muuttaminen:
 
@@ -140,28 +169,34 @@ Tasaisen huonelämmön perusta on juuri oikean muotoinen säätökäyrä. Geopro
 4. Muuta arvoa **+/-** näppäimillä → **OK**
 5. Poistu **ESC**:llä
 
+ML-piiriin siirrytään ryhmänvaihtonäppäimellä.
+
 ---
 
 ## MITTAUKSET
 
-Geopro 202S:ssa on yhteensä 14 samanaikaista lämpötilan mittaustietoa:
+*Käsikirja s. 10–11*
+
+Geopro 202S:ssa on yhteensä 14 samanaikaista mittaustietoa (11 NTC-mittausta + 3 digitaalituloa). Näytössä näkyvät vain kytketyt mittaukset.
 
 ### Mittaukset:
 
-| Mittaus | Nimi | Mittausalue |
-|---------|------|-------------|
+| Riviliitin | Nimi | Mittausalue |
+|------------|------|-------------|
 | 1 | Ulkolämpö | -50...+50°C |
 | 2 | L1 Menovesi | 0...+130°C |
 | 3 | L1 Huone | -10...+80°C |
 | 4 | VaraajaKeski | 0...+130°C |
 | 5 | L2 Menovesi | 0...+130°C |
-| 6 | Mittaus 6 / L2 Huone / Tuuli / Aurinko | -10...+80°C |
-| 7 | Yläosa tulo | 0...+130°C |
+| 6 | Mittaus 6 / L2 Huone / Tuuli / Aurinko | -10...+80°C (tuuli ja aurinko % anturin alueesta) |
+| 7 | Yläosa tulo (tulistimen ja sähkövastuksen jälkeen) | 0...+130°C |
 | 8 | Maaliuos | -20...+60°C |
 | 9 | VaraajaYlä | 0...+130°C |
 | 10 | VaraajaAla | 0...+130°C |
-| 11 | Kompr.Aika | 0...9999 h |
-| - | Sähköv.Aika | 0...9999 h |
+| - | Kompr.Aika (kompressorin käyntilaskuri) | 0...9999 h |
+| - | Sähköv.Aika (sähkövastuksen päälläololaskuri) | 0...9999 h |
+
+Mittaus 11 (Mitt.11) on kompressorin käyntitieto, potentiaalivapaa kosketin (s. 11, 39). Mittausalueen ulkopuolella näytössä on - tai +, anturiviassa "err".
 
 ### Mittausten katselu:
 
@@ -177,11 +212,17 @@ Geopro 202S:ssa on yhteensä 14 samanaikaista lämpötilan mittaustietoa:
 
 1. Valinta → Mittaukset → Mittaus 6
 2. Siirrä osoitin kohtaan "Anna uusi nimi" → **OK**
-3. Kirjoita nimi tekstieditorilla → Hyväksy pitkällä **ESC**:llä
+3. Kirjoita nimi tekstieditorilla → Hyväksy pitkällä **OK**:lla (yli 2 s)
+
+### Antureiden käyttöönotto:
+
+Ulkoanturin säädin ottaa käyttöön automaattisesti. Muiden antureiden lisäämisen tai poistamisen jälkeen on tehtävä starttitoiminta (s. 17). Anturityypit ja riviliittimet: ks. [Yleiset kytkentäohjeet](#yleiset-kytkentäohjeet).
 
 ---
 
 ## MENOVESI-INFO
+
+*Käsikirja s. 12*
 
 Menovesi-infossa nähdään, mistä tekijöistä säätimen määräämä menoveden lämpötila muodostuu.
 
@@ -197,7 +238,8 @@ Menovesi-infossa nähdään, mistä tekijöistä säätimen määräämä menove
 - **Ulkol.hidast.** - Ulkolämpömittauksen hidastus
 - **Max raj.vaik** - Maksimirajoitus
 - **Min raj.vaik** - Minimirajoitus
-- **Yhteisvaik.** - Kaikkien yhteenlaskettu vaikutus
+- **Alasajo** - Vapaan pudotuksen vaikutus
+- **Yhteisvaik.** - Säätimen määräämä menoveden lämpötila
 
 ### Katselu:
 
@@ -209,11 +251,13 @@ Menovesi-infossa nähdään, mistä tekijöistä säätimen määräämä menove
 
 ## OHJAUSTAVAT
 
+*Käsikirja s. 13; ML-piiri myös s. 21*
+
 Jokaista säätöpiiriä voidaan ohjata eri ohjaustavoilla:
 
 ### L1 ja L2 Lämmityspiirit:
 
-- **Autom.säätö** - Normaali säätö, kello-ohjatut pudotukset mahdollisia
+- **Autom.säätö** - Normaali säätö, kello-ohjatut pudotukset mahdollisia (tehdasasetus)
 - **Jatkuva päivä** - Jatkuva normaali lämpötila (ei pudotuksia)
 - **Jatkuva yö** - Jatkuva alennettu lämpötila
 - **Alasajo** - Vapaa pudotus jäätymissuojarajaan
@@ -226,6 +270,8 @@ Jokaista säätöpiiriä voidaan ohjata eri ohjaustavoilla:
 - **Kompressori** - Vain maalämpö (ei sähkövastuksia)
 - **Sähkövastus** - Vain sähkövastus
 
+Jakoventtiilin ohjaustapa valitaan huoltotilassa (s. 28).
+
 ### Ohjaustavan muuttaminen:
 
 1. Valinta → Ohjaustavat → **OK**
@@ -235,6 +281,10 @@ Jokaista säätöpiiriä voidaan ohjata eri ohjaustavoilla:
 ---
 
 ## KELLOTOIMINNAT
+
+*Käsikirja s. 14–15*
+
+Kello huomioi kesä- ja talviajan sekä karkausvuodet. Varakäynnin pariston kestoikä on noin 10 vuotta.
 
 ### Kellon asetus:
 
@@ -253,7 +303,7 @@ Jokaista säätöpiiriä voidaan ohjata eri ohjaustavoilla:
 
 ### Lämpötilan pudotusohjelmat:
 
-Voit ohjelmoida lämmityksen pudotuksia haluaminasi aikoina (esim. yöaikaan).
+Voit ohjelmoida lämmityspiirien L1 ja L2 pudotuksia haluaminasi aikoina.
 
 **Ohjelman lisääminen:**
 
@@ -268,18 +318,22 @@ Voit ohjelmoida lämmityksen pudotuksia haluaminasi aikoina (esim. yöaikaan).
 4. Aseta pudotuksen päättymisaika (sama tapa)
 5. Valitse viikonpäivät → **OK**
 
-**Esimerkki:**
-- Pudotus päälle: Arkisin klo 22:00
-- Pudotus pois: Arkisin klo 06:00
-- Viikonloppuisin ei pudotusta
+Ohjelmajakso poistetaan poistamalla siitä kaikki viikonpäivät.
+
+**Esimerkki (s. 15):**
+- Pudotus päälle: Ma–Pe klo 19:30
+- Pudotus pois: Ma–Pe klo 4:30
+- Viikonloppuna pudotus kestää perjantai-illasta klo 19:30 maanantaiaamuun klo 4:30
 
 ---
 
 ## KIELI JA TYYPPITIEDOT
 
+*Käsikirja s. 16*
+
 ### Kielen vaihto:
 
-Geopro 202S on kaksikielinen. Saatavilla:
+Geopro 202S on kaksikielinen. Yleisimmät yhdistelmät:
 - Suomi / Svenska
 - English / Eesti
 
@@ -298,36 +352,39 @@ Näyttää säätimen:
 
 ## STARTTITOIMINTA
 
+*Käsikirja s. 17*
+
 Starttitoiminnassa säädin:
 - Tunnistaa kytketyt anturit
-- Ottaa käyttöön säätöpiirit
-- Aktivoi vikahälytykset
+- Ottaa menovesiantureiden perusteella käyttöön säätöpiirit (L1 ja L2)
+- Aktivoi antureiden vikahälytykset
 
 ### Milloin starttitoiminta tehdään:
 
 - Kun anturi kytketään tai irrotetaan
 - Käyttöönoton yhteydessä
-- Asetusten palauttamisen jälkeen
 
 ### Säätötavan valinta:
 
-**Perussäädin:**
+**Perussäädin (tehdasasetus):**
 - Ohjaa menoveden lämpötilaa säätökäyrän mukaisesti
 
 **Itseoppiva säädin:**
 - Muokkaa säätökäyrää automaattisesti huoneanturin palautteen perusteella
-- Itseoppivuuden maksimivaikutus: ±10%
-- Vaatii huoneanturin TMR (ei TMR/P)
+- Korjaa käyrää 0°C tai -20°C pisteessä, kun huonelämpö poikkeaa asetusarvostaan vähintään 1°C ulkolämmön ollessa vähintään 4 h alueella +5...-5°C tai -15...-25°C
+- Korjausnopeus 1°C / 4 h, maksimivaikutus ±10 % käyrän asetusarvosta
+- Vaatii huoneanturin TMR (ei TMR/P); ei toimi lämpötilan pudotusten aikana
 - Merkitty "i"-kirjaimella säätökäyrässä
 
 **Starttitoiminnan suoritus:**
 1. Valinta → Starttitoiminta → **OK**
-2. Valitse säätötapa → **OK**
-3. Poistu **ESC**:llä
+2. Valitse säätötapa → **OK**, tai poistu **ESC**:llä muuttamatta mitään
 
 ---
 
 ## HÄLYTYKSET
+
+*Käsikirja s. 18; maalämpökojeen hälytykset myös s. 20*
 
 Geopro 202S hälyttää poikkeavissa tilanteissa:
 - Hälytysääni
@@ -341,34 +398,39 @@ Geopro 202S hälyttää poikkeavissa tilanteissa:
 - Mittausnimi + "err"
 - Esim. "Hälytys! Mittaus 1 Ulkolämpö err"
 
-**Poikkeamahälytys:**
-- Menoveden lämpötila poikkeaa pysyvästi säätimen määräämästä
-- Näyttää todellisen menovesilämpötilan
-
 **Jäätymisvaarahälytys:**
-- Menoveden lämpötila liian matala
+- Menoveden lämpötila alittaa vapaan pudotuksen alarajasta tai huonelämpötilan alarajasta lasketun raja-arvon
 - "Jäätymisvaara! Mittaus 2 L1 Menovesi [lämpötila]"
 
+**Poikkeamahälytys:**
+- Menoveden lämpötila poikkeaa pysyvästi (tehdasasetus 60 min) säätimen määräämästä
+- Raja ja kesto asetetaan erikoishuollossa (L1 Poikk.häl, PoikHälHid)
+
 **Maalämpökojeen hälytykset:**
-- Alilämpöhälytys (Maaliuos)
-- Poikkeamahälytys (Kompressorin käyntitieto puuttuu)
-- Kompressorin ylivirtasuoja
-- Sähkövastuksen ylikuumenemissuoja
+- Alilämpöhälytys / Mittaus 8 / Maaliuos: palaavan maaliuoksen alilämpö, raja "Maaliuos häl"
+- Poikkeamahälytys / Mittaus 11 / Kompr.käynti: kompressori ohjataan päälle, mutta käyntitietoa ei tule. Säädin katkaisee kompressorin ohjauksen; hälytys kuittautuu itsestään 5 minuutin päästä, jolloin kompressori saa taas käynnistyä
+- Hälytys / Dig 2 / Kompr. L-rele: kompressorin ylivirtasuoja (lämpörele) lauennut
+- Hälytys / Dig 3 / Sähköv.ylik: sähkövastuksen ylikuumenemissuoja lauennut; kuitataan vain sähkövastuksen käsikuittauspainikkeella
+
+**Ulkopuoliset hälytykset:**
+- Vapaaseen mittaukseen 6 voi kytkeä potentiaalivapaan hälytyskoskettimen 30 kΩ vastuksen kanssa (sulkeutuva tai avautuva); hälytyksen voi nimetä
 
 ### Hälytyksen kuittaus:
 
-1. Paina mitä tahansa näppäintä → Hälytysääni vaimentuu
-2. Korjaa vika
-3. Hälytys poistuu kun vika on korjattu
+1. Paina mitä tahansa näppäintä → Hälytysääni vaimentuu ja näyttö palaa edelliseen tilaan
+2. Jos näppäimiin ei kosketa 20 sekuntiin, hälytysilmoitus palaa näyttöön, ellei vikaa ole korjattu
+3. Viimeinen hälytys jää näyttöön, kunnes se kuitataan
 
 ---
 
 ## GSM-TOIMINNOT
 
+*Käsikirja s. 19*
+
 GSM-modeemi mahdollistaa:
 - Kommunikoinnin säätimen kanssa tekstiviesteillä
-- Hälytysten vastaanoton
-- Asetusten muuttamisen etänä
+- Hälytysten vastaanoton ja kuittauksen
+- Käyttäjätason asetusten muuttamisen etänä
 - Mittausten lukemisen
 
 ### Peruskäyttö:
@@ -395,10 +457,12 @@ L1 ASETUSARVOT
 SÄÄTÖKÄYRÄT
 ```
 
+Säädin käsittelee yhden avainsanan viestiä kohden.
+
 ### Asetusten muuttaminen:
 
 1. Pyydä nykyiset asetukset (esim. "L1 ASETUSARVOT")
-2. Muokkaa säätiimen lähettämää viestiä
+2. Muokkaa säätimen lähettämää viestiä
 3. Lähetä muokattu viesti takaisin
 4. Säädin lähettää kuittauksen uusista asetuksista
 
@@ -413,41 +477,26 @@ TC1 MITTAUKSET
 
 ## MAALÄMMITYSTOIMINNOT
 
-### Kompressorin ohjaus:
+*Käsikirja s. 20–23*
 
-**Kompressori käynnistyy kun:**
-- Varaajan alaosan lämpötila (M4) alittaa asetusarvon
-- Edellisestä käyntijaksosta kulunut vähintään 5 minuuttia
+Säädin lämmittää varaajan alaosaa kompressorilla ja tarvittaessa sähkövastuksella S1 niin, että lämmitysverkostoon riittää lämpöä, ja yläosaa samoin niin, että saadaan lämmintä käyttövettä (s. 20).
 
-**Kompressori pysähtyy kun:**
-- Varaajan alaosan lämpötila (M10) ylittää "Kompr.esto" lämpötilan
-
-### Sähkövastuksen ohjaus:
-
-**Sähkövastus käynnistyy kun:**
-- Kompressori on käynyt "SV_viiveaika" määrätyn ajan (tehd. 30 min)
-- Varaajan yläosa tai alaosa alittaa asetusarvon
-
-**Sähkövastus pysähtyy kun:**
-- Varaajan yläosa tai alaosa ylittää asetusarvon
+Kompressorin, sähkövastuksen S1 ja jakoventtiilin (JV) ohjaussäännöt ovat tiedostossa `docs/controller.md`, kukin sivunumeroineen.
 
 ### Lisälämmitys:
 
+*Käsikirja s. 20, 21, 23*
+
 Kun odotetaan tavanomaista suurempaa käyttöveden tarvetta:
-1. Paina lisälämmityspainiketta
-2. Varaajan alaosan asetusarvo nousee "Lisälämmitys"-arvoon (esim. 50°C)
-3. Asetusarvo palautuu "Lisäläm.aika" kuluttua (esim. 2 h)
-
-### Jakoventtiilin (JV) ohjaus:
-
-- Ohjataan mittauksen 7 (yläosan tulo) perusteella
-- Asetusarvo: "VaraajaYlä" + 5°C
-- Esiavaus ennen sähkövastuksen kytkemistä
-- Kiinniajon esto sähkövastuksen kytkeytymisen jälkeen
+1. Paina lisälämpöpainiketta (lisävaruste, Dig 1)
+2. Varaajan alaosan asetusarvo "VaraajaAlaMin" vaihtuu "Lisälämmitys"-arvoon (esim. 45°C)
+3. Asetusarvo palautuu "Lisäläm.aika" kuluttua
 
 ---
 
 ## HUOLTOTILAAN SIIRTYMINEN
+
+*Käsikirja s. 24*
 
 Huoltotilaan pääsy vaatii huoltokoodin (4 numeroa).
 
@@ -470,6 +519,8 @@ Huoltotilaan pääsy vaatii huoltokoodin (4 numeroa).
 
 ## VIRITYSARVOT
 
+*Käsikirja s. 25*
+
 PID-säätimen parametrit (normaalisti ei tarvitse muuttaa).
 
 | Parametri | L1, L2 Tehdasasetus | ML Tehdasasetus | Alue |
@@ -484,32 +535,44 @@ PID-säätimen parametrit (normaalisti ei tarvitse muuttaa).
 
 **D-aika:** Säädön reagoinnin nopeutus
 
-⚠️ Varo vakiohuojuntaa! Viritysarvojen muuttaminen saattaa aiheuttaa epästabiilin säädön.
+⚠️ Varo vakiohuojuntaa!
+
+Tehtaan alkuasetukset voivat poiketa taulukosta (s. 25).
 
 ---
 
 ## ASETUSARVOT (Huoltotila)
 
+*Käsikirja s. 26; ML-piiri myös s. 21 ja 29*
+
 ### L1 ja L2 Piirit:
 
 | Asetusarvo | Tehdasasetus | Alue | Merkitys |
 |------------|--------------|------|----------|
-| Ulkol.hidas | 2 h / 0 h | 0...20 h | Ulkolämmön keskiarvojakso |
+| Ulkol.hidas | L1 2 h / L2 0 h | 0...20 h | Ulkolämmön keskiarvojakso |
 | Esikorotus | 0 h | 0...5 h | Esikorotuksen kestoaika |
 
 ### ML Piiri:
 
 | Asetusarvo | Tehdasasetus | Alue | Merkitys |
 |------------|--------------|------|----------|
-| VaraajaAlaEro | 3°C | 3...7°C | Alaosan ohjauksen eroalue |
-| VaraajaYläEro | 5°C | 3...10°C | Yläosan ohjauksen eroalue |
-| JV Esiavaus | 40% | 25...100% | Jakoventtiilin esiavaus |
-| JV Esto | 60 s | 30...240 s | Kiinniajon eston kesto |
+| Kompr.esto | 55°C | 45...55°C | Varaajan alaosan (M10) lämpötila, jossa kompressori pysäytetään aina |
+| VarYläEroSv | 3°C | 0...10°C | Lisäero, jolla varaajan yläosa kytkee sähkövastuksen |
+| VaraajaAlaEro | 5°C | 3...7°C | Alaosan ohjauksen eroalue |
+| VaraajaYläEro | 3°C | 3...10°C | Yläosan ohjauksen eroalue |
+| JV Esiavaus | 40% | 25...100% | Jakoventtiilin esiavaus ennen sähkövastuksen kytkemistä |
+| JV Esto | 60 s | 30...240 s | Kiinniajon eston kesto sähkövastuksen kytkemisestä |
 | Maaliuos häl | -6°C | -10...0°C | Alilämpöhälytysraja |
+
+Kompr.esto ja VarYläEroSv ovat vain sivulla 21, eivät sivun 26 näytössä.
+
+**Ristiriitaiset tehdasasetukset:** sivu 21 ja sivun 29 tehdasasetuslista antavat VaraajaAlaEro 5°C ja VaraajaYläEro 3°C. Sivu 26 vaihtaa ne keskenään sekä näytössä että taulukossa (VaraajaAlaEro 3°C, VaraajaYläEro 5°C). `docs/controller.md` kertoo, mitä arvoja säädin todella piti.
 
 ---
 
 ## TRENDIT
+
+*Käsikirja s. 27*
 
 Menoveden lämpötilan seuranta graafisella kuvaajalla.
 
@@ -522,13 +585,15 @@ Menoveden lämpötilan seuranta graafisella kuvaajalla.
 **Näytössä näkyy:**
 - Menoveden lämpötilakäyrä
 - Nykyinen lämpötila
-- Venttiilimoottorin asento/ajosuunta
+- 3-tilamoottorin ajosuunta (+/-) tai jänniteohjatun moottorin asento (%)
 
 ---
 
 ## MOOTTORIVALINTA
 
-Valitaan venttiilimoottorin ohjaustapa kullekin piirille (L1, L2, ML).
+*Käsikirja s. 28*
+
+Valitaan venttiilimoottorin ohjaustapa kullekin piirille: L1 (ohjauslähtö M1), L2 (M2) ja ML:n jakoventtiili JV (M3).
 
 ### Vaihtoehdot:
 
@@ -538,7 +603,7 @@ Valitaan venttiilimoottorin ohjaustapa kullekin piirille (L1, L2, ML).
 
 ### Ajoaika:
 
-Aika (sekuntia), joka kuluu kun moottori ajaa venttiilin kiinni-asennosta auki-asentoon. Tehdasasetus: 35 s
+Aika (sekuntia), joka kuluu kun moottori ajaa venttiilin kiinni-asennosta auki-asentoon. Tehdasasetus: 35 s (s. 29)
 
 ### Moottorivalinnan muutos:
 
@@ -550,15 +615,19 @@ Aika (sekuntia), joka kuluu kun moottori ajaa venttiilin kiinni-asennosta auki-a
 
 ## JAKOVENTTIILIN OHJAUSTAPA
 
+*Käsikirja s. 28*
+
 Maalämmityksen jakoventtiili (JV) voidaan ohjata:
 
 - **Autom.säätö** - Säädin ohjaa mittauksen 7 perusteella
-- **Käsiajo mek.** - Moottori sähkötön
-- **Käsiajo sähk.** - Manuaalinen sähköohjaus
+- **Käsiajo mek.** - Moottori sähkötön, vain mekaaninen käyttö
+- **Käsiajo sähk.** - Venttiiliä ajetaan näppäimillä
 
 ---
 
 ## ERIKOISHUOLTO
+
+*Käsikirja s. 24*
 
 Pääsy: Huoltotila → Erikoishuolto
 
@@ -575,42 +644,56 @@ Pääsy: Huoltotila → Erikoishuolto
 
 ## TEHDASASETUSTEN PALAUTUS
 
-Palauttaa kaikki asetukset tehdasarvoihin.
+*Käsikirja s. 29*
 
 ### Palautus:
 
 1. Erikoishuolto → Aset.palautus → **OK**
 2. Siirrä osoitin kohtaan "Kyllä" → **OK**
 
-⚠️ **Tämä poistaa:**
-- Kaikki käyttäjän ja huoltomiehen asetusarvot
-- Kello-ohjelmoinnit
-- Säätökäyrien asetukset
-- Moottorivalinnat
-- GSM-asetukset
+### Palautus tekee seuraavat:
+
+1. Palauttaa säätökäyrien tehdasasetukset
+2. Poistaa kello-ohjelmoinnit
+3. Palauttaa käyttäjä- ja huoltotason alkuasetusarvot
+4. Valitsee ohjaustavaksi automaattiohjauksen
+5. Valitsee säätimen tyypiksi perussäätimen
+6. Tunnistaa kytketyt anturit ja olettaa niiden perusteella käytössä olevat säätöpiirit
+7. Palauttaa viritysarvot ja trendien näytevälin
+8. Valitsee moottorin ohjaustavaksi 3-tilaohjauksen, ajoaika 35 s L1:ssä ja L2:ssa
+9. Väylältä ei lueta mittauksia
+10. Nollaa puhelinnumeron ja palauttaa modeemiasetukset
+
+Sivun 29 tehdasasetuslistassa ML Ohjaustavat -näytössä on valittuna Kompr.+sähköv.
 
 ---
 
 ## ERIKOISHUOLLON ASETUSARVOT
 
+*Käsikirja s. 30*
+
 | Asetusarvo | Tehdasasetus | Alue | Merkitys |
 |------------|--------------|------|----------|
-| Huonel.hid. | 0.5 h | 0...2 h | Sisälämmön keskiarvojakso |
-| L1mv.min(0) | 10°C | 5...20°C | Menoveden min. 0°C:ssa |
-| L1mv.min(-20) | 10°C | 5...20°C | Menoveden min. -20°C:ssa |
-| L2mv.min(0) | 30°C | 10...50°C | L2 menoveden min. 0°C:ssa |
-| L2mv.min(-20) | 30°C | 10...50°C | L2 menoveden min. -20°C:ssa |
-| L1 Poikk.häl | 75°C | 1...75°C | Poikkeamahälytysraja |
-| L2 Poikk.häl | 75°C | 1...75°C | Poikkeamahälytysraja |
-| PoikHälHid | 60 min | 0...90 min | Poikkeaman kesto hälytykseen |
+| Huonel.hid. | 0.5 h | 0...2 h | Sisälämmön keskiarvojakso huonekompensointia varten |
+| L1mv.min (0) | 10°C | 5...20°C | L1 menoveden vapaan pudotuksen alaraja 0°C:ssa (alasajo) |
+| L2mv.min (0) | 10°C | 5...20°C | L2 menoveden vapaan pudotuksen alaraja 0°C:ssa (alasajo) |
+| L1mv.min(-20) | 30°C | 10...50°C | L1 menoveden vapaan pudotuksen alaraja -20°C:ssa (alasajo) |
+| L2mv.min(-20) | 30°C | 10...50°C | L2 menoveden vapaan pudotuksen alaraja -20°C:ssa (alasajo) |
+| L1 Poikk.häl | 75°C | 1...75°C | Hälytyksen aiheuttava poikkeama |
+| L2 Poikk.häl | 75°C | 1...75°C | Hälytyksen aiheuttava poikkeama |
+| PoikHälHid | 60 min | 0...90 min | Poikkeaman kesto ennen hälytystä |
+
+Sivun 30 taulukko ja sivu 29 antavat yllä olevat arvot. Sivun 30 näytössä L1mv.min(-20) on 10 ja L2mv.min (0) 30.
 
 ---
 
 ## MITTAUKSEN 6 ASETUS
 
+*Käsikirja s. 31–32*
+
 Mittaus 6 voidaan määrittää:
 
-- **Mittaus 6** - Vapaa lämpötilan mittaus (nimetävissä)
+- **Mittaus 6** - Vapaa lämpötilan mittaus, nimettävissä (tehdasasetus)
 - **L2 Huonelämpö** - L2-piirin huonekompensointi
 - **Tuulimittaus** - Tuulikompensointi (L1 ja L2)
 - **Aurinkomittaus** - Aurinkokompensointi (L1 ja L2)
@@ -618,14 +701,18 @@ Mittaus 6 voidaan määrittää:
 
 ### Tuuli-/aurinkoanturin raja-arvot:
 
-Jos valitset tuuli- tai aurinkomittauksen, aseta kompensointialueen raja-arvot:
+Jos valitset tuuli- tai aurinkomittauksen, aseta kompensointialueen raja-arvot prosentteina anturin mittausalueen maksimista:
 
-- **Min** - Kompensointi alkaa (esim. 30% anturin alueesta)
-- **Max** - Kompensointi maksimissa (esim. 70% anturin alueesta)
+- **Min** - Kompensointi alkaa (esim. 30%)
+- **Max** - Kompensointi maksimissa (esim. 70%)
+
+Anturit (0...10 V, 2...10 V, 0...20 mA tai 4...20 mA) sovitetaan vastuksilla niin, että säätimelle tuleva viesti on 0...5 V. Nollasta alkamattomille antureille sivulla 32 on muuntotaulukko.
 
 ---
 
 ## LON-KÄYTTÖÖNOTTO
+
+*Käsikirja s. 33*
 
 LON-200 sovitinkortti mahdollistaa säätimen liittämisen LON-kenttäväylään.
 
@@ -645,7 +732,9 @@ Tämä ohjaa Neuron-prosessorin service pin:iä lähettämään tunnuksensa väy
 
 ## VÄYLÄMITTAUKSET
 
-Mittaustietojen lukeminen LON/RS-485/MODBUS-väylän kautta.
+*Käsikirja s. 34*
+
+Mittaustietojen lukeminen väylän kautta (LON-200, EH-485 tai MODBUS-sovitinkortti).
 
 ### Väylältä luettavissa olevat mittaukset:
 
@@ -664,8 +753,6 @@ Mittaustietojen lukeminen LON/RS-485/MODBUS-väylän kautta.
 
 ### Tuuli-/aurinkokompensointialueen asetus (väylä):
 
-Jos valitset tuuli- tai aurinkomittauksen:
-
 **Tuulimittaus:**
 - Min: Tuulen nopeus, jossa kompensointi alkaa (m/s)
 - Max: Tuulen nopeus, jossa kompensointi on maksimissa (m/s)
@@ -678,17 +765,19 @@ Jos valitset tuuli- tai aurinkomittauksen:
 
 ## TEKSTIVIESTIASETUKSET (Suora GSM-modeemi)
 
-GSM-modeemin kytkeminen suoraan säätimeen.
+*Käsikirja s. 35*
+
+GSM-modeemi kytketään säätimeen modeemin mukana tulevalla sovitinkaapelilla. Säätimen riviliittimien B ja D väli yhdistetään hyppylangalla (ks. myös s. 39). Säädin alustaa modeemin starttitoiminnassa ja sen jälkeen 2 tunnin välein.
 
 ### Asetukset:
 
 **1. Hälytysnumerot:**
 - GSM 1: Ensisijainen hälytyksen vastaanottaja
-- GSM 2: Toissijainen vastaanottaja (jos GSM 1 ei kuittaa 5 min sisällä)
+- GSM 2: Toissijainen vastaanottaja (jos GSM 1 ei kuittaa 5 min sisällä, viesti lähtee molempiin)
 
 **2. Laitetunnus:**
-- 4 merkin tunnus (esim. "TC01")
-- Toimii laitteen salasanana
+- Enintään 4 merkin tunnus (esim. "TC01")
+- Toimii laitteen salasanana ja osoitteena
 - Kirjoitetaan avainsanan eteen GSM-viesteissä
 
 **3. Sanomakeskuksen numero:**
@@ -696,17 +785,18 @@ GSM-modeemin kytkeminen suoraan säätimeen.
 - Esimerkkejä:
   - TeliaSonera: +358 40 520 2000
   - Elisa: +358 50 877 1010
-  - Saunalahti: +358 45 110 0100
+  - Saunalahti: +358 45 110 0100 (tehdasasetus)
   - DNA: +358 44 798 3500
+  - Tele Finland: +358 40 520 2330
 
 **4. PIN-koodi:**
 - SIM-kortin PIN-koodi
 - Säädin ei alusta modeemia ennen kuin PIN-koodi on asetettu
 
 **5. Modeemin tyyppi:**
+- Falcom
 - Nokia/Siemens
 - Ouman/Fargo (tehdasasetus)
-- Falcom
 
 ### Fargo Maestro 20 modeemin LED-merkkivalot:
 
@@ -721,7 +811,9 @@ GSM-modeemin kytkeminen suoraan säätimeen.
 
 ## TEKSTIVIESTIASETUKSET (Väyläratkaisu)
 
-Kun GSM-modeemi kytketään RS-485 väylään EH-686 laitteen kautta.
+*Käsikirja s. 36*
+
+Kun modeemia ei ole kytketty suoraan säätimeen, vaan säätimet kytketään RS-485 kenttäväylään EH-485 väyläsovitinkortilla ja GSM-modeemi väylään EH-686 (tai EH-60) laitteen kautta.
 
 ### Asetukset:
 
@@ -748,6 +840,8 @@ Jokaisella säätimellä oma laitetunnus → Viestit osoitetaan laitetunnuksella
 
 ## SELAINKÄYTTÖ
 
+*Käsikirja s. 37*
+
 MODBUS-väyläsovitinkortin avulla säädin voidaan liittää EH-net web-palvelimeen.
 
 ### Järjestelmä:
@@ -759,34 +853,45 @@ Internet/Intranet
      |
   MODBUS-väylä
      |
-  Geopro 202S säätimeet
+  Geopro 202S säätimet
 ```
 
 ### Ominaisuudet:
 
 - Etäkäyttö mistä tahansa PC:ltä web-selaimella
-- Kaikkien tietojen lukeminen ja muuttaminen
+- Tietojen lukeminen ja muuttaminen
 - Käyttöoikeuksien rajoitus
 - Hälytysten välitys sähköpostilla
-- Hälytysten välitys tekstiviestillä (jos GSM-modeemi kytketty)
+- Hälytysten välitys tekstiviestillä (jos isäntälaitteeseen on kytketty GSM-modeemi)
 
 ---
 
 ## DATAYHTEYS PC:HEN
 
-Geopro 202S voidaan kytkeä suoraan tietokoneeseen DATAJAMAK-kaapelilla.
+*Käsikirja s. 38; sama kytkentä s. 39 (NET)*
+
+Geopro 202S voidaan kytkeä suoraan tietokoneeseen DATAJAMAK-kaapelilla (EIA-232, max. 25 m).
 
 ### Kytkentä:
 
-**Säätimen riviliittimet:**
-- A - EIA-232 TX
-- B - EIA-232 RX
-- C - EIA-232 GND
-- D - EIA-232 GND
+**Säätimen riviliittimet (väyläliitäntä NET):**
+- A - säätimen lähettämä data (PC:n RX)
+- B - EIA-232 GND
+- C - säätimen vastaanottama data (PC:n TX)
+- D - ei käytössä PC-kytkennässä (s. 38). Sivun 39 kaaviossa ja modeemikytkennässä (s. 35) B ja D yhdistetään hyppylangalla.
+
+Sivut 38 ja 39 nimeävät signaalit PC:n (kenttälaitteen) päästä: sivun 39 "EIA-232 RX" menee liittimeen A ja "EIA-232 TX" liittimeen C.
 
 **PC:n sarjaportti:**
-- D-25 liitin tai D-9 liitin
-- Käytä DATAJAMAK 2x(2+1)x0,24 kaapelia
+
+| Signaali | D-25 nasta | D-9 nasta | Säätimen liitin |
+|----------|------------|-----------|-----------------|
+| RX | 3 | 2 | A |
+| GND | 7 | 5 | B |
+| TX | 2 | 3 | C |
+
+- PC:n päässä yhdistetään DCD, DTR ja DSR (D-25: 8, 20, 6; D-9: 1, 4, 6) sekä RTS ja CTS (D-25: 4, 5; D-9: 7, 8)
+- Kaapeli DATAJAMAK 2x(2+1)x0,24. Häiriöiden sattuessa kokeile kaapelin vaipan kytkemistä D-25 -liittimen nastaan 1 (protective GND)
 
 ### Ohjelmisto:
 
@@ -795,6 +900,8 @@ Windows-ympäristössä toimiva sarjaliikenneajuri Geopro 202 laitteille on vapa
 ---
 
 ## HUOLTO-OHJEET
+
+*Käsikirja s. 38*
 
 ### Sulakkeen vaihto:
 
@@ -821,7 +928,9 @@ Windows-ympäristössä toimiva sarjaliikenneajuri Geopro 202 laitteille on vapa
 
 ## YLEISET KYTKENTÄOHJEET
 
-Riviliittimet kytkentäkaavion (Käsikirja s. 39, YLEISKYTKENTÄKAAVIO) mukaan.
+*Käsikirja s. 39; anturit myös s. 11, moottorit s. 28*
+
+Riviliittimet kytkentäkaavion (YLEISKYTKENTÄKAAVIO) mukaan.
 
 **Varoitus:** Riviliittimissä 83–84 on säätimen 230 VAC verkkojännite (N/L). Releliittimet 71–75 kytkevät maalämpökojeen 230 VAC piirejä.
 
@@ -841,7 +950,9 @@ Jokaisella mittauksella on oma riviliitin ja oma maaliitin (⊥).
 | 8 + ⊥ | T8 (Mitt.8) | Maaliuos (M8) | TMS | 2x0.8 |
 | 9 + ⊥ | T9 (Mitt.9) | VaraajaYlä (M9) | TME | 2x0.8 |
 | 10 + ⊥ | T10 (Mitt.10) | VaraajaAla (M10) | TME | 2x0.8 |
-| 11 + ⊥ | T11 (Mitt.11) | Kompr.käynti (potentiaalivapaa kosketin) | Dig.tulo | 2x0.8 |
+| 11 + ⊥ | T11 (Mitt.11) | Kompr.käynti (potentiaalivapaa kosketin) | - | 2x0.8 |
+
+Sivulla 11 on NTC-anturien vastusarvotaulukko (10 000 Ω 25°C:ssa).
 
 ### Venttiilimoottorien kytkentä:
 
@@ -873,15 +984,15 @@ Moottorikaapeli 3x0.8.
 
 **Hälytyskosketin (K1):**
 - Liittimet 31-32
-- Max. 46 V, 1 A (kytkentäkaavio s. 39; tekstiosassa 24 VAC / 1 A)
+- Max. 46 V, 1 A (s. 39; sivuilla 18 ja 42 24 VAC / 1 A)
 - Sulkeutuva kosketin, kytketään kiinteistön hälytyskeskukseen
 - Kaapeli 2x0.8
 
 ### Muut liittimet:
 
 - 24 VAC lähtö (AC): Liittimet 41-42
-- Väyläliitäntä (NET): Liittimet A, B, C, D, kaapeli DATAJAMAK 2x(2+1)x0,24
-- Suojamaa (PE): Liitin 81
+- Väyläliitäntä (NET): Liittimet A, B, C, D, kaapeli DATAJAMAK 2x(2+1)x0,24; B ja D yhdistetty hyppylangalla. Signaalit: ks. [Datayhteys PC:hen](#datayhteys-pchen)
+- Suojamaa (PE): Liitin 81, kytketään jos säätimeen on liitetty LON-kortti
 - Virransyöttö 230 VAC 50 Hz: Liittimet 83 (N) ja 84 (L), kaapeli 3x1.5 S
 
 ### Digitaalitulot:
@@ -896,6 +1007,8 @@ Kaapeli 2x0.8.
 
 ## TEKNISET TIEDOT
 
+*Käsikirja s. 42*
+
 ### Sähköiset ominaisuudet:
 
 - **Käyttöjännite:** 230 VAC, 50 Hz, 200 mA
@@ -906,24 +1019,19 @@ Kaapeli 2x0.8.
 ### Mekaniikka:
 
 - **Kotelointi:** PC/ABS
-- **Mitat:** 230 x 145 x 60 mm (K x L x S)
+- **Mitat:** 230 x 145 x 60 mm
 - **Paino:** 1.2 kg
-- **Kaapelointi:** Ylhäältä tai alhaalta (näyttö käännettävissä)
+- **Kaapelointi:** Ylhäältä tai alhaalta (näyttö ja näppäimistö käännettävissä)
 
 ### Säätö:
 
 - **Säädintyyppi:** PID-säädin lämmityspiireissä
-- **Säätöperiaatteet:**
-  - Ulkolämpötilan mukaan
-  - Huonekompensointi
-  - Tuulikompensointi
-  - Aurinkokompensointi
+- **Säätöperiaatteet:** ulkolämpötilan mukaan, lisänä huone-, tuuli- ja aurinkokompensointi tai niiden yhdistelmät
 
 ### Mittaukset:
 
-- **10 kpl NTC 10kΩ lämpötilan mittausta**
-- **3 kpl digitaalituloa**
-- Potentiaalivapaa kosketin, 6-9 VDC/20 mA
+- **10 kpl NTC 10kΩ lämpötilan mittausta** (sivu 10 sanoo 11 NTC-mittausta)
+- **3 kpl digitaalituloa**, potentiaalivapaa kosketin, 6-9 VDC/20 mA
 
 ### Ohjauslähdöt:
 
@@ -945,7 +1053,7 @@ Kaapeli 2x0.8.
 ### Tiedonsiirto:
 
 - **Vakiona:** EIA-232C
-- **Lisävarusteena:** RS-485, MODBUS, LON
+- **Lisävarusteena:** RS-485, MODBUS tai LON
 
 ### Hyväksynnät:
 
@@ -960,9 +1068,15 @@ Kaapeli 2x0.8.
 
 - 2 vuotta
 
+### Valmistaja:
+
+**Ouman Finland Oy**, Kempele, Finland. Puh. 0424 840 1, Fax 0424 840 201.
+
 ---
 
 ## LISÄVARUSTEET
+
+*Käsikirja s. 40; modeemimallit s. 35, EH-net s. 37*
 
 ### LON-200
 Sovitinkortti, joka muuttaa säätimen sarjaliikenneväylän LON-kenttäväylään yhteensopivaksi. Sisältää FTT-10A väyläsovittimen.
@@ -974,7 +1088,7 @@ Väyläsovitinkortti, joka muuttaa säätimen sarjaliikenneväylän RS-485 kentt
 Sovitinkortti, joka muuttaa säätimen sarjaliikenneväylän MODBUS RTU-kenttäväylään yhteensopivaksi. Galvaanisesti erotettu RS-485 liityntä.
 
 ### GSM-modeemi
-Mahdollistaa kommunikoinnin säätimen kanssa tekstiviestien välityksellä. Yhteensopivat mallit:
+Mahdollistaa kommunikoinnin säätimen kanssa tekstiviestien välityksellä. Yhteensopivat mallit (s. 35):
 - Falcom A2D
 - Nokia 30
 - Siemens M20T ja TC35T
@@ -988,98 +1102,7 @@ Input/output yksikkö, joka sisältää:
 - Voi toimia RS-485 väylän isäntälaitteena (master)
 
 ### EH-net
-Web-palvelin, joka mahdollistaa:
+Web-palvelin (s. 37), joka mahdollistaa:
 - Selainkäytön
 - Etäkäytön internetin/intranetin kautta
 - Hälytysten välityksen sähköpostilla
-
----
-
-## HAKEMISTO
-
-### A-E
-- Aikaohjaukset: 14-15
-- Alasajo: 13, 30
-- Anturivikahälytys: 18
-- Asetusarvot: 8-9, 26, 30
-- Aurinkokompensointi: 9, 31-32, 34
-- Automaattisäätö: 13
-- Datayhteys: 38
-- EH-485: 34, 36, 40
-- EH-net: 37, 40
-- Erikoishuolto: 29-37
-- Esikorotus: 8-9, 26
-
-### H-K
-- Hälytykset: 18-19
-- Hälytysten nimeäminen: 11, 18
-- Huonekompensointi: 8, 31, 34
-- Itseoppivuus: 17
-- Jakoventtiili: 21-23, 28
-- Jäätymisvaara: 18
-- Kellotoiminnat: 14-15
-- Kielivalinta: 16
-- Kompressorin ohjaus: 21-23
-- Käsiajo: 13
-
-### L-M
-- Laitetunnus: 35-36
-- Lattialämmitys: 7
-- LON-käyttöönotto: 33
-- Maalämmitystoiminnot: 20-23
-- Maksimiraja: 8
-- Menovesi-info: 12
-- Minimiraja: 8
-- Mittaukset: 10-11, 31
-- MODBUS: 34, 37-38, 40
-- Moottorivalinta: 28
-
-### O-T
-- Ohjaustavat: 13
-- Pariston vaihto: 38
-- PID-säätö: 25
-- Poikkeamahälytys: 18, 30
-- RS-485: 34, 36, 40
-- Selainkäyttö: 37
-- Starttitoiminta: 17
-- Sulakkeen vaihto: 38
-- Syyskuivaus: 9
-- Sähkövastuksen ohjaus: 20-23
-- Säätökäyrät: 6-7
-
-### T-Ö
-- Tehdasasetusten palautus: 29
-- Tekstiviestit: 35-36
-- Trendit: 27
-- Tuulikompensointi: 8-9, 31-32, 34
-- Tyyppitiedot: 16
-- Ulkolämpötila: 10-11, 34
-- Viritysarvot: 25
-- Väylämittaukset: 34
-- Yöalennus: 8, 13, 15
-
----
-
-## VALMISTAJA
-
-**Ouman Finland Oy**  
-Kempele, Finland
-
-**Puhelin:** 0424 840 1  
-**Faksi:** 0424 840 201  
-**Web:** www.ouman.fi
-
----
-
-**Huomautus:** Tämä on käyttö- ja huolto-opas. Säätimen asentaminen ja huoltaminen tulee tehdä ammattitaitoisen sähköasentajan tai huoltomiehen toimesta. Noudata paikallisia sähköasennusmääräyksiä ja -ohjeita.
-
-**Takuu:** 2 vuotta
-
-**Hyväksynnät:**
-- CE-merkintä
-- EMC-direktiivi 89/336/EEC, 92/31/EEC
-- Pienjännitedirektiivi 73/23/EEC
-
----
-
-*Valmistaja pidättää oikeuden teknisiin muutoksiin ilman ennakkoilmoitusta.*

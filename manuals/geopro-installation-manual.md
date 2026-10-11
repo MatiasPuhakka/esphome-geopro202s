@@ -1,6 +1,14 @@
 # GEOPRO SH-TULISTUS-MAALÄMPÖPUMPPU
 ## Asennusohje
 
+This file paraphrases `SH rev002FI Asennusohje_vm-10-2004 Ouman säädin.pdf` (in this folder) in condensed Finnish. It leaves out the figures and the appendix drawings, and where it disagrees with the PDF, the PDF is right. Each section names the PDF pages it comes from as "s. N". These are PDF page indexes counted from 1, which in the Asennusohje equal the printed page numbers.
+
+The Controller's control rules are in `docs/controller.md`; the Controller's own manual is paraphrased in `geopro-202s-manual.md`.
+
+---
+
+*Asennusohje s. 1*
+
 **Versio Rev. 002**
 
 ### Mallit:
@@ -10,7 +18,7 @@
 - GS 90
 - GS 110
 
----
+(Tekniset tiedot, s. 17, käyttää mallinimiä SH 7 ... SH 25.)
 
 **Geopro Systems Oy**  
 Metsä-Pietilänkatu 1  
@@ -24,23 +32,28 @@ www.geopro.fi
 
 ## SISÄLLYSLUETTELO
 
-1. [YLEISTÄ](#yleistä)
-2. [GEOPRO MAALÄMPÖPUMPPUTOIMITUKSEN SISÄLTÖ](#toimituksen-sisältö)
-3. [ASENNUKSEEN TARVITTAVAT LISÄTARVIKKEET](#lisätarvikkeet)
-4. [LÄMPÖPUMPUN YHTEET JA LIITOSKOOT](#yhteet-ja-liitoskoot)
-5. [VARAAJAN LIITÄNNÄT JA SÄHKÖKYTKENNÄT](#varaajan-liitännät)
-6. [LÄMPÖPUMPUN TILANTARVE](#tilantarve)
-7. [MAAPUTKISTON ASENNUS](#maaputkiston-asennus)
-8. [LÄMMÖNKERUUPUTKISTON ASENNUS PORAKAIVOON](#porakaivo-asennus)
-9. [LÄMMÖNKERUUPUTKISTON ASENNUS VESISTÖÖN](#vesistö-asennus)
-10. [MAALÄMPÖPUMPUN YHDISTÄMINEN RAKENNUKSEN VIILENNYKSEEN](#viilennys)
-11. [MAAPIIRIN JA LÄMMITYSJÄRJESTELMÄN TÄYTTÖ](#täyttö)
-12. [LÄMPÖPUMPUN KÄYTTÖÖNOTTO](#käyttöönotto)
-13. [TEKNISET TIEDOT](#tekniset-tiedot)
+*Asennusohje s. 2*
+
+1. [YLEISTÄ](#yleistä) (s. 3)
+2. [GEOPRO MAALÄMPÖPUMPPUTOIMITUKSEN SISÄLTÖ](#toimituksen-sisältö) (s. 4)
+3. [ASENNUKSEEN TARVITTAVAT LISÄTARVIKKEET](#lisätarvikkeet) (s. 4)
+4. [LÄMPÖPUMPUN YHTEET JA LIITOSKOOT](#yhteet-ja-liitoskoot) (s. 5)
+5. [VARAAJAN LIITÄNNÄT JA SÄHKÖKYTKENNÄT](#varaajan-liitännät) (s. 6)
+6. [LÄMPÖPUMPUN TILANTARVE](#tilantarve) (s. 7)
+7. [MAAPUTKISTON ASENNUS](#maaputkiston-asennus) (s. 8)
+8. [LÄMMÖNKERUUPUTKISTON ASENNUS PORAKAIVOON](#porakaivo-asennus) (s. 10)
+9. [LÄMMÖNKERUUPUTKISTON ASENNUS VESISTÖÖN](#vesistö-asennus) (s. 12)
+10. [MAALÄMPÖPUMPUN YHDISTÄMINEN RAKENNUKSEN VIILENNYKSEEN](#viilennys) (s. 14)
+11. [MAAPIIRIN JA LÄMMITYSJÄRJESTELMÄN TÄYTTÖ](#täyttö) (s. 15)
+12. [LÄMPÖPUMPUN KÄYTTÖÖNOTTO](#käyttöönotto) (s. 16)
+13. [TEKNISET TIEDOT](#tekniset-tiedot) (s. 17)
+14. [LIITTEET](#liitteet) (s. 18–23)
 
 ---
 
 ## YLEISTÄ
+
+*Asennusohje s. 3*
 
 Maalämpöpumpun kompressorikoneikon tuottama maksimi lämpötila on jopa yli 80 astetta. Hetkellisesti sähkövastuksen kytkeytymisen jälkeen lämpötila saattaa kohota varaajan yläosaan menevässä putkessa jopa 100°C:een.
 
@@ -48,7 +61,7 @@ Maalämpöpumpun kompressorikoneikon tuottama maksimi lämpötila on jopa yli 80
 
 - Sekä lämmitys- että maapiiripuolen paluuputkiin on aina asennettava roskanerotin
 - Maapiirin suodattimen molemmin puolin on asennettava sulkuventtiili, ellei käytössä ole ns. yhdistelmäventtiiliä
-- Lämpöpumppu on kuljetettava ja varastoitava pystysuorassa asennossa
+- Lämpöpumppu on kuljetettava ja varastoitava pystysuorassa asennossa (tilapäisesti kyljellään asennuspaikalle siirrettäessä; nokkakärryt vain takaosasta)
 - Tilassa johon pumppu asennetaan on oltava lattiakaivo
 
 ### Sijoitus:
@@ -56,11 +69,13 @@ Maalämpöpumpun kompressorikoneikon tuottama maksimi lämpötila on jopa yli 80
 - Lämpöpumppu pyritään sijoittamaan tasaiselle alustalle
 - Pumpun pohjassa olevilla säätöjaloilla voidaan hienosäätää pumpun asentoa
 - Vältä pumpun asentamista ääniherkille seinille
-- Ennen käyttöönottoa tulee lämmönkeruu- ja lämmitysjärjestelmän olla täytettyjä ja ilmattuja
+- Ennen käyttöönottoa tulee lämmönkeruu- ja lämmitysjärjestelmän olla täytettyjä ja ilmattuja, eikä niissä saa olla vuotoja
 
 ---
 
 ## TOIMITUKSEN SISÄLTÖ
+
+*Asennusohje s. 4*
 
 Geopro-maalämpöpumpputoimituksen sisältö:
 
@@ -74,6 +89,8 @@ Geopro-maalämpöpumpputoimituksen sisältö:
 ---
 
 ## LISÄTARVIKKEET
+
+*Asennusohje s. 4*
 
 SH-pumpun asennuksessa tarvittavat lisätarvikkeet:
 
@@ -95,11 +112,15 @@ Jos maakiertopiirissä on 2 tai useampi rinnakkainen putkilenkki, asennetaan:
 - Putkilenkkien menopuolelle linjasäätöventtiilit
 - Paluupuolelle lämpömittarit
 
-Mikäli SH maalämpöpumppu liitetään vanhaan radiaattorilämmitysjärjestelmään (maksimi mitoitusmenovesilämpötila yli 50°C), on suositeltavaa korvata kolmitieventtiili nelitieventtiilillä.
+Mikäli SH maalämpöpumppu liitetään vanhaan radiaattorilämmitysjärjestelmään (maksimi mitoitusmenovesilämpötila yli 50°C), on suositeltavaa korvata kolmitieventtiili nelitieventtiilillä. Varaajan yläosasta kytketään silloin putki nelitieventtiilille (liite 1), jolloin menovesi voi nousta jopa 60°C:een.
+
+SH maalämpöpumppu voidaan liittää myös vanhan öljy/puukattilan rinnalle (liite 2).
 
 ---
 
 ## YHTEET JA LIITOSKOOT
+
+*Asennusohje s. 5–6*
 
 ### Lämpöpumpun yhteet:
 
@@ -121,13 +142,17 @@ Mikäli SH maalämpöpumppu liitetään vanhaan radiaattorilämmitysjärjestelm�
 
 ## VARAAJAN LIITÄNNÄT
 
+*Asennusohje s. 6*
+
 ### Sähkökytkennät:
 
-Syöttökaapeli kytketään kuvan mukaan pääkytkimelle -Q1 ja riviliittimelle -X0.
+Syöttökaapeli kytketään Kaapeleiden liityntäkaavion (liite 4) mukaan pääkytkimelle -Q1 ja riviliittimelle -X0.
 
 **Kaapelikoko:**
 - Malleissa SH 7 ... SH 11: 6 mm²
 - Malleissa SH 13 ... SH 25: 10 mm²
+
+Lämpötila-anturit ja venttiiliohjaukset kytketään riviliittimelle -X3 Säätimen liitännät -kuvan (liite 3) mukaan.
 
 ### Lämpötila-anturit:
 
@@ -142,12 +167,14 @@ Varaajan varalämpövastus (Oilon lämpöparoni 6 tai 9 kW) kytketään 2" yhtee
 
 ## TILANTARVE
 
+*Asennusohje s. 7*
+
 ### Sijoitusohjeet:
 
 - Lämpöpumppu tulee sijoittaa noin 100 mm etäisyydellä seinästä
 - Vakiotoimituksessa liuospiirin liitokset sijaitsevat pumpun oikealla puolella
 - Putket on myös mahdollista liittää vasemmalta (tarvitaan vähintään 500 mm tilaa)
-- Lämmitysverkoston liitännät sijaitsevat varaajan oikealla puolella
+- Lämmitysverkoston liitännät ja käyttövesiyhteet sijaitsevat varaajan oikealla puolella
 - SHB varaajan varalämpövastus asennetaan varaajan etuosan alaosaan
 
 ### Suositukset:
@@ -159,6 +186,8 @@ Varaajan varalämpövastus (Oilon lämpöparoni 6 tai 9 kW) kytketään 2" yhtee
 ---
 
 ## MAAPUTKISTON ASENNUS
+
+*Asennusohje s. 8–9*
 
 ### Asennussyvyydet:
 
@@ -176,11 +205,13 @@ Varaajan varalämpövastus (Oilon lämpöparoni 6 tai 9 kW) kytketään 2" yhtee
 
 ⚠️ **Lämmönkeruuputkiston huolellinen asennus on erittäin tärkeää pumpun luotettavan toiminnan takaamiseksi.**
 
-Maaputkisto on asennettava siten, että putkistoon ei pääse syntymään ilmapusseja. Roskanerotin on asennettava maapiirin paluuputkeen ennen lämpöpumppua.
+Maaputkisto on asennettava siten, että putkistoon ei pääse syntymään ilmapusseja. Roskanerotin on asennettava maapiirin paluuputkeen ennen lämpöpumppua, ja sen molemmin puolin sulkuventtiilit tai yhdistelmäventtiili.
 
 ---
 
 ## PORAKAIVO-ASENNUS
+
+*Asennusohje s. 10–11*
 
 ### Porakaivon tekniset vaatimukset:
 
@@ -199,7 +230,7 @@ Maaputkisto on asennettava siten, että putkistoon ei pääse syntymään ilmapu
 
 - Lämpökaivon päälle tehdään noin metrin syvyinen huoltokaivo
 - Mikäli lämpökaivoja on 2 tai useampi, huoltokaivot yhdistetään kokoojakaivoon
-- Kokoojakaivosta liuos viedaan kahdella eristetyllä putkella lämpöpumpulle
+- Kokoojakaivosta liuos viedään kahdella eristetyllä putkella lämpöpumpulle
 
 ### Kasteluveden otto:
 
@@ -218,6 +249,8 @@ Maaputkisto on asennettava siten, että putkistoon ei pääse syntymään ilmapu
 ---
 
 ## VESISTÖ-ASENNUS
+
+*Asennusohje s. 12–13*
 
 ### Soveltuvuus:
 
@@ -246,6 +279,8 @@ Vesistö soveltuu lämmönlähteeksi kun:
 
 ### Läpivienti:
 
+*Asennusohje s. 13*
+
 - Seinän ja anturan läpivienti esim. kahdella 110 mm viemäriputkella
 - Eristeenä käytetään esim. solukumityyppistä eristettä tai maalevyjä
 - Pienin taivutussäde on 1 metri
@@ -254,6 +289,8 @@ Vesistö soveltuu lämmönlähteeksi kun:
 ---
 
 ## VIILENNYS
+
+*Asennusohje s. 14*
 
 Mikäli maalämpöpumpun lämmönlähteenä käytetään porakaivoa, voidaan liuoskiertoa hyödyntää kesäaikana rakennuksen viilennyksessä.
 
@@ -273,15 +310,19 @@ Mikäli maalämpöpumpun lämmönlähteenä käytetään porakaivoa, voidaan liu
 
 ## TÄYTTÖ
 
+*Asennusohje s. 15*
+
 ⚠️ **Lämmitysverkosto ja maapiiri on täytettävä huolellisesti ja aina ennen pumpun käynnistämistä.**
 
 ### Lämmitysverkoston täyttö:
 
-1. Täytä varaaja ja lämmitysjärjestelmä
+1. Täytä varaaja ja lämmitysjärjestelmä; varaaja ilmataan sen päällä olevasta ilmausyhteestä
 2. Lattialämmityksessä tee täyttö piiri kerrallaan
 3. Ilmaa lopuksi runkoputket
 4. Tarkista paine: n. 1 – 1,3 bar
 5. Varmista, että sulkuventtiilit varaajan ja lämpöpumpun välillä ovat auki
+
+Lämmitysjärjestelmällä on aina oltava oma paisuntasäiliönsä.
 
 ### Maapiirin täyttö:
 
@@ -305,7 +346,7 @@ Mikäli maalämpöpumpun lämmönlähteenä käytetään porakaivoa, voidaan liu
 
 **Ennen käynnistystä:**
 
-On suositeltavaa kierrättää liuoskiertopumppua ennen lämpöpumpun käynnistämistä. Jos paisuntasäiliön pinta laskee liuoskiertopumpun käynnistyessä, järjestelmässä on vielä ilmaa.
+Liuoskiertopumppua voi käyttää ennen lämpöpumpun käynnistämistä: käyttökytkin S1 asentoon "0", pääkytkin Q1, ohjaussulake F3 ja maakiertopumpun sulake F6 päälle, ja pumppu käyntiin käsikytkimellä S2. Jos paisuntasäiliön pinta laskee liuoskiertopumpun käynnistyessä, järjestelmässä on vielä ilmaa.
 
 ⚠️ **HUOM!** Käytä täyttöpumpun imuputkessa tehokasta suodatinta, jotta putkistosta tulevat roskat jäävät täyttötilanteessa.
 
@@ -313,22 +354,26 @@ On suositeltavaa kierrättää liuoskiertopumppua ennen lämpöpumpun käynnist�
 
 ## KÄYTTÖÖNOTTO
 
-Geopro SH lämpöpumpussa käytetään Geopro 202S -säädintä. Säädin voi ohjata kahta eri lämmityspiiriä, L1 ja L2. Säätimen kolmas ohjauspiiri ML hyödynnetään lämpöpumpun sisäisessä ohjauksessa.
+*Asennusohje s. 16*
+
+Geopro SH lämpöpumpussa käytetään Geopro 202S -säädintä. Säädin voi ohjata kahta eri lämmityspiiriä, L1 ja L2. Säätimen kolmas ohjauspiiri ML hyödynnetään lämpöpumpun sisäisessä ohjauksessa, joten käyttöveden lämpötilan säätöön tarvitaan erillinen sekoitusventtiili.
+
+Tutustu ennen käynnistystä säätimen ohjeeseen: Asetusarvot, Säätökäyrien asetukset, Ohjaustavat ja Starttitoiminta.
 
 ### Käyttöönoton vaiheet:
 
+Numerointi seuraa PDF:ää, josta vaihe 7 puuttuu.
+
 1. Varmista, että käyttökytkin S1 on asennossa "0"
-2. Kytke pääkytkin Q1 ja ohjaussulake F3 päälle
-3. Kytke kompressorin ylivirtasuoja F1 pois päältä
-4. Käännä käyttökytkin S1 asentoon "1"
-5. Säädin käynnistyy ja hälyttää kompressorin ylivirtasuojasta - kuittaa hälytys painamalla "OK"
-6. Suorita käyttöohjeen mukainen "Starttitoiminta"
-7. Valitse ohjaustapa L1 (ja L2): Valinta - Ohjaustavat - Käsiajo sähköinen
-8. Tarkista venttiilimoottorien toiminta ja ajosuunta
-9. Palauta ohjaustapa asentoon Autom. säätö
-10. Valitse ML Valinta - Ohjaustapa - Kompressori
-11. Aseta lämmitysjärjestelmän L1 (ja L2) säätökäyrät
-12. Käynnistä kompressori kytkemällä kompressorin ylivirtasuoja F1 päälle
+2. Kytke pääkytkin Q1 ja ohjaussulake F3 päälle ja kompressorin ylivirtasuoja F1 pois päältä, jotta kompressori ei käynnisty heti
+3. Käännä käyttökytkin S1 asentoon "1"
+4. Säädin käynnistyy ja hälyttää kompressorin ylivirtasuojasta - kuittaa hälytys painamalla "OK"
+5. Suorita käyttöohjeen mukainen "Starttitoiminta" (PDF viittaa automatiikan käyttöohjeen sivuun 15; Käsikirjassa se on s. 17)
+6. Valitse ohjaustapa L1 (ja L2): Valinta - Ohjaustavat - Käsiajo sähköinen. Tarkista venttiilimoottorien toiminta ja ajosuunta, muuta tarvittaessa kytkentää ja palauta ohjaustapa asentoon Autom. säätö
+8. Valitse ML Valinta - Ohjaustapa - Kompressori
+9. Aseta lämmitysjärjestelmän L1 (ja L2) säätökäyrät: L1 (L2) Valinta - Säätökäyrien as.
+10. Käynnistä kompressori kytkemällä kompressorin ylivirtasuoja F1 päälle
+11. Varmista kompressorin pyörimissuunta (alla)
 
 ### VARMISTA KOMPRESSORIN PYÖRIMISSUUNTA:
 
@@ -347,9 +392,9 @@ Geopro SH lämpöpumpussa käytetään Geopro 202S -säädintä. Säädin voi oh
 
 ### Viimeistelyä:
 
-13. Kytke sähkövastuksen sulake F2 päälle
-14. Muuta ML valikosta ohjaustavaksi Kompr. + sähköv.
-15. Seuraa laitteen toimintaa mittausvalikosta:
+12. Kytke sähkövastuksen sulake F2 päälle
+13. Muuta ML valikosta ohjaustavaksi Kompr. + sähköv.
+14. Seuraa laitteen toimintaa mittausvalikosta:
     - Menovesilämpötila
     - Maaliuoksen lämpötila
     - Varaajan lämpötilat
@@ -357,15 +402,17 @@ Geopro SH lämpöpumpussa käytetään Geopro 202S -säädintä. Säädin voi oh
 
 ### Kesäsulkulämpötila:
 
-Käyttöönottovaiheessa on ehkä tarpeellista muuttaa kesäsulkulämpötilaa. Tehdasasetuksena on +19°C. Jos ulkolämpötila on korkeampi, ajaa automatiikka lämmitysjärjestelmän säätöventtiilin L1 kiinni.
+Käyttöönottovaiheessa on ehkä tarpeellista muuttaa kesäsulkulämpötilaa. Tämä ohje sanoo tehdasasetukseksi +19°C; Käsikirja (s. 8, 9, 29) sanoo 30°C. Jos ulkolämpötila on korkeampi, ajaa automatiikka lämmitysjärjestelmän säätöventtiilin L1 kiinni.
 
-**Muuta kesäsulkulämpötila:** L1 Valinta - Asetusarvot - Vent. Kesäsulk.
+**Muuta kesäsulkulämpötila:** L1 Valinta - Asetusarvot - Vent. Kesäsulk. (PDF viittaa automatiikan käyttöohjeen sivuihin 6–7; Käsikirjassa asetusarvot ovat s. 8–9.)
 
 **Täytä lopuksi asennuspöytäkirja!**
 
 ---
 
 ## TEKNISET TIEDOT
+
+*Asennusohje s. 17*
 
 | Malli | SH 7 | SH 9 | SH 11 | SH 13 | SH 15 | SH 18 | SH 20 | SH 25 |
 |-------|------|------|-------|-------|-------|-------|-------|-------|
@@ -385,18 +432,15 @@ Käyttöönottovaiheessa on ehkä tarpeellista muuttaa kesäsulkulämpötilaa. T
 
 ---
 
-## YHTEYSTIEDOT
+## LIITTEET
 
-**Geopro Systems Oy**  
-Metsä-Pietilänkatu 1  
-PL 5, 15801 LAHTI  
-Finland
+*Asennusohje s. 18–23*
 
-**Puh.** (03) 857 6400  
-**Fax** (03) 857 6499  
-**Email:** geopro@oilon.com  
-**Web:** www.geopro.fi
+Liitteet ovat kuvia; niiden sisältöä ei ole toistettu tässä.
 
----
-
-*Tämä asennusohje on tarkoitettu ammattiasentajille. Noudata aina paikallisia rakennusmääräyksiä ja -ohjeita.*
+1. 4-tieventtiilin kytkentä, lämpöpumpun kytkentä vanhaan varaajaan (s. 18)
+2. Öljy/puukattilan ja lämpöpumpun yhdistäminen (s. 19)
+3. Säätimen liitännät (s. 20)
+4. Kaapeleiden liityntäkaavio (s. 21)
+5. Maalämpöpumppu päävirtakaavio (s. 22)
+6. Maalämpöpumppu ohjauspiirikaavio (s. 23)

@@ -2,7 +2,7 @@
 
 This document lists the rules the Controller follows to start and stop the compressor, the electric heater S1 and the JV. Terms follow `CONTEXT.md`; M-numbers are the Controller's measurements (M9 is the tank top, M4 the tank middle, M10 the tank bottom).
 
-The source is the Käsikirja, `manuals/Geopro 202S Käsikirja.pdf`. Page numbers here are PDF page indexes, counted from 1. In the Käsikirja they equal the printed page numbers. The markdown copies of the manual (`geopro-202s-manual.md` and `manuals/geopro-202s-manual.md`) get these rules wrong; #39 tracks fixing them.
+The source is the Käsikirja, `manuals/Geopro 202S Käsikirja.pdf`. Page numbers here are PDF page indexes, counted from 1. In the Käsikirja they equal the printed page numbers. `manuals/geopro-202s-manual.md` paraphrases the Käsikirja section by section and points here for these rules instead of restating them.
 
 A line marked **Observed** comes from the Node or the owner, not from the manual, and names its source.
 
@@ -31,7 +31,7 @@ The ML circuit's settings, as listed on p. 21. The last column is what the Contr
 
 ### Factory values that contradict each other
 
-Page 21 gives VaraajaAlaEro 5 °C and VaraajaYläEro 3 °C. Page 26 swaps them, in both its ML Asetusarvot screen and its table: VaraajaAlaEro 3 °C, VaraajaYläEro 5 °C. The examples on p. 22 use VaraajaYläEro 5 °C and VaraajaAlaEro 3 °C, but as example settings, not factory values. The Controller held VaraajaAlaEro 5 °C and VaraajaYläEro 3 °C (offsets 3 and 4 in the 2026-10-09 trace), which agrees with p. 21. Whether those are factory values or an installer's is unknown.
+Page 21 gives VaraajaAlaEro 5 °C and VaraajaYläEro 3 °C, and so does the factory-reset list on p. 29. Page 26 swaps them, in both its ML Asetusarvot screen and its table: VaraajaAlaEro 3 °C, VaraajaYläEro 5 °C. The examples on p. 22 use VaraajaYläEro 5 °C and VaraajaAlaEro 3 °C, but as example settings, not factory values. The Controller held VaraajaAlaEro 5 °C and VaraajaYläEro 3 °C (offsets 3 and 4 in the 2026-10-09 trace), which agrees with pp. 21 and 29. Whether those are factory values or an installer's is unknown.
 
 Two labels are spelled differently across pages: p. 21's text calls VarYläEroSv "VaraajaYläEroSv", and p. 23 writes SV_viiveaika as "SV-viiveaika".
 
