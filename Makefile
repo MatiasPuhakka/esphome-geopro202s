@@ -3,13 +3,13 @@ CXXFLAGS ?= -std=c++17 -Wall -Wextra -O1
 COMPONENT_DIR := components/geopro_202s
 BUILD_DIR := build
 # The ESPHome install every ESPHome target runs. ADR 0002 supports the 2026.9 series
-# only, and the targets stop when $(ESPHOME) is another version. Then point it at a
-# 2026.9 install: make <target> ESPHOME=/path/to/esphome, or export ESPHOME.
+# only, and the targets stop when $(ESPHOME) is another version. To use a 2026.9 install
+# that isn't on PATH: make <target> ESPHOME=/path/to/esphome, or export ESPHOME.
 ESPHOME ?= esphome
 SUPPORTED_ESPHOME := 2026.9
 # check-contract and update-contract import register_map.py, so they need the Python
 # that has ESPHome installed: the python next to $(ESPHOME), as in a venv or CI's
-# setup-python, else python3.
+# setup-python, else python3. PYTHON runs the host tests and doesn't need ESPHome.
 ESPHOME_PYTHON ?= $(firstword $(wildcard $(dir $(shell command -v $(ESPHOME)))python) python3)
 PYTHON ?= python3
 CONFIG_TEST := tests/all-keys.yaml

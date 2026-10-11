@@ -9,12 +9,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 # Answers `esphome version` with $FAKE_VERSION. For `esphome config` it prints a config on
-# stdout, $FAKE_LOG on stderr and exits with $FAKE_EXIT. It logs every call to $FAKE_CALLS.
+# stdout and $FAKE_LOG on stderr. It logs every call to $FAKE_CALLS.
 FAKE_ESPHOME = '''#!/bin/sh
 echo "$@" >> "$FAKE_CALLS"
 case "$1" in
   version) echo "Version: $FAKE_VERSION" ;;
-  config) echo "esphome:"; printf '%b' "$FAKE_LOG" >&2; exit "${FAKE_EXIT:-0}" ;;
+  config) echo "esphome:"; printf '%b' "$FAKE_LOG" >&2 ;;
 esac
 '''
 
@@ -47,17 +47,13 @@ class EsphomeTargetsTest(unittest.TestCase):
         self.assertIn('2026.9.x', result.stdout)
         self.assertIn('ESPHOME=/path/to/esphome', result.stdout)
 
-    def test_refuses_an_older_esphome(self):
-        result = self.make('check-config', FAKE_VERSION='2025.2.2')
-        self.assertRefused(result, '2025.2.2')
-        self.assertNotIn('config', self.calls.read_text())
-
     def test_every_esphome_target_refuses_an_older_esphome(self):
         for target in ('check-config', 'check-node-config', 'check-trace-config',
                        'check-contract', 'update-contract', 'compile', 'compile-node'):
             with self.subTest(target):
                 self.assertRefused(self.make(target, FAKE_VERSION='2025.2.2'), '2025.2.2')
-        self.assertEqual(self.calls.read_text().split('\n').count('version'), 7)
+        # Each target asked for the version and ran nothing else.
+        self.assertEqual(self.calls.read_text(), 'version\n' * 7)
 
     def test_node_config_check_prints_warnings_when_it_passes(self):
         result = self.make('check-node-config', FAKE_LOG=(
