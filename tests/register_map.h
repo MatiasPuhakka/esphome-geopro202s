@@ -14,6 +14,9 @@ struct Row {
   esphome::geopro_202s::Registration registration;
 };
 
+// Every row, in register_map.py's order.
+const std::vector<Row> &all_rows();
+
 // The rows with these keys, in the order given. Fails the test if a key isn't in the Register map.
 std::vector<Row> rows_named(const std::vector<std::string> &keys);
 
