@@ -247,10 +247,9 @@ VALUES = (
     # Lisäläm.aika, p. 21
     _bank("extra_time", 0x0B, 9, UNIT_HOUR, DEVICE_CLASS_DURATION, "mdi:clock"),
     # ML Ohjaustapa, the ML Ohjaustavat screen, pp. 13, 21: Kompr.+sähköv.,
-    # Kompressori or Sähkövastus, with no codes given. Observed: 0 is Kompr.+sähköv.,
-    # which the display showed while the Value read 0 (#10, 2026-10-09). 2 appears
-    # in Home Assistant history on 2026-10-09 (#26) and nobody has matched it to
-    # the display; if the codes follow the menu order, it is Sähkövastus.
+    # Kompressori or Sähkövastus, with no codes given. The codes follow the menu
+    # order: 0 Kompr.+sähköv., 1 Kompressori, 2 Sähkövastus. The owner confirmed
+    # them on 2026-10-11; 0 also matched the display in #10.
     _bank("hp_mode", 0x0B, 10, None, None, "mdi:gauge"),
     # Maaliuos häl, pp. 21, 26
     _bank("brine_alert", 0x0B, 11, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON, decode=S8),
