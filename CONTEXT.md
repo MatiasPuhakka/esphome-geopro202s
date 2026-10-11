@@ -71,6 +71,18 @@ _Avoid_: compressor lock
 Which heat sources the ML circuit may use: Kompr.+sähköv. (0), Kompressori (1) or Sähkövastus (2). The manual's menu is ML Ohjaustavat (p. 21); this is its singular.
 _Avoid_: heat pump mode
 
+**Run**:
+One stretch of a Status bit being on. A compressor run is the Controller calling for the compressor; `tools/runs.py` finds them, and `tools/cycles.py` lists them with the idle time before each.
+_Avoid_: on-cycle
+
+**Start**:
+The compressor beginning to draw current, seen as the lowest Shelly phase current rising above 4 A. A run without breaks has one start.
+_Avoid_: run (a run can hold several starts)
+
+**Break**:
+A stretch inside a run where the compressor drew no current while the Status bit stayed on, as in the chatter of 2026-10-07 to 2026-10-09.
+_Avoid_: trip, stop
+
 ## Wire protocol
 
 **Frame**:

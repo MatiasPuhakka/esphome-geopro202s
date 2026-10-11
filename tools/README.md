@@ -92,6 +92,30 @@ python3 tools/compare_entities.py .scratch/states-before.json .scratch/states-af
 .scratch/esphome-2026.9.1/bin/python tools/count_states.py 75
 ```
 
+`cycles.py` lists the compressor runs in a window, each with its starts and breaks, M9, M4 and M10 at its ends, M1, and the Controller model's thresholds and call beside it. Then it lists the heater's runs.
+
+```sh
+python3 tools/cycles.py "2026-10-10 00:00" --end "2026-10-10 09:40"
+```
+
+`profile.py` prints M1, M9, M4 and M10, the compressor Status bit, the model's call, the highest current on the lowest phase and the compressor starts, one row per slot. Both scripts count starts the same way, with no start for a compressor already drawing when the window opens.
+
+```sh
+python3 tools/profile.py "2026-10-10 04:00" "2026-10-10 05:00" --step 5
+```
+
+Both replace the `.scratch/cycles/scripts/` versions, which read saved history files. They fetch through the client instead, and drop the columns the model doesn't use: M7, brine, L1 supply and the hour counters. `profile.py` no longer prints a row for the slot that starts at END.
+
+
+## Controller model and run detector
+
+Both are pure: no Home Assistant, no clock. `plant.py` looks up the entities they read in the contract and turns history rows into their inputs.
+
+- `controller.py` follows `docs/controller.md`. Settings and M1, M9 and M10 in; VaraajaYlä, the start, stop, heater and restart thresholds, and whether the Controller should be calling for the compressor out. It models the tank-top start and stop, the Kompr.esto stop and restart, and ML Ohjaustapa Sähkövastus. It leaves out the tank-middle start and the tank-bottom stop, because they need the L1 setpoint, which the Component doesn't read.
+- `runs.py` takes the compressor Status bit and the three Shelly phase currents and finds runs, starts and breaks (see CONTEXT.md). The currents alone can't tell the compressor from the sauna or S1, which also draw 4 A or more on every phase, so it counts only the current inside a Status-bit run.
+
+On the recorded day the model calls within a minute of every Status-bit edge, and the phase currents start and end every run within the 10 s value interval.
+
 ## Retired scripts
 
 These log scrapers in `.scratch/` match log formats the Node no longer writes: ESPHome 2025.2.2's "Sending state" lines and the YAML protocol copy's lines. They have no port here, and deleting them is up to the owner.
@@ -102,7 +126,7 @@ These log scrapers in `.scratch/` match log formats the Node no longer writes: E
 - `.scratch/live/scripts/summary_quiet.py`
 - `.scratch/alarm11/scripts/series.py`
 
-`run_watch.py`, `fetch.py`, `compare_entities.py`, `count_states.py` and `device_info.py` in `.scratch/` have their ports above, and `day_run.py` has had one since #42.
+`run_watch.py`, `fetch.py`, `compare_entities.py`, `count_states.py`, `device_info.py`, `cycles.py` and `profile.py` in `.scratch/` have their ports above, and `day_run.py` has had one since #42.
 
 ## Tests
 
@@ -115,6 +139,7 @@ The tests run offline against JSON recorded from Home Assistant and the Node and
 - `states.json`, `history_day.json` and `history_nordpool.json`: Home Assistant on 2026-10-10.
 - `states_before_flash.json` and `states_after_flash.json`: the Geopro entities in the states snapshots from before and after the first flash in #11, on 2026-10-09.
 - `history_run_watch.json`: history for the entities `run_watch.py` reads, in two windows of 2026-10-09 (10:31 to 10:39 and 18:37 to 18:56 Finnish time). `ReplayHomeAssistant` in `fakes.py` answers from it as Home Assistant would have at a fake clock's time.
+- `history_2026-10-09_day.json`: the recorded day for the model and the run detector, 2026-10-09 09:40 to 2026-10-10 09:40, with the compressor and heater Status bits, M1, M9, M4, M10, the ML settings and the phase currents. `tests/recorded.py` says how it was trimmed. `ReplayHomeAssistant` serves it to the `cycles.py` and `profile.py` tests.
 - `node_session.json`: the Node's entities and 75 s of its state messages after the #11 flash, taken from its log. `RecordedNode` in `fakes.py` stands in for `aioesphomeapi` with it.
 
 `tests/expected/` holds what the scripts in `.scratch/` printed for these fixtures before they moved here, and the ports must print the same. Fixtures must hold no token, key or password, no `context` (context and user IDs), and nothing beyond the entities a test needs; `test_fixtures.py` checks the first two.
