@@ -15,6 +15,8 @@ void Geopro202sComponent::setup() {
   // The scheduler keeps each address once, however many values share it.
   for (const Registration &registration : this->registrations_)
     this->scheduler_.add_address(registration.group, registration.address);
+  if (this->component_revision_text_sensor_ != nullptr)
+    this->component_revision_text_sensor_->publish_state(this->component_revision_);
 }
 
 void Geopro202sComponent::loop() {
@@ -65,6 +67,7 @@ void Geopro202sComponent::send_request_(uint16_t address) {
 
 void Geopro202sComponent::dump_config() {
   ESP_LOGCONFIG(TAG, "Geopro 202S:");
+  ESP_LOGCONFIG(TAG, "  Component revision: %s", this->component_revision_);
   ESP_LOGCONFIG(TAG, "  Registered values: %u", (unsigned) this->registrations_.size());
   for (size_t i = 0; i < this->registrations_.size(); i++) {
     const Registration &value = this->registrations_[i];

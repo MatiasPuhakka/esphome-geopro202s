@@ -26,6 +26,9 @@ logger:
 # Main component configuration
 geopro_202s:
   id: geopro
+  # The git revision of the component this firmware was built from (diagnostic)
+  component_revision:
+    name: "Komponentin versio"
   # Temperature sensors
   outside_temp:
     name: "Ulkolämpötila"

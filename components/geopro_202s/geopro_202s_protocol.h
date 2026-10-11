@@ -6,6 +6,7 @@
 #include "esphome/core/hal.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
+#include "esphome/components/text_sensor/text_sensor.h"
 #include "frame.h"
 #include "poll_scheduler.h"
 #include "value_decoder.h"
@@ -30,6 +31,13 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
   void set_value_interval(uint32_t interval_ms) { this->scheduler_.set_value_interval(interval_ms); }
   void set_bank_interval(uint32_t interval_ms) { this->scheduler_.set_bank_interval(interval_ms); }
 
+  // The Component's git revision, stamped by codegen: a short commit hash, "-dirty"
+  // when built from uncommitted changes, or "unknown". The text sensor is optional.
+  void set_component_revision(const char *revision) { this->component_revision_ = revision; }
+  void set_component_revision_text_sensor(text_sensor::TextSensor *text_sensor) {
+    this->component_revision_text_sensor_ = text_sensor;
+  }
+
   // Registers one value from the Register map: the address read for it (a
   // bank for settings), where it starts in the reply, and how to decode it.
   // A sensor publishes the decoded number, a binary sensor whether it is non-zero.
@@ -51,6 +59,9 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
   void add_value_(const Registration &registration, const Target &target);
   void handle_frame_(const Frame &frame);
   void send_request_(uint16_t address);
+
+  const char *component_revision_{"unknown"};
+  text_sensor::TextSensor *component_revision_text_sensor_{nullptr};
 
   FrameDecoder decoder_;
   PollScheduler scheduler_;

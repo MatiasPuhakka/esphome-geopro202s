@@ -41,6 +41,8 @@ uart:
 #   (see "Valve positions" in the README).
 geopro_202s:
   id: geopro
+  component_revision:
+    name: "Komponentin versio"
   outside_temp:
     name: "Ulkolämpötila"
   l1_supply:
