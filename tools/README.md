@@ -59,6 +59,20 @@ The count includes the first message for each entity, which the Node sends on su
 
 Each runs from any directory.
 
+`flash_check.py` checks a flash of the Node in three phases, one command each; `docs/agents/verification.md` says when to run which. Each prints a report and exits with status 1 when a check fails.
+
+```sh
+python3 tools/flash_check.py before                                   # before flashing
+.scratch/esphome-2026.9.1/bin/python tools/flash_check.py after       # after flashing; needs aioesphomeapi
+python3 tools/flash_check.py overnight                                # the next morning
+```
+
+- `before` saves Home Assistant's states.
+- `after` counts the Node's state messages for 75 s (`--seconds`), then saves Home Assistant's states and checks both against `tests/entity-contract.txt`. `verification.md` lists what fails it. The expected revision is what a local build of this checkout stamps; `--revision` names another commit or ref.
+- `overnight` runs `day_run.py`'s summary for the contract's entities from the time the after phase ran (`--start`, `--end`), and fails on any unavailable or unknown state.
+
+The phases keep `states-before.json`, `states-after.json` and `times.json` in `.scratch/flash-check/` (`--dir`). Running `before` again starts a new check.
+
 `day_run.py` summarises a window of history for every `geopro_` entity: state changes, unavailable or unknown states, and the first and last value.
 
 ```sh
@@ -82,7 +96,7 @@ python3 tools/fetch.py 2026-10-09T00:00 2026-10-10T00:00 .scratch/run.json compr
 `compare_entities.py` compares the Geopro entities in two `/api/states` snapshots, such as one from before a flash and one from after: entities that appeared or went missing, and for each of the rest its state, a changed unit, and whether it reported since.
 
 ```sh
-python3 tools/compare_entities.py .scratch/states-before.json .scratch/states-after.json
+python3 tools/compare_entities.py .scratch/flash-check/states-before.json .scratch/flash-check/states-after.json
 ```
 
 `device_info.py` prints the Node's ESPHome version, compile time and name. `count_states.py` subscribes to the Node's states and counts the messages per entity, which shows that every entity still publishes when Home Assistant's history can't. Both need `aioesphomeapi`.

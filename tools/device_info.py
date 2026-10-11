@@ -13,9 +13,13 @@ if not __package__:
 from tools.node import Node  # noqa: E402
 
 
+def describe(info):
+    """A DeviceInfo's ESPHome version, compile time and name, on one line."""
+    return "esphome %s | compiled %s | name %s" % (info.esphome_version, info.compilation_time, info.name)
+
+
 def summary(node):
-    info = node.device_info()
-    return "esphome %s | compiled %s | name %s\n" % (info.esphome_version, info.compilation_time, info.name)
+    return describe(node.device_info()) + "\n"
 
 
 def main(argv=None):
