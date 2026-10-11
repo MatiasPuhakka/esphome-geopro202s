@@ -29,6 +29,17 @@ from esphome.const import (
 )
 
 
+class EntityKind(Enum):
+    """The ESPHome platform a Value publishes on. Home Assistant keys each entity on its
+    platform and name, so changing a row's entity kind orphans its entity
+    (docs/adr/0004). Each value is the platform's ESPHome name, which AUTO_LOAD and the
+    entity contract use; __init__.py's _PLATFORMS gives each kind its schema and entity
+    constructor."""
+
+    SENSOR = "sensor"
+    BINARY_SENSOR = "binary_sensor"
+
+
 class PollGroup(Enum):
     """Which cycle reads a row's address; it sets cadence only. Mirrors PollGroup in poll_scheduler.h."""
 
@@ -57,16 +68,12 @@ class DecodeRule:
     width: int  # bytes, big-endian
     signed: bool
     divisor: int = 1  # the raw number is divided by this
-    mask: int = 0  # when set, the value is whether any of these bits is set
+    mask: int = 0  # when set, the value is 1 if any of these bits is set and 0 if none is
 
     def __post_init__(self):
         assert self.width in (1, 2), "width must be 1 or 2 bytes"
         assert self.divisor > 0, "divisor must be positive"
         assert 0 <= self.mask < 1 << (8 * self.width), "mask must fit the value's width"
-
-    @property
-    def is_binary(self):
-        return self.mask != 0
 
 
 S8 = DecodeRule(width=1, signed=True)
@@ -76,13 +83,16 @@ CENTI_S16 = DecodeRule(width=2, signed=True, divisor=100)
 
 
 def status_bit(mask):
-    """One bit of the 16-bit status word, published as a boolean."""
+    """One bit of the 16-bit status word, decoded as 1 when set and 0 when not."""
     return DecodeRule(width=2, signed=False, mask=mask)
 
 
 @dataclass(frozen=True)
 class Value:
+    # The config key and the entity kind. Home Assistant knows the entity by its kind
+    # and its name in geopro.yaml.
     key: str
+    entity_kind: EntityKind
     # The address read for this value (for settings, the bank), where the value
     # starts in the reply's data, how to decode it, what the address holds and
     # which cycle reads it. Rows may share an address; check_rows() says how.
@@ -98,10 +108,8 @@ class Value:
     accuracy: Optional[int] = None
     icon: Optional[str] = None
 
-    @property
-    def is_binary(self):
-        """Binary sensor rather than sensor."""
-        return self.decode.is_binary
+    def __post_init__(self):
+        assert isinstance(self.entity_kind, EntityKind), f"{self.key}: entity_kind must be an EntityKind"
 
     @property
     def end(self):
@@ -117,7 +125,7 @@ class Value:
 
     @property
     def schema_options(self):
-        """Keyword arguments for sensor_schema() or binary_sensor_schema()."""
+        """Keyword arguments for the entity kind's schema, such as sensor_schema()."""
         options = {
             "unit_of_measurement": self.unit,
             "device_class": self.device_class,
@@ -130,7 +138,7 @@ class Value:
 
 def _temperature(key, address):
     return Value(
-        key, address, CENTI_S16,
+        key, EntityKind.SENSOR, address, CENTI_S16,
         unit=UNIT_CELSIUS, device_class=DEVICE_CLASS_TEMPERATURE,
         state_class=STATE_CLASS_MEASUREMENT, accuracy=2, icon="mdi:thermometer",
     )
@@ -140,38 +148,69 @@ def _valve(key, address):
     # Only 0-10 V / 2-10 V motors report a position (Käsikirja pp. 27, 28); a
     # 3-point motor reads 0 %.
     return Value(
-        key, address, U8,
+        key, EntityKind.SENSOR, address, U8,
         unit=UNIT_PERCENT, state_class=STATE_CLASS_MEASUREMENT, accuracy=0, icon="mdi:valve",
     )
 
 
 def _hours(key, address):
     return Value(
-        key, address, U16,
+        key, EntityKind.SENSOR, address, U16,
         unit=UNIT_HOUR, device_class=DEVICE_CLASS_DURATION,
         state_class=STATE_CLASS_TOTAL_INCREASING, accuracy=0, icon="mdi:clock",
     )
 
 
-STATUS_WORD = Value("status_word", 0x2D, U16, state_class=STATE_CLASS_MEASUREMENT, accuracy=0)
+STATUS_WORD = Value("status_word", EntityKind.SENSOR, 0x2D, U16, state_class=STATE_CLASS_MEASUREMENT, accuracy=0)
 
 
 def _status_bit(key, mask, icon):
     return Value(
-        key, STATUS_WORD.address, status_bit(mask), offset=STATUS_WORD.offset,
+        key, EntityKind.BINARY_SENSOR, STATUS_WORD.address, status_bit(mask), offset=STATUS_WORD.offset,
         device_class=DEVICE_CLASS_RUNNING, icon=icon,
     )
 
 
-def _bank(key, bank, offset, unit, device_class, icon, decode=S8):
+# Bank settings, one helper per type of setting: each reads the byte at `offset` in
+# `bank` and sets its own presentation. All four publish with state class measurement
+# and no decimals today; #26 decides whether that changes.
+def _bank_setting(key, bank, offset, decode, **entity_options):
     return Value(
-        key, bank, decode, offset=offset, address_kind=AddressKind.BANK, group=PollGroup.BANK,
-        unit=unit, device_class=device_class,
-        state_class=STATE_CLASS_MEASUREMENT, accuracy=0, icon=icon,
+        key, EntityKind.SENSOR, bank, decode,
+        offset=offset, address_kind=AddressKind.BANK, group=PollGroup.BANK, **entity_options,
     )
 
 
 _TEMP_ICON = "mdi:temperature-celsius"
+
+
+def _bank_temperature(key, bank, offset, icon=_TEMP_ICON, decode=S8):
+    return _bank_setting(
+        key, bank, offset, decode,
+        unit=UNIT_CELSIUS, device_class=DEVICE_CLASS_TEMPERATURE,
+        state_class=STATE_CLASS_MEASUREMENT, accuracy=0, icon=icon,
+    )
+
+
+def _bank_duration(key, bank, offset, unit, decode=S8):
+    return _bank_setting(
+        key, bank, offset, decode,
+        unit=unit, device_class=DEVICE_CLASS_DURATION,
+        state_class=STATE_CLASS_MEASUREMENT, accuracy=0, icon="mdi:clock",
+    )
+
+
+def _bank_percentage(key, bank, offset, icon):
+    return _bank_setting(
+        key, bank, offset, S8,
+        unit=UNIT_PERCENT, state_class=STATE_CLASS_MEASUREMENT, accuracy=0, icon=icon,
+    )
+
+
+def _bank_mode(key, bank, offset):
+    """A setting whose number picks one of a menu's choices."""
+    return _bank_setting(key, bank, offset, S8, state_class=STATE_CLASS_MEASUREMENT, accuracy=0, icon="mdi:gauge")
+
 
 VALUES = (
     # Measurements, from the Mittaukset display and its table (p. 10)
@@ -229,64 +268,64 @@ VALUES = (
     # Bank 0x0C: heating circuit L1. Every row matched the Controller's display on
     # 2026-10-09 (#10).
     # L1 Käyrä -20, Säätökäyrien as, p. 6
-    _bank("l1_minus20", 0x0C, 0, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:chart-line"),
+    _bank_temperature("l1_minus20", 0x0C, 0, "mdi:chart-line"),
     # L1 Käyrä 0, p. 6
-    _bank("l1_zero", 0x0C, 1, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:chart-line"),
+    _bank_temperature("l1_zero", 0x0C, 1, "mdi:chart-line"),
     # L1 Käyrä +20, p. 6
-    _bank("l1_plus20", 0x0C, 2, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:chart-line"),
+    _bank_temperature("l1_plus20", 0x0C, 2, "mdi:chart-line"),
     # Minimiraja, L1 Aset.arvot, p. 8
-    _bank("l1_min_limit", 0x0C, 3, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON),
+    _bank_temperature("l1_min_limit", 0x0C, 3),
     # Maksimiraja, L1 Aset.arvot, p. 8
-    _bank("l1_max_limit", 0x0C, 4, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON),
+    _bank_temperature("l1_max_limit", 0x0C, 4),
     # Yöalennus v. (Yöalennus vaikutus), L1 Aset.arvot, p. 8
-    _bank("l1_night_effect", 0x0C, 5, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON),
+    _bank_temperature("l1_night_effect", 0x0C, 5),
     # Syyskuivaus, L1 Aset.arvot, pp. 8, 9
-    _bank("l1_autumn_dry", 0x0C, 14, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON),
+    _bank_temperature("l1_autumn_dry", 0x0C, 14),
     # Ulkol.hidas (Ulkolämpötilan hidastus), huoltotila L1 Asetusarvot, p. 26
-    _bank("l1_out_temp_delay", 0x0C, 19, UNIT_HOUR, DEVICE_CLASS_DURATION, "mdi:clock"),
+    _bank_duration("l1_out_temp_delay", 0x0C, 19, UNIT_HOUR),
     # Esikorotus h, huoltotila L1 Asetusarvot, p. 26: the duration (0-5 h), not the
     # user menu's Esikorotus amount in °C (p. 9). Observed: setting it from 0 h to
     # 1 h at the display moved the Value from 0 to 1 on 2026-10-09 (#10, #21).
-    _bank("l1_pre_increase", 0x0C, 23, UNIT_HOUR, DEVICE_CLASS_DURATION, "mdi:clock"),
+    _bank_duration("l1_pre_increase", 0x0C, 23, UNIT_HOUR),
 
     # Bank 0x2C: L1 settings. Every row matched the Controller's display on
     # 2026-10-09 (#10).
     # Vent.kesäsulk (venttiilin kesäsulkeutuminen), L1 Aset.arvot, pp. 8, 9
-    _bank("l1_summer_close", 0x2C, 8, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON),
+    _bank_temperature("l1_summer_close", 0x2C, 8),
 
     # Bank 0x0B: ML settings, p. 21 (the Settings table in docs/controller.md).
     # Every row matched the Controller's display on 2026-10-09 (#10).
     # Var.ylä talvi, p. 21
-    _bank("winter_temp", 0x0B, 1, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON),
+    _bank_temperature("winter_temp", 0x0B, 1),
     # Var.ylä kesä, p. 21
-    _bank("summer_temp", 0x0B, 2, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON),
+    _bank_temperature("summer_temp", 0x0B, 2),
     # VaraajaAlaEro, pp. 21, 26
-    _bank("bottom_diff", 0x0B, 3, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON),
+    _bank_temperature("bottom_diff", 0x0B, 3),
     # VaraajaYläEro, pp. 21, 26
-    _bank("top_diff", 0x0B, 4, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON),
+    _bank_temperature("top_diff", 0x0B, 4),
     # VaraajaAlaMin, p. 21
-    _bank("tank_min", 0x0B, 5, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON),
+    _bank_temperature("tank_min", 0x0B, 5),
     # SV_viiveaika, p. 21
-    _bank("delay_time", 0x0B, 6, UNIT_MINUTE, DEVICE_CLASS_DURATION, "mdi:clock"),
+    _bank_duration("delay_time", 0x0B, 6, UNIT_MINUTE),
     # VarYläEroSv, p. 21
-    _bank("top_eh_diff", 0x0B, 7, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON),
+    _bank_temperature("top_eh_diff", 0x0B, 7),
     # Lisälämmitys, p. 21
-    _bank("extra_heating", 0x0B, 8, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON),
+    _bank_temperature("extra_heating", 0x0B, 8),
     # Lisäläm.aika, p. 21
-    _bank("extra_time", 0x0B, 9, UNIT_HOUR, DEVICE_CLASS_DURATION, "mdi:clock"),
+    _bank_duration("extra_time", 0x0B, 9, UNIT_HOUR),
     # ML Ohjaustapa, the ML Ohjaustavat screen, pp. 13, 21: Kompr.+sähköv.,
     # Kompressori or Sähkövastus, with no codes given. The codes follow the menu
     # order: 0 Kompr.+sähköv., 1 Kompressori, 2 Sähkövastus. The owner confirmed
     # them on 2026-10-11; 0 also matched the display in #10.
-    _bank("hp_mode", 0x0B, 10, None, None, "mdi:gauge"),
+    _bank_mode("hp_mode", 0x0B, 10),
     # Maaliuos häl, pp. 21, 26
-    _bank("brine_alert", 0x0B, 11, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, _TEMP_ICON, decode=S8),
+    _bank_temperature("brine_alert", 0x0B, 11),
     # JV Esiavaus, pp. 21, 26
-    _bank("dhw_pre", 0x0B, 12, UNIT_PERCENT, None, "mdi:valve"),
+    _bank_percentage("dhw_pre", 0x0B, 12, "mdi:valve"),
     # JV Esto, pp. 21, 26
-    _bank("dhw_lock", 0x0B, 13, UNIT_SECOND, DEVICE_CLASS_DURATION, "mdi:clock", decode=U8),
+    _bank_duration("dhw_lock", 0x0B, 13, UNIT_SECOND, decode=U8),
     # Kompr.esto, pp. 21, 23
-    _bank("comp_lock", 0x0B, 14, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, "mdi:thermometer-off"),
+    _bank_temperature("comp_lock", 0x0B, 14, "mdi:thermometer-off"),
 )
 
 # Bank bytes no row reads yet: each was non-zero in the 2026-10-09 trace

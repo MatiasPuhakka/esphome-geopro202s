@@ -103,12 +103,12 @@ The wire format lives in `frame.h`/`frame.cpp`, which have no ESPHome dependenci
 
 ### Register map
 
-Every config key is one row in the Register map, `register_map.py`: the address to read (for a setting, its bank), whether that address is a bank or a single value, where the value starts in the reply's data, a decode rule, and the poll group that reads it. The rule gives the width (1 or 2 bytes, big-endian), whether the value is signed, a divisor, and, for a status bit, a mask. Current rules:
+Every config key is one row in the Register map, `register_map.py`: its entity kind (sensor or binary sensor), the address to read (for a setting, its bank), whether that address is a bank or a single value, where the value starts in the reply's data, a decode rule, and the poll group that reads it. The rule gives the width (1 or 2 bytes, big-endian), whether the value is signed, a divisor, and, for a status bit, a mask. Current rules:
 
 - **Temperatures** - signed 16-bit, divided by 100
 - **Valve positions** - unsigned 8-bit
 - **Hour counters and the status word** - unsigned 16-bit
-- **Status bits** - the status word (0x2D) masked, published as a binary sensor
+- **Status bits** - the status word (0x2D) masked, 1 when any masked bit is set
 - **Bank settings** - one byte at the setting's offset, signed unless noted
 
 Several rows can share an address. The status word sensor and the five status bits all read 0x2D, which is requested once per cycle and decoded for every row from one reply. Status bits work without the `status_word` sensor.
@@ -116,6 +116,8 @@ Several rows can share an address. The status word sensor and the five status bi
 A reply's data length comes from its address: 31 bytes for a bank, and for a single value, where the value ends (offset + width). The poll group only sets how often the address is read. `register_map.py` checks its rows when it loads and fails the config with the offending keys when a bank row runs past the 31 data bytes, or when rows that share an address disagree on the reply's data length or on their poll group.
 
 Adding a value takes one row, a key in `tests/all-keys.yaml` and a contract update (see below), and no C++ change. The hub registers each row with `register_value()` and passes every reply to the decoder in `value_decoder.h`/`value_decoder.cpp`, which has no ESPHome dependencies and is covered by `make test`.
+
+Each row names its entity kind, so editing a decode rule never moves a value to another platform. Adding an entity kind takes a member of `EntityKind` in `register_map.py`, its platform in `_PLATFORMS` in `__init__.py`, and a `publish_value()` overload in `geopro_202s_protocol.h`. `make test` checks each row's entity kind against the platform in `tests/entity-contract.txt`.
 
 ### Home Assistant entity contract
 

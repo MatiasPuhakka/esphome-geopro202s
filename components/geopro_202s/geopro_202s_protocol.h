@@ -10,12 +10,20 @@
 #include "frame.h"
 #include "poll_scheduler.h"
 #include "value_decoder.h"
+#include <functional>
 #include <vector>
 
 namespace esphome {
 namespace geopro_202s {
 
 static const char *const TAG = "geopro_202s";
+
+// How each entity kind publishes a decoded value. The hub picks a platform here and
+// nowhere else, as codegen does in _PLATFORMS in __init__.py.
+inline void publish_value(sensor::Sensor *sensor, float value) { sensor->publish_state(value); }
+inline void publish_value(binary_sensor::BinarySensor *binary_sensor, float value) {
+  binary_sensor->publish_state(value != 0.0f);
+}
 
 class Geopro202sComponent : public Component, public uart::UARTDevice {
  public:
@@ -40,23 +48,18 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
 
   // Registers one value from the Register map: which cycle reads its address,
   // whether that address is a bank or a single value, the address, where the
-  // value starts in the reply, and how to decode it.
-  // A sensor publishes the decoded number, a binary sensor whether it is non-zero.
-  void register_value(PollGroup group, AddressKind kind, uint16_t address, uint8_t offset, DecodeRule rule,
-                      sensor::Sensor *sensor) {
-    this->add_value_(group, Registration{address, offset, rule, kind}, Target{sensor, nullptr});
-  }
-  void register_value(PollGroup group, AddressKind kind, uint16_t address, uint8_t offset, DecodeRule rule,
-                      binary_sensor::BinarySensor *binary_sensor) {
-    this->add_value_(group, Registration{address, offset, rule, kind}, Target{nullptr, binary_sensor});
+  // value starts in the reply, how to decode it, and the entity that publishes
+  // it, of any kind publish_value() takes.
+  template<typename Entity>
+  void register_value(PollGroup group, AddressKind address_kind, uint16_t address, uint8_t offset, DecodeRule rule,
+                      Entity *entity) {
+    this->add_value_(group, Registration{address, offset, rule, address_kind},
+                     [entity](float value) { publish_value(entity, value); });
   }
 
  protected:
-  // Where a registration's decoded value is published. Exactly one is set.
-  struct Target {
-    sensor::Sensor *sensor;
-    binary_sensor::BinarySensor *binary_sensor;
-  };
+  // Publishes a registration's decoded value on its entity.
+  using Target = std::function<void(float)>;
 
   void add_value_(PollGroup group, const Registration &registration, const Target &target);
   void handle_frame_(const Frame &frame);

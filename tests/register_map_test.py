@@ -1,4 +1,4 @@
-"""Tests the checks register_map.py runs on its rows when it loads.
+"""Tests register_map.py: each row's entity kind, and the checks it runs on its rows when it loads.
 
 Plain Python: run with `python3 -m unittest discover -s tests -p '*_test.py'`.
 """
@@ -9,6 +9,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import entity_contract
 from export_register_map import load_register_map
 
 REGISTER_MAP_PATH = Path(__file__).resolve().parent.parent / "components" / "geopro_202s" / "register_map.py"
@@ -25,10 +26,11 @@ register_map = load()
 Value = register_map.Value
 S8, U8, U16 = register_map.S8, register_map.U8, register_map.U16
 BANK, VALUE = register_map.PollGroup.BANK, register_map.PollGroup.VALUE
+SENSOR = register_map.EntityKind.SENSOR
 
 
 def bank_row(key, offset, decode=S8, group=BANK):
-    return Value(key, 0x0B, decode, offset=offset, address_kind=register_map.AddressKind.BANK, group=group)
+    return Value(key, SENSOR, 0x0B, decode, offset=offset, address_kind=register_map.AddressKind.BANK, group=group)
 
 
 def check(*rows):
@@ -57,12 +59,12 @@ class RegisterMapCheckTest(unittest.TestCase):
     def test_single_value_rows_that_disagree_on_reply_length_fail(self):
         message = "word and low_byte share Address 0x2D but expect 2 and 1 data bytes"
         with self.assertRaisesRegex(ValueError, message):
-            check(Value("word", 0x2D, U16), Value("low_byte", 0x2D, U8))
+            check(Value("word", SENSOR, 0x2D, U16), Value("low_byte", SENSOR, 0x2D, U8))
 
     def test_a_bank_row_and_a_single_value_row_at_one_address_fail(self):
         message = "setting and single share Address 0x0B but expect 31 and 1 data bytes"
         with self.assertRaisesRegex(ValueError, message):
-            check(bank_row("setting", 0), Value("single", 0x0B, S8))
+            check(bank_row("setting", 0), Value("single", SENSOR, 0x0B, S8))
 
     def test_rows_that_disagree_on_poll_group_fail(self):
         message = "slow and fast share Address 0x0B but are in Poll groups BANK and VALUE"
@@ -75,13 +77,34 @@ class RegisterMapCheckTest(unittest.TestCase):
 
     def test_loading_a_register_map_with_a_bank_offset_past_the_data_fails(self):
         source = REGISTER_MAP_PATH.read_text()
-        broken = source.replace('_bank("comp_lock", 0x0B, 14,', '_bank("comp_lock", 0x0B, 31,')
+        broken = source.replace('_bank_temperature("comp_lock", 0x0B, 14,', '_bank_temperature("comp_lock", 0x0B, 31,')
         self.assertNotEqual(broken, source)
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "register_map.py"
             path.write_text(broken)
             with self.assertRaisesRegex(ValueError, "comp_lock: offset 31"):
                 load(path)
+
+
+def contract_platforms():
+    """Each key's platform as tests/entity-contract.txt records it, from its key lines."""
+    with open(entity_contract.CONTRACT, encoding="utf-8") as file:
+        lines = [line for line in file.read().splitlines() if " unit=" in line]
+    return {key: platform for key, platform, *_ in (line.replace(":", "", 1).split(" ") for line in lines)}
+
+
+class EntityKindTest(unittest.TestCase):
+    def test_each_row_publishes_on_the_platform_the_contract_records(self):
+        # Changing a row's entity kind orphans its Home Assistant entity (ADR 0004), so it
+        # has to show up in the contract too. This catches it without ESPHome installed.
+        platforms = contract_platforms()
+        for value in register_map.VALUES:
+            with self.subTest(value.key):
+                self.assertEqual(value.entity_kind.value, platforms[value.key])
+
+    def test_a_row_without_an_entity_kind_is_rejected(self):
+        with self.assertRaisesRegex(TypeError, "entity_kind"):
+            Value("no_kind", address=0x12, decode=register_map.CENTI_S16)
 
 
 if __name__ == "__main__":
