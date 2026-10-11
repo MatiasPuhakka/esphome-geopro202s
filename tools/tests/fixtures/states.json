@@ -1,0 +1,129 @@
+[
+ {
+  "entity_id": "binary_sensor.geopro_kompressori",
+  "state": "off",
+  "attributes": {
+   "device_class": "running",
+   "icon": "mdi:engine",
+   "friendly_name": "Geopro Kompressori"
+  },
+  "last_changed": "2026-10-10T14:33:44.655047+00:00",
+  "last_reported": "2026-10-10T14:33:44.655047+00:00",
+  "last_updated": "2026-10-10T14:33:44.655047+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_maaliuos",
+  "state": "17.2000007629395",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:thermometer",
+   "friendly_name": "Geopro Maaliuos"
+  },
+  "last_changed": "2026-10-10T15:04:25.744246+00:00",
+  "last_reported": "2026-10-10T15:04:25.744246+00:00",
+  "last_updated": "2026-10-10T15:04:25.744246+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_ml_varyl_kes",
+  "state": "53.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:temperature-celsius",
+   "friendly_name": "Geopro ML VarYlä Kesä"
+  },
+  "last_changed": "2026-10-10T07:40:01.535264+00:00",
+  "last_reported": "2026-10-10T07:40:01.535264+00:00",
+  "last_updated": "2026-10-10T07:40:01.535264+00:00"
+ },
+ {
+  "entity_id": "sensor.nordpool_kwh_fi_eur_3_10_0255",
+  "state": "0.043",
+  "attributes": {
+   "state_class": "total",
+   "average": 0.030145833333333334,
+   "off_peak_1": 0.01825,
+   "off_peak_2": 0.03353947368421053,
+   "peak": 0.016583333333333332,
+   "min": 0.013,
+   "max": 0.063,
+   "mean": 0.03,
+   "unit": "kWh",
+   "currency": "EUR",
+   "country": "Finland",
+   "region": "FI",
+   "low_price": false,
+   "price_percent_to_average": 1.4263994471319972,
+   "today": [
+    0.023,
+    0.023,
+    0.023,
+    0.022
+   ],
+   "tomorrow": [
+    0.036,
+    0.036,
+    0.035,
+    0.035
+   ],
+   "tomorrow_valid": true,
+   "raw_today": [
+    {
+     "start": "2026-10-10T00:00:00+03:00",
+     "end": "2026-10-10T00:15:00+03:00",
+     "value": 0.023
+    },
+    {
+     "start": "2026-10-10T00:15:00+03:00",
+     "end": "2026-10-10T00:30:00+03:00",
+     "value": 0.023
+    },
+    {
+     "start": "2026-10-10T00:30:00+03:00",
+     "end": "2026-10-10T00:45:00+03:00",
+     "value": 0.023
+    },
+    {
+     "start": "2026-10-10T00:45:00+03:00",
+     "end": "2026-10-10T01:00:00+03:00",
+     "value": 0.022
+    }
+   ],
+   "raw_tomorrow": [
+    {
+     "start": "2026-10-11T00:00:00+03:00",
+     "end": "2026-10-11T00:15:00+03:00",
+     "value": 0.036
+    },
+    {
+     "start": "2026-10-11T00:15:00+03:00",
+     "end": "2026-10-11T00:30:00+03:00",
+     "value": 0.036
+    },
+    {
+     "start": "2026-10-11T00:30:00+03:00",
+     "end": "2026-10-11T00:45:00+03:00",
+     "value": 0.035
+    },
+    {
+     "start": "2026-10-11T00:45:00+03:00",
+     "end": "2026-10-11T01:00:00+03:00",
+     "value": 0.035
+    }
+   ],
+   "current_price": 0.043,
+   "additional_costs_current_hour": 0.0,
+   "price_in_cents": false,
+   "unit_of_measurement": "EUR/kWh",
+   "device_class": "monetary",
+   "icon": "mdi:flash",
+   "friendly_name": "nordpool_kwh_fi_eur_3_10_0255"
+  },
+  "last_changed": "2026-10-10T15:00:00.169159+00:00",
+  "last_reported": "2026-10-10T15:00:00.169159+00:00",
+  "last_updated": "2026-10-10T15:00:00.169159+00:00"
+ }
+]

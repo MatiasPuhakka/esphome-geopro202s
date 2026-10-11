@@ -15,7 +15,7 @@ TEST_BIN := $(BUILD_DIR)/tests
 # A raw trace from the Node that tests/trace_test.cpp replays; the test gets its absolute path.
 NODE_TRACE := tests/traces/node-2026-10-09.log
 
-.PHONY: test pure-check check-secrets check-config check-node-config compile clean
+.PHONY: test pure-check tools-test check-secrets check-config check-node-config compile clean
 
 test: pure-check $(TEST_BIN)
 	./$(TEST_BIN)
@@ -29,6 +29,10 @@ pure-check:
 $(TEST_BIN): $(TEST_SRCS) $(PURE_SRCS) $(wildcard $(COMPONENT_DIR)/*.h) tests/doctest.h
 	@mkdir -p $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -DNODE_TRACE='"$(CURDIR)/$(NODE_TRACE)"' -I$(COMPONENT_DIR) -Itests -o $@ $(TEST_SRCS) $(PURE_SRCS)
+
+# Runs the Python tools' tests offline against recorded Home Assistant JSON, with the stdlib only.
+tools-test:
+	python3 -I -m unittest discover -t . -s tools/tests
 
 # Credentials live in the gitignored secrets.yaml and reach configs through !secret.
 # Prints file:line only, so a leaked value stays out of the CI log.
