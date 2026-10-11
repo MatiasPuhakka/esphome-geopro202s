@@ -40,4 +40,6 @@ jobs:
           printf 'api_encryption_key: "%s"\nota_password: ci\n' "$(head -c 32 /dev/urandom | base64)" > secrets.yaml
           make check-node-config
           make check-trace-config
+      # Reuses the secrets.yaml written above.
+      - run: make check-contract
       - run: make compile

@@ -3,6 +3,9 @@ CXXFLAGS ?= -std=c++17 -Wall -Wextra -O1
 COMPONENT_DIR := components/geopro_202s
 BUILD_DIR := build
 ESPHOME ?= esphome
+# check-contract and update-contract import register_map.py, so they need the Python
+# that has ESPHome installed, such as the python next to $(ESPHOME) in a venv.
+PYTHON ?= python3
 CONFIG_TEST := tests/all-keys.yaml
 CONFIG_ARDUINO := tests/all-keys-arduino.yaml
 NODE_CONFIG := geopro.yaml
@@ -17,14 +20,13 @@ TEST_BIN := $(BUILD_DIR)/tests
 NODE_TRACE := tests/traces/node-2026-10-09.log
 # The Register map's rows for the host tests, rewritten whenever register_map.py changes.
 # The export runs on plain python3 without ESPHome.
-PYTHON ?= python3
 REGISTER_MAP_ROWS := $(BUILD_DIR)/register_map_rows.inc
 
-.PHONY: test pure-check tools-test check-secrets check-config check-node-config check-trace-config compile clean
+.PHONY: test pure-check tools-test check-secrets check-config check-node-config check-trace-config check-contract update-contract compile clean
 
 test: pure-check $(TEST_BIN)
 	./$(TEST_BIN)
-	python3 -m unittest discover -s tests -p '*_test.py'
+	$(PYTHON) -m unittest discover -s tests -p '*_test.py'
 
 # The pure sources also run on the device, whose Arduino ESP32 build is C++11.
 # Host tests use C++17, so check the pure sources on their own.
@@ -73,6 +75,15 @@ check-trace-config:
 	@mkdir -p $(BUILD_DIR)
 	$(ESPHOME) config $(TRACE_CONFIG) > $(BUILD_DIR)/trace-config.out 2> $(BUILD_DIR)/trace-config.log || { cat $(BUILD_DIR)/trace-config.out $(BUILD_DIR)/trace-config.log; exit 1; }
 	@if grep -qi deprecat $(BUILD_DIR)/trace-config.log; then cat $(BUILD_DIR)/trace-config.log; exit 1; fi
+
+# The Home Assistant entity contract, tests/entity-contract.txt: each key's platform and
+# entity options, and the Node's entity names and IDs, taken from both config checks'
+# output. check-contract fails with a diff when it changed; update-contract rewrites it.
+check-contract: check-config check-node-config
+	$(PYTHON) tests/entity_contract.py check $(BUILD_DIR)/config.out $(BUILD_DIR)/node-config.out
+
+update-contract: check-config check-node-config
+	$(PYTHON) tests/entity_contract.py update $(BUILD_DIR)/config.out $(BUILD_DIR)/node-config.out
 
 # Builds firmware for both ESP32 frameworks. Slow on the first run (toolchain download).
 compile:
