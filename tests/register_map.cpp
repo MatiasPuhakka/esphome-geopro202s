@@ -8,17 +8,12 @@ using esphome::geopro_202s::Registration;
 
 namespace register_map {
 
-namespace {
-
-// Every row, in register_map.py's order.
 const std::vector<Row> &all_rows() {
   static const std::vector<Row> ROWS = {
 #include "register_map_rows.inc"
   };
   return ROWS;
 }
-
-}  // namespace
 
 std::vector<Row> rows_named(const std::vector<std::string> &keys) {
   std::vector<Row> found;
