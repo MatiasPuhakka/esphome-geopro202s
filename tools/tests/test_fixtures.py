@@ -6,9 +6,10 @@ from tools.tests.fakes import FIXTURES
 
 # Home Assistant's long-lived tokens are JWTs, which start with the base64 of '{"'.
 JWT = re.compile(r"eyJ[\w-]+\.[\w-]+")
-# A states dump carries context IDs and the user who caused each change; the token keys catch
-# a pasted credential.
-PRIVATE_KEYS = {"context", "user_id", "parent_id", "access_token", "token"}
+# A states dump carries context IDs and the user who caused each change; the token, key and
+# password names catch a pasted credential.
+PRIVATE_KEYS = {"context", "user_id", "parent_id", "access_token", "token", "api_encryption_key", "noise_psk",
+                "ota_password", "password"}
 
 
 def keys(value):

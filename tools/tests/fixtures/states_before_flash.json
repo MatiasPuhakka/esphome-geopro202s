@@ -1,0 +1,563 @@
+[
+ {
+  "entity_id": "sensor.shellyem3_34945474817a_channel_a_current",
+  "state": "0.8",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "A",
+   "device_class": "current",
+   "friendly_name": "shellyem3-34945474817A Phase A Virta"
+  },
+  "last_changed": "2026-10-09T16:13:03.201553+00:00",
+  "last_reported": "2026-10-09T16:13:03.201553+00:00",
+  "last_updated": "2026-10-09T16:13:03.201553+00:00"
+ },
+ {
+  "entity_id": "binary_sensor.geopro_kompressori",
+  "state": "off",
+  "attributes": {
+   "device_class": "running",
+   "icon": "mdi:engine",
+   "friendly_name": "Geopro Kompressori"
+  },
+  "last_changed": "2026-10-09T15:55:15.395856+00:00",
+  "last_reported": "2026-10-09T15:55:15.395856+00:00",
+  "last_updated": "2026-10-09T15:55:15.395856+00:00"
+ },
+ {
+  "entity_id": "binary_sensor.geopro_s_hk_vastus",
+  "state": "off",
+  "attributes": {
+   "device_class": "running",
+   "icon": "mdi:radiator",
+   "friendly_name": "Geopro Sähkövastus"
+  },
+  "last_changed": "2026-10-09T11:55:56.811239+00:00",
+  "last_reported": "2026-10-09T11:55:56.811239+00:00",
+  "last_updated": "2026-10-09T11:55:56.811239+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_ulkol_mp_tila",
+  "state": "9.39999961853027",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:thermometer",
+   "friendly_name": "Geopro Ulkolämpötila"
+  },
+  "last_changed": "2026-10-09T16:08:03.887809+00:00",
+  "last_reported": "2026-10-09T16:08:03.887809+00:00",
+  "last_updated": "2026-10-09T16:08:03.887809+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_l1_menovesi",
+  "state": "24.7000007629395",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:thermometer",
+   "friendly_name": "Geopro L1 menovesi"
+  },
+  "last_changed": "2026-10-09T15:55:33.891640+00:00",
+  "last_reported": "2026-10-09T15:55:33.891640+00:00",
+  "last_updated": "2026-10-09T15:55:33.891640+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_varaaja_yl_tulo",
+  "state": "47.0999984741211",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:thermometer",
+   "friendly_name": "Geopro Varaaja ylä tulo"
+  },
+  "last_changed": "2026-10-09T16:11:34.587921+00:00",
+  "last_reported": "2026-10-09T16:11:34.587921+00:00",
+  "last_updated": "2026-10-09T16:11:34.587921+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_varaaja_yl",
+  "state": "51.9000015258789",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:thermometer",
+   "friendly_name": "Geopro Varaaja ylä"
+  },
+  "last_changed": "2026-10-09T16:09:14.599010+00:00",
+  "last_reported": "2026-10-09T16:09:14.599010+00:00",
+  "last_updated": "2026-10-09T16:09:14.599010+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_varaaja_keski",
+  "state": "49.2999992370605",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:thermometer",
+   "friendly_name": "Geopro Varaaja keski"
+  },
+  "last_changed": "2026-10-09T15:56:44.389527+00:00",
+  "last_reported": "2026-10-09T15:56:44.389527+00:00",
+  "last_updated": "2026-10-09T15:56:44.389527+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_varaaja_ala",
+  "state": "49.4000015258789",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:thermometer",
+   "friendly_name": "Geopro Varaaja ala"
+  },
+  "last_changed": "2026-10-09T15:55:24.650833+00:00",
+  "last_reported": "2026-10-09T15:55:24.650833+00:00",
+  "last_updated": "2026-10-09T15:55:24.650833+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_maaliuos",
+  "state": "13.5",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:thermometer",
+   "friendly_name": "Geopro Maaliuos"
+  },
+  "last_changed": "2026-10-09T16:12:25.091362+00:00",
+  "last_reported": "2026-10-09T16:12:25.091362+00:00",
+  "last_updated": "2026-10-09T16:12:25.091362+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_l1_venttiili",
+  "state": "0.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "%",
+   "icon": "mdi:valve",
+   "friendly_name": "Geopro L1 Venttiili"
+  },
+  "last_changed": "2026-10-09T11:55:56.913020+00:00",
+  "last_reported": "2026-10-09T11:55:56.913020+00:00",
+  "last_updated": "2026-10-09T11:55:56.913020+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_jv_venttiili",
+  "state": "0.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "%",
+   "icon": "mdi:valve",
+   "friendly_name": "Geopro JV Venttiili"
+  },
+  "last_changed": "2026-10-09T11:55:56.914663+00:00",
+  "last_reported": "2026-10-09T11:55:56.914663+00:00",
+  "last_updated": "2026-10-09T11:55:56.914663+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_s_hk_vastus_tunnit",
+  "state": "7355.0",
+  "attributes": {
+   "state_class": "total_increasing",
+   "unit_of_measurement": "h",
+   "device_class": "duration",
+   "icon": "mdi:clock",
+   "friendly_name": "Geopro Sähkövastus tunnit"
+  },
+  "last_changed": "2026-10-09T11:55:56.931003+00:00",
+  "last_reported": "2026-10-09T11:55:56.931003+00:00",
+  "last_updated": "2026-10-09T11:55:56.931003+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_kompressori_tunnit",
+  "state": "8193.0",
+  "attributes": {
+   "state_class": "total_increasing",
+   "unit_of_measurement": "h",
+   "device_class": "duration",
+   "icon": "mdi:clock",
+   "friendly_name": "Geopro Kompressori tunnit"
+  },
+  "last_changed": "2026-10-09T11:55:56.932417+00:00",
+  "last_reported": "2026-10-09T11:55:56.932417+00:00",
+  "last_updated": "2026-10-09T11:55:56.932417+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_tila_muuttuja",
+  "state": "65031.0",
+  "attributes": {
+   "state_class": "measurement",
+   "friendly_name": "Geopro Tila Muuttuja"
+  },
+  "last_changed": "2026-10-09T15:55:15.393422+00:00",
+  "last_reported": "2026-10-09T15:55:15.393422+00:00",
+  "last_updated": "2026-10-09T15:55:15.393422+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_l1_20_c",
+  "state": "36.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:chart-line",
+   "friendly_name": "Geopro L1 -20°C"
+  },
+  "last_changed": "2026-10-09T11:55:56.964311+00:00",
+  "last_reported": "2026-10-09T11:55:56.964311+00:00",
+  "last_updated": "2026-10-09T11:55:56.964311+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_l1_0_c",
+  "state": "29.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:chart-line",
+   "friendly_name": "Geopro L1 0°C"
+  },
+  "last_changed": "2026-10-09T11:55:56.966040+00:00",
+  "last_reported": "2026-10-09T11:55:56.966040+00:00",
+  "last_updated": "2026-10-09T11:55:56.966040+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_l1_20_c_2",
+  "state": "20.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:chart-line",
+   "friendly_name": "Geopro L1 +20°C"
+  },
+  "last_changed": "2026-10-09T11:55:56.982064+00:00",
+  "last_reported": "2026-10-09T11:55:56.982064+00:00",
+  "last_updated": "2026-10-09T11:55:56.982064+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_l1_y_alennus_vaikutus",
+  "state": "2.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:temperature-celsius",
+   "friendly_name": "Geopro L1 Yöalennus vaikutus"
+  },
+  "last_changed": "2026-10-09T13:47:47.426444+00:00",
+  "last_reported": "2026-10-09T13:47:47.426444+00:00",
+  "last_updated": "2026-10-09T13:47:47.426444+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_l1_minimiraja",
+  "state": "20.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:temperature-celsius",
+   "friendly_name": "Geopro L1 Minimiraja"
+  },
+  "last_changed": "2026-10-09T11:55:56.983504+00:00",
+  "last_reported": "2026-10-09T11:55:56.983504+00:00",
+  "last_updated": "2026-10-09T11:55:56.983504+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_l1_maksimiraja",
+  "state": "65.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:temperature-celsius",
+   "friendly_name": "Geopro L1 Maksimiraja"
+  },
+  "last_changed": "2026-10-09T11:55:56.999040+00:00",
+  "last_reported": "2026-10-09T11:55:56.999040+00:00",
+  "last_updated": "2026-10-09T11:55:56.999040+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_l1_syyskuivaus",
+  "state": "3.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:temperature-celsius",
+   "friendly_name": "Geopro L1 Syyskuivaus"
+  },
+  "last_changed": "2026-10-09T11:55:57.016531+00:00",
+  "last_reported": "2026-10-09T11:55:57.016531+00:00",
+  "last_updated": "2026-10-09T11:55:57.016531+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_l1_ulkol_mp_tilan_hidastus",
+  "state": "2.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "h",
+   "device_class": "duration",
+   "icon": "mdi:clock",
+   "friendly_name": "Geopro L1 Ulkolämpötilan hidastus"
+  },
+  "last_changed": "2026-10-09T11:55:57.029639+00:00",
+  "last_reported": "2026-10-09T11:55:57.029639+00:00",
+  "last_updated": "2026-10-09T11:55:57.029639+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_l1_esikorotus",
+  "state": "1.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:temperature-celsius",
+   "friendly_name": "Geopro L1 Esikorotus"
+  },
+  "last_changed": "2026-10-09T13:15:47.150267+00:00",
+  "last_reported": "2026-10-09T13:15:47.150267+00:00",
+  "last_updated": "2026-10-09T13:15:47.150267+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_l1_venttiilin_kes_sulku",
+  "state": "30.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:temperature-celsius",
+   "friendly_name": "Geopro L1 venttiilin kesäsulku"
+  },
+  "last_changed": "2026-10-09T11:55:57.046797+00:00",
+  "last_reported": "2026-10-09T11:55:57.046797+00:00",
+  "last_updated": "2026-10-09T11:55:57.046797+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_ml_ohjaustapa",
+  "state": "0.0",
+  "attributes": {
+   "state_class": "measurement",
+   "icon": "mdi:gauge",
+   "friendly_name": "Geopro ML Ohjaustapa"
+  },
+  "last_changed": "2026-10-09T11:55:57.146407+00:00",
+  "last_reported": "2026-10-09T11:55:57.146407+00:00",
+  "last_updated": "2026-10-09T11:55:57.146407+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_ml_varaajaalamin",
+  "state": "32.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:temperature-celsius",
+   "friendly_name": "Geopro ML VaraajaAlaMin"
+  },
+  "last_changed": "2026-10-09T11:55:57.095136+00:00",
+  "last_reported": "2026-10-09T11:55:57.095136+00:00",
+  "last_updated": "2026-10-09T11:55:57.095136+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_ml_sv_viiveaika",
+  "state": "90.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "min",
+   "device_class": "duration",
+   "icon": "mdi:clock",
+   "friendly_name": "Geopro ML SV_viiveaika"
+  },
+  "last_changed": "2026-10-09T11:55:57.111103+00:00",
+  "last_reported": "2026-10-09T11:55:57.111103+00:00",
+  "last_updated": "2026-10-09T11:55:57.111103+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_ml_varyl_kes",
+  "state": "50.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:temperature-celsius",
+   "friendly_name": "Geopro ML VarYlä Kesä"
+  },
+  "last_changed": "2026-10-09T11:55:57.062987+00:00",
+  "last_reported": "2026-10-09T11:55:57.062987+00:00",
+  "last_updated": "2026-10-09T11:55:57.062987+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_ml_varyl_talvi",
+  "state": "55.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:temperature-celsius",
+   "friendly_name": "Geopro ML VarYlä Talvi"
+  },
+  "last_changed": "2026-10-09T11:55:57.051042+00:00",
+  "last_reported": "2026-10-09T11:55:57.051042+00:00",
+  "last_updated": "2026-10-09T11:55:57.051042+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_ml_lis_l_mmitys",
+  "state": "50.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:temperature-celsius",
+   "friendly_name": "Geopro ML Lisälämmitys"
+  },
+  "last_changed": "2026-10-09T11:55:57.128047+00:00",
+  "last_reported": "2026-10-09T11:55:57.128047+00:00",
+  "last_updated": "2026-10-09T11:55:57.128047+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_ml_lis_l_mmitys_aika",
+  "state": "120.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "min",
+   "device_class": "duration",
+   "icon": "mdi:clock",
+   "friendly_name": "Geopro ML Lisälämmitys aika"
+  },
+  "last_changed": "2026-10-09T11:55:57.141173+00:00",
+  "last_reported": "2026-10-09T11:55:57.141173+00:00",
+  "last_updated": "2026-10-09T11:55:57.141173+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_ml_kompuran_esto",
+  "state": "51.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:thermometer-off",
+   "friendly_name": "Geopro ML Kompuran esto"
+  },
+  "last_changed": "2026-10-09T14:03:47.840875+00:00",
+  "last_reported": "2026-10-09T14:03:47.840875+00:00",
+  "last_updated": "2026-10-09T14:03:47.840875+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_ml_varylaerosv",
+  "state": "5.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:temperature-celsius",
+   "friendly_name": "Geopro ML VarYlaEroSV"
+  },
+  "last_changed": "2026-10-09T11:55:57.112518+00:00",
+  "last_reported": "2026-10-09T11:55:57.112518+00:00",
+  "last_updated": "2026-10-09T11:55:57.112518+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_ml_varaajaalaero",
+  "state": "5.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:temperature-celsius",
+   "friendly_name": "Geopro ML VaraajaAlaEro"
+  },
+  "last_changed": "2026-10-09T11:55:57.069211+00:00",
+  "last_reported": "2026-10-09T11:55:57.069211+00:00",
+  "last_updated": "2026-10-09T11:55:57.069211+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_ml_varaajayl_ero",
+  "state": "3.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:temperature-celsius",
+   "friendly_name": "Geopro ML VaraajaYläEro"
+  },
+  "last_changed": "2026-10-09T11:55:57.093472+00:00",
+  "last_reported": "2026-10-09T11:55:57.093472+00:00",
+  "last_updated": "2026-10-09T11:55:57.093472+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_ml_jv_esiavaus",
+  "state": "40.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "%",
+   "icon": "mdi:valve",
+   "friendly_name": "Geopro ML JV esiavaus"
+  },
+  "last_changed": "2026-10-09T11:55:57.164093+00:00",
+  "last_reported": "2026-10-09T11:55:57.164093+00:00",
+  "last_updated": "2026-10-09T11:55:57.164093+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_ml_jv_esto",
+  "state": "60.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "s",
+   "device_class": "duration",
+   "icon": "mdi:clock",
+   "friendly_name": "Geopro ML JV Esto"
+  },
+  "last_changed": "2026-10-09T11:55:57.174078+00:00",
+  "last_reported": "2026-10-09T11:55:57.174078+00:00",
+  "last_updated": "2026-10-09T11:55:57.174078+00:00"
+ },
+ {
+  "entity_id": "sensor.geopro_ml_maaliuos_h_lytys",
+  "state": "-6.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:temperature-celsius",
+   "friendly_name": "Geopro ML Maaliuos hälytys"
+  },
+  "last_changed": "2026-10-09T11:55:57.157921+00:00",
+  "last_reported": "2026-10-09T11:55:57.157921+00:00",
+  "last_updated": "2026-10-09T11:55:57.157921+00:00"
+ },
+ {
+  "entity_id": "sensor.garage_geopro_l1_huone",
+  "state": "0.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:thermometer",
+   "friendly_name": "Geopro L1 huone"
+  },
+  "last_changed": "2026-10-09T11:55:56.808081+00:00",
+  "last_reported": "2026-10-09T11:55:56.808081+00:00",
+  "last_updated": "2026-10-09T11:55:56.808081+00:00"
+ },
+ {
+  "entity_id": "sensor.garage_geopro_vapaa_mittaus",
+  "state": "0.0",
+  "attributes": {
+   "state_class": "measurement",
+   "unit_of_measurement": "°C",
+   "device_class": "temperature",
+   "icon": "mdi:thermometer",
+   "friendly_name": "Geopro Vapaa mittaus"
+  },
+  "last_changed": "2026-10-09T11:55:56.861371+00:00",
+  "last_reported": "2026-10-09T11:55:56.861371+00:00",
+  "last_updated": "2026-10-09T11:55:56.861371+00:00"
+ }
+]
