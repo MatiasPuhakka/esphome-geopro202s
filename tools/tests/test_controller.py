@@ -22,7 +22,8 @@ class ThresholdTest(unittest.TestCase):
                 self.assertAlmostEqual(t.stop, 52, delta=0.2)
 
     def test_varaaja_yla_runs_from_var_yla_kesa_at_plus_20_to_var_yla_talvi_at_minus_20(self):
-        # Worked from the p. 21 graph: a straight line between the two, flat beyond.
+        # Worked from the graph on manuals/kasikirja.md#s21: a straight line between the two,
+        # flat beyond.
         cases = {30: 50, 20: 50, 3: 52.125, 0: 52.5, -20: 55, -30: 55}
         for outdoor, expected in cases.items():
             with self.subTest(outdoor=outdoor):

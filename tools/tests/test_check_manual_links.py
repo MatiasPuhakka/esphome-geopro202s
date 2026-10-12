@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.check_manual_links import broken_links
+from tools.check_manual_links import broken_links, citing
 
 MANUAL = '<a id="s21"></a>\n## Sivu 21\n'
 
@@ -54,6 +54,25 @@ class BrokenLinksTest(unittest.TestCase):
         self.assertEqual(
             broken_links(self.root, [code]),
             [("components/geopro_202s/register_map.py", 2, "manuals/kasikirja.md#s20")],
+        )
+
+
+class CitingTest(unittest.TestCase):
+    def test_a_test_that_cites_a_page_is_checked_but_the_checkers_own_made_up_links_are_not(self):
+        self.assertEqual(
+            citing(["tools/tests/test_controller.py", "tools/tests/test_check_manual_links.py"]),
+            ["tools/tests/test_controller.py"],
+        )
+
+    def test_pdfs_images_and_fixtures_are_not_checked(self):
+        self.assertEqual(
+            citing([
+                "manuals/Geopro 202S Käsikirja.pdf",
+                "manuals/kasikirja/s22-maalampojarjestelma.png",
+                "tools/tests/fixtures/history_2026-10-09_day.json",
+                "docs/controller.md",
+            ]),
+            ["docs/controller.md"],
         )
 
 

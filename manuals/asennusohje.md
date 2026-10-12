@@ -425,7 +425,7 @@ Käyttöönottovaiheessa on ehkä tarpeellista muuttaa kesäsulkulämpötilaa. T
 
 ***Täytä lopuksi asennuspöytäkirja!***
 
-> **Repo note:** the page numbers this page gives for the controller manual ("automatiikan käyttöohje") don't fit the Käsikirja in this folder. The Käsikirja has Starttitoiminta on p. 17, not p. 15, and Vent.kesäsulk on pp. 8–9, not pp. 6–7. It also gives Vent.kesäsulk a factory value of 30 °C (pp. 9 and 29), not +19 °C.
+> **Repo note:** the page numbers this page gives for the controller manual ("automatiikan käyttöohje") don't fit the Käsikirja in this folder. The Käsikirja has Starttitoiminta on [p. 17](kasikirja.md#s17), not p. 15, and Vent.kesäsulk on pp. [8](kasikirja.md#s8)–[9](kasikirja.md#s9), not pp. 6–7. It also gives Vent.kesäsulk a factory value of 30 °C (pp. [9](kasikirja.md#s9) and [29](kasikirja.md#s29)), not +19 °C.
 
 ---
 
@@ -541,9 +541,9 @@ Riviliittimet -X3:2, -X3:5, -X3:10 ja -X3:13 ovat kahden anturin yhteisiä ⊥-l
 
 Nimiö: SÄÄTIMEN LIITYNNÄT; GEOPRO SYSTEMS OY, GEOPRO SH 7-25; Pvm. 30.06.2004; Suun. VM; Kokonaisuus = MLP; Sijainti +; Piir.no. &EFS001 / Lehti 001; Piir.no. 142 002 02. Vasemmassa reunassa FIBOX® TESTED SYSTEMS, Hovinpelto 2 FIN-74700 KIURUVESI, Tel. +358 17 750 505 Fax +358 17 750 100. Kentät Muutos pvm., Muutti, Tark./Hyv., Suhde ja Huom. ovat tyhjiä.
 
-> **Repo note:** the wiring diagram on Käsikirja p. 39 names the Controller's own terminal groups X1–X3 (Dig 1–3), K1 (the alarm contact 31–32) and M1–M3 (the valve-motor outputs). On these drawings -X1, -X2 and -X3 are the heat pump's terminal strips, -K1 is the compressor contactor and -M1 the compressor.
+> **Repo note:** the wiring diagram on Käsikirja [p. 39](kasikirja.md#s39) names the Controller's own terminal groups X1–X3 (Dig 1–3), K1 (the alarm contact 31–32) and M1–M3 (the valve-motor outputs). On these drawings -X1, -X2 and -X3 are the heat pump's terminal strips, -K1 is the compressor contactor and -M1 the compressor.
 
-> **Repo note:** T1–T10 are the measurement inputs Mitt.1–Mitt.10, M1–M10 in [CONTEXT.md](../CONTEXT.md), and the sensors here match its table. 51–54 and 55–58 are the outputs Moott. L1 and Moott. L2. The -X2 TULISTUSOHJAUS cable goes to the JV's 3-point motor on Moott. JV ([`docs/controller.md`](../docs/controller.md#jv), terminals 59–62). It wires 59–61, the 3-point motor's terminals on Käsikirja p. 39; 62 is the 0...10 V control of a voltage-controlled motor.
+> **Repo note:** T1–T10 are the measurement inputs Mitt.1–Mitt.10, M1–M10 in [CONTEXT.md](../CONTEXT.md), and the sensors here match its table. 51–54 and 55–58 are the outputs Moott. L1 and Moott. L2. The -X2 TULISTUSOHJAUS cable goes to the JV's 3-point motor on Moott. JV ([`docs/controller.md`](../docs/controller.md#jv), terminals 59–62). It wires 59–61, the 3-point motor's terminals on Käsikirja [p. 39](kasikirja.md#s39); 62 is the 0...10 V control of a voltage-controlled motor.
 
 ---
 
@@ -663,9 +663,9 @@ Kelojen -K1 ja -K2 alla luetellaan niiden koskettimet ja paikat muodossa lehti/s
 
 Nimiö: MAALÄMPÖPUMPPU OHJAUSPIIRIKAAVIO; GEOPRO SYSTEMS OY, GEOPRO SH 7-25; Pvm. 07.07.2004; Suun. VM; Kokonaisuus = MLP; Sijainti + OK; Piir.no. & EFS001 / Lehti 201; Piir.no. 142 002 02; Huom. johdotus 0,75 mu ellei muuta ilmoitettu.
 
-> **Repo note:** A1's terminals here match the Controller's in [`docs/controller.md`](../docs/controller.md#inputs-and-relays) (from Käsikirja p. 39): 71–72 is Rele 2 (the compressor), 73–75 Rele 1 (the electric heater), 21–22 Dig 1 (Lisälämpöpainike), 23–24 Dig 2 (Kompr. L-rele) and 11 with gnd Mitt.11 (Kompressorin käyntitieto), which this drawing feeds from K1's opening contact 21–22.
+> **Repo note:** A1's terminals here match the Controller's in [`docs/controller.md`](../docs/controller.md#inputs-and-relays) (from Käsikirja [p. 39](kasikirja.md#s39)): 71–72 is Rele 2 (the compressor), 73–75 Rele 1 (the electric heater), 21–22 Dig 1 (Lisälämpöpainike), 23–24 Dig 2 (Kompr. L-rele) and 11 with gnd Mitt.11 (Kompressorin käyntitieto), which this drawing feeds from K1's opening contact 21–22.
 
-> **Repo note:** [`docs/controller.md`](../docs/controller.md#inputs-and-relays) puts the heater's overheat cut-out on Dig 3 (25–26), after Käsikirja p. 39. This drawing leaves 25–26 unused and wires YLILÄMPÖSUOJA -S3 in series with K2's coil. docs/controller.md also has Dig 2 (23–24) alarm on a closing contact, after Käsikirja p. 20, while this drawing wires F1's opening contact 21–22 to 23–24.
+> **Repo note:** [`docs/controller.md`](../docs/controller.md#inputs-and-relays) puts the heater's overheat cut-out on Dig 3 (25–26), after Käsikirja [p. 39](kasikirja.md#s39). This drawing leaves 25–26 unused and wires YLILÄMPÖSUOJA -S3 in series with K2's coil. docs/controller.md also has Dig 2 (23–24) alarm on a closing contact, after Käsikirja [p. 20](kasikirja.md#s20), while this drawing wires F1's opening contact 21–22 to 23–24.
 
 ---
 

@@ -1,21 +1,24 @@
 """A model of how the Controller decides to run the compressor, from docs/controller.md.
 
 Pure: settings and temperatures in, the thresholds and whether the Controller should be calling
-for the compressor out. Page numbers are the Käsikirja's (manuals/Geopro 202S Käsikirja.pdf)."""
+for the compressor out. Each page cited is a link into the Käsikirja's transcription, such as
+manuals/kasikirja.md#s21 for p. 21."""
 from dataclasses import dataclass
 
-# VaraajaYlä equals Var.ylä kesä at this outdoor temperature and above (p. 21).
+# VaraajaYlä equals Var.ylä kesä at this outdoor temperature and above (manuals/kasikirja.md#s21).
 SUMMER_OUTDOOR = 20.0
-# VaraajaYlä equals Var.ylä talvi at this outdoor temperature and below (p. 21).
+# VaraajaYlä equals Var.ylä talvi at this outdoor temperature and below (manuals/kasikirja.md#s21).
 WINTER_OUTDOOR = -20.0
 # The ML Ohjaustapa code for Sähkövastus, which turns compressor control into heater control
-# (p. 23). The codes follow the menu order; the owner confirmed them on 2026-10-11 (docs/controller.md).
+# (manuals/kasikirja.md#s23). The codes follow the menu order; the owner confirmed them on
+# 2026-10-11 (docs/controller.md).
 SAHKOVASTUS = 2
 
 
 @dataclass(frozen=True)
 class Settings:
-    """The ML circuit's settings the compressor rules use, in °C, with their p. 21 labels."""
+    """The ML circuit's settings the compressor rules use, in °C, with their labels on
+    manuals/kasikirja.md#s21."""
     var_yla_kesa: float  # Var.ylä kesä
     var_yla_talvi: float  # Var.ylä talvi
     varaaja_yla_ero: float  # VaraajaYläEro
@@ -29,15 +32,17 @@ class Settings:
 class Thresholds:
     """The temperatures at which the Controller switches, in °C."""
     varaaja_yla: float  # VaraajaYlä
-    start: float  # M9 below this starts the compressor (p. 23)
-    stop: float  # M9 above this stops it (p. 23)
-    heater: float  # M9 below this switches S1 on (pp. 21, 23)
-    restart: float  # after a Kompr.esto stop, M10 must fall to this before the compressor restarts (p. 23)
+    start: float  # M9 below this starts the compressor (manuals/kasikirja.md#s23)
+    stop: float  # M9 above this stops it (manuals/kasikirja.md#s23)
+    heater: float  # M9 below this switches S1 on (manuals/kasikirja.md#s21, manuals/kasikirja.md#s23)
+    # After a Kompr.esto stop, M10 must fall to this before the compressor restarts
+    # (manuals/kasikirja.md#s23).
+    restart: float
 
 
 def varaaja_yla(settings, outdoor):
     """VaraajaYlä at an outdoor temperature: a straight line from Var.ylä kesä at +20 °C to
-    Var.ylä talvi at −20 °C, flat beyond them (p. 21)."""
+    Var.ylä talvi at −20 °C, flat beyond them (manuals/kasikirja.md#s21)."""
     outdoor = min(max(outdoor, WINTER_OUTDOOR), SUMMER_OUTDOOR)
     share = (SUMMER_OUTDOOR - outdoor) / (SUMMER_OUTDOOR - WINTER_OUTDOOR)
     return settings.var_yla_kesa + (settings.var_yla_talvi - settings.var_yla_kesa) * share
@@ -71,10 +76,11 @@ def step(settings, temperatures, state):
     """The State after one reading.
 
     Models the tank-top start and stop, the Kompr.esto stop and restart, and ML Ohjaustapa
-    Sähkövastus (p. 23). Leaves out the tank-middle start and the tank-bottom stop, which need
-    the L1 setpoint the Component doesn't read, and the running-feedback alarm (p. 20). How the
-    tank-top and tank-bottom calls combine is an open question in docs/controller.md; here the
-    Kompr.esto stop overrides the tank-top call, as p. 23 says."""
+    Sähkövastus (manuals/kasikirja.md#s23). Leaves out the tank-middle start and the tank-bottom
+    stop, which need the L1 setpoint the Component doesn't read, and the running-feedback
+    alarm (manuals/kasikirja.md#s20). How the tank-top and tank-bottom calls combine is an open
+    question in docs/controller.md; here the Kompr.esto stop overrides the tank-top call, as
+    manuals/kasikirja.md#s23 says."""
     t = thresholds(settings, temperatures.outdoor)
     if temperatures.tank_top < t.start:
         top_call = True
