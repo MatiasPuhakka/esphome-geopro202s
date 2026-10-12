@@ -121,6 +121,12 @@ python3 tools/profile.py "2026-10-10 04:00" "2026-10-10 05:00" --step 5
 Both replace the `.scratch/cycles/scripts/` versions, which read saved history files. They fetch through the client instead, and drop the columns the model doesn't use: M7, brine, L1 supply and the hour counters. `profile.py` no longer prints a row for the slot that starts at END.
 
 
+`check_manual_links.py` checks that every link to a manual page anchor, such as the `#s21` of page 21 in `manuals/kasikirja.md`, points at a manual and anchor that exist (ADR 0006). It prints each broken link with its file and line and exits with status 1 if there is one. CI runs it as `make check-manual-links`.
+
+```sh
+python3 tools/check_manual_links.py
+```
+
 ## Controller model and run detector
 
 Both are pure: no Home Assistant, no clock. `plant.py` looks up the entities they read in the contract and turns history rows into their inputs.

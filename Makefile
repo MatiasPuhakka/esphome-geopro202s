@@ -28,7 +28,7 @@ NODE_TRACE := tests/traces/node-2026-10-09.log
 # The export runs on plain python3 without ESPHome.
 REGISTER_MAP_ROWS := $(BUILD_DIR)/register_map_rows.inc
 
-.PHONY: test pure-check tools-test check-secrets esphome-version check-config check-node-config check-trace-config check-contract update-contract compile compile-node clean
+.PHONY: test pure-check tools-test check-secrets check-manual-links esphome-version check-config check-node-config check-trace-config check-contract update-contract compile compile-node clean
 
 test: pure-check $(TEST_BIN)
 	./$(TEST_BIN)
@@ -51,6 +51,10 @@ $(TEST_BIN): $(TEST_SRCS) $(PURE_SRCS) $(wildcard $(COMPONENT_DIR)/*.h) $(wildca
 # Runs the Python tools' tests offline against recorded Home Assistant JSON, with the stdlib only.
 tools-test:
 	python3 -I -m unittest discover -t . -s tools/tests
+
+# Every link to a manual page anchor (manuals/*.md#s21) must resolve (ADR 0006).
+check-manual-links:
+	python3 -I tools/check_manual_links.py
 
 # Credentials live in the gitignored secrets.yaml and reach configs through !secret.
 # Prints file:line only, so a leaked value stays out of the CI log.

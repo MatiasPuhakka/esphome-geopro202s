@@ -483,6 +483,8 @@ Säädin lämmittää varaajan alaosaa kompressorilla ja tarvittaessa sähkövas
 
 Kompressorin, sähkövastuksen S1 ja jakoventtiilin (JV) ohjaussäännöt ovat tiedostossa `docs/controller.md`, kukin sivunumeroineen.
 
+Sivut 21–23 on litteroitu kokonaan tiedostoon [`kasikirja.md`](kasikirja.md#s21).
+
 ### Lisälämmitys:
 
 *Käsikirja s. 20, 21, 23*
