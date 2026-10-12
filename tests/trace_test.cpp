@@ -2,8 +2,10 @@
 
 #include "frame.h"
 #include "register_map.h"
+#include "session.h"
 #include "value_decoder.h"
 
+#include <array>
 #include <fstream>
 #include <map>
 #include <set>
@@ -12,10 +14,9 @@
 #include <vector>
 
 using esphome::geopro_202s::build_read_request;
-using esphome::geopro_202s::decode_values;
-using esphome::geopro_202s::DecodedValue;
 using esphome::geopro_202s::Frame;
 using esphome::geopro_202s::FrameDecoder;
+using esphome::geopro_202s::Session;
 
 // The Makefile passes the trace's absolute path, so the tests find it from any working directory.
 #ifndef NODE_TRACE
@@ -72,6 +73,51 @@ struct ExpectedValue {
   std::string source;
 };
 
+// What a Session did while the trace's Replies played back.
+struct Replay {
+  std::vector<std::array<uint8_t, 6>> requests;
+  std::vector<uint16_t> answered;
+  std::map<std::string, float> published;  // by Register map key
+};
+
+// Plays the trace through a Session built from the real Register map rows, as the hub would:
+// time advances in 5 ms steps, and each Read request the Session sends gets the trace's Reply
+// for that Address, fed in one byte at a time 20 ms later. The Session asks in its own order,
+// not the trace's, so Replies are matched by Address. Stops before the second cycle (10 s).
+Replay replay_trace(const std::vector<register_map::Row> &rows) {
+  std::map<uint16_t, TraceLine> replies;
+  uint16_t requested = 0;
+  for (const TraceLine &line : read_trace()) {
+    if (line.sent)
+      requested = requested_address(line);
+    else
+      replies[requested] = line;
+  }
+
+  Session session;
+  for (const register_map::Row &row : rows)
+    session.add_value(row.group, row.registration);
+
+  Replay replay;
+  for (uint32_t now = 0; now < 5000; now += 5) {
+    std::array<uint8_t, 6> request;
+    if (!session.next_request(now, request))
+      continue;
+    replay.requests.push_back(request);
+    const uint16_t address = static_cast<uint16_t>(request[3] << 8 | request[4]);
+    auto reply = replies.find(address);
+    REQUIRE_MESSAGE(reply != replies.end(), "the Session asked for an Address the trace has no Reply for");
+    now += 20;
+    for (uint8_t byte : reply->second.bytes) {
+      auto output = session.feed(&byte, 1, now);
+      replay.answered.insert(replay.answered.end(), output.answered.begin(), output.answered.end());
+      for (const auto &value : output.values)
+        replay.published[rows[value.index].key] = value.value;
+    }
+  }
+  return replay;
+}
+
 }  // namespace
 
 TEST_CASE("node trace: the Node's Read requests are the ones build_read_request() makes") {
@@ -114,6 +160,27 @@ TEST_CASE("node trace: each Reply is one Frame for the requested Address, with C
   CHECK(replies == 17);
   // Banks 0x0C and 0x0B, whose data holds a 2 (offsets 19 and 9).
   CHECK(replies_with_0x02_inside == 2);
+}
+
+TEST_CASE("node trace: the Session asks for every Address the trace covers once, with a request build_read_request() makes") {
+  const Replay replay = replay_trace(register_map::all_rows());
+
+  std::set<uint16_t> traced;
+  for (const TraceLine &line : read_trace())
+    if (line.sent)
+      traced.insert(requested_address(line));
+  REQUIRE(traced.size() == 17);
+
+  std::set<uint16_t> asked;
+  for (const auto &request : replay.requests) {
+    const uint16_t address = static_cast<uint16_t>(request[3] << 8 | request[4]);
+    CHECK(asked.insert(address).second);
+    auto expected = build_read_request(address);
+    CHECK(request == expected);
+  }
+  CHECK(asked == traced);
+  // Every Reply was answered, once, in the order the Session asked.
+  CHECK(replay.answered.size() == 17);
 }
 
 TEST_CASE("node trace: every row whose Address the trace covers decodes to its expected Value") {
@@ -180,20 +247,9 @@ TEST_CASE("node trace: every row whose Address the trace covers decodes to its e
   };
 
   const auto &rows = register_map::all_rows();
-  const auto registrations = register_map::registrations(rows);
-
-  FrameDecoder decoder;
-  std::set<uint16_t> replied_addresses;
-  std::map<std::string, float> decoded;
-  for (const TraceLine &line : read_trace()) {
-    if (line.sent)
-      continue;
-    for (const Frame &frame : receive(decoder, line)) {
-      replied_addresses.insert(frame.address);
-      for (const DecodedValue &result : decode_values(frame.address, frame.data, registrations))
-        decoded[rows[result.index].key] = result.value;
-    }
-  }
+  const Replay replay = replay_trace(rows);
+  const auto &decoded = replay.published;
+  std::set<uint16_t> replied_addresses(replay.answered.begin(), replay.answered.end());
 
   size_t checked = 0;
   for (const register_map::Row &row : rows) {

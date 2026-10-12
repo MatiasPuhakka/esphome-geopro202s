@@ -19,8 +19,9 @@ std::optional<uint16_t> next(PollScheduler &scheduler, uint32_t now) {
   return std::nullopt;
 }
 
-// Drives a scheduler the way the hub's loop does, with a fake millisecond clock
-// that advances one tick per loop pass.
+// Drives a scheduler alone, with a fake millisecond clock that advances one tick per pass and
+// replies delivered straight to on_frame(). It tests the scheduler's timing rules. tests/
+// session_test.cpp covers the loop's decisions around it.
 struct Harness {
   explicit Harness(uint32_t start = 0) : now(start) {}
 
