@@ -108,6 +108,15 @@ TEST_CASE("bytes before the start byte are skipped") {
   check_temp_5_00(feed(decoder, bytes));
 }
 
+TEST_CASE("reset drops a partial frame, and the next frame decodes") {
+  FrameDecoder decoder;
+  CHECK(feed(decoder, {0x02, 0x06, 0x04, 0x00}).empty());
+  decoder.reset();
+  // The partial frame's rest, which would have completed it.
+  CHECK(feed(decoder, {0x01, 0x01, 0xF4, 0x00}).empty());
+  check_temp_5_00(feed(decoder, TEMP_5_00));
+}
+
 TEST_CASE("several frames in one feed") {
   FrameDecoder decoder;
   std::vector<uint8_t> bytes = TEMP_6_00;
