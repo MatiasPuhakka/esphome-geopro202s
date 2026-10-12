@@ -6,9 +6,7 @@ namespace esphome {
 namespace geopro_202s {
 
 void Geopro202sComponent::add_value_(PollGroup group, const Registration &registration, const Target &target) {
-  // The scheduler keeps each address once, however many values share it.
-  this->scheduler_.add_address(group, registration.address);
-  this->registrations_.push_back(registration);
+  this->session_.add_value(group, registration);
   this->targets_.push_back(target);
 }
 
@@ -21,51 +19,39 @@ void Geopro202sComponent::setup() {
 void Geopro202sComponent::loop() {
   const uint32_t now = millis();
 
+  uint8_t buffer[64];
   while (this->available()) {
-    uint8_t c;
-    this->read_byte(&c);
-    for (const auto &frame : this->decoder_.feed(&c, 1)) {
-      // A frame without data is a read request (an echo of our own, say), not a reply.
-      if (!frame.data.empty())
-        this->scheduler_.on_frame(frame.address, now);
-      this->handle_frame_(frame);
-    }
+    size_t len = 0;
+    while (len < sizeof(buffer) && this->available())
+      this->read_byte(&buffer[len++]);
+    this->publish_(this->session_.feed(buffer, len, now));
   }
 
-  uint16_t address;
-  if (this->scheduler_.next_request(now, address))
-    this->send_request_(address);
+  std::array<uint8_t, 6> request;
+  if (this->session_.next_request(now, request)) {
+    ESP_LOGD(TAG, "Sending request for address 0x%04X", (unsigned) (request[3] << 8 | request[4]));
+    this->write_array(request.data(), request.size());
+  }
 }
 
-void Geopro202sComponent::handle_frame_(const Frame &frame) {
-  ESP_LOGD(TAG, "Received frame: address=0x%04X, data length=%u", frame.address, (unsigned) frame.data.size());
-  if (frame.data.empty())
-    return;
-
-  auto results = decode_values(frame.address, frame.data, this->registrations_);
-  if (results.empty()) {
-    ESP_LOGV(TAG, "No value decoded from address 0x%04X", frame.address);
-    return;
-  }
-  for (const auto &result : results) {
-    const Registration &value = this->registrations_[result.index];
+void Geopro202sComponent::publish_(const SessionOutput &output) {
+  for (uint16_t address : output.answered)
+    ESP_LOGD(TAG, "Received reply: address=0x%04X", address);
+  const auto &registrations = this->session_.registrations();
+  for (const DecodedValue &result : output.values) {
+    const Registration &value = registrations[result.index];
     ESP_LOGV(TAG, "Address 0x%04X offset %u: %.2f", value.address, value.offset, result.value);
     this->targets_[result.index](result.value);
   }
 }
 
-void Geopro202sComponent::send_request_(uint16_t address) {
-  auto request = build_read_request(address);
-  ESP_LOGD(TAG, "Sending request for address 0x%04X", address);
-  this->write_array(request.data(), request.size());
-}
-
 void Geopro202sComponent::dump_config() {
   ESP_LOGCONFIG(TAG, "Geopro 202S:");
   ESP_LOGCONFIG(TAG, "  Component revision: %s", this->component_revision_);
-  ESP_LOGCONFIG(TAG, "  Registered values: %u", (unsigned) this->registrations_.size());
-  for (size_t i = 0; i < this->registrations_.size(); i++) {
-    const Registration &value = this->registrations_[i];
+  const auto &registrations = this->session_.registrations();
+  ESP_LOGCONFIG(TAG, "  Registered values: %u", (unsigned) registrations.size());
+  for (size_t i = 0; i < registrations.size(); i++) {
+    const Registration &value = registrations[i];
     ESP_LOGCONFIG(TAG, "    %s 0x%04X, offset %u, %u byte(s), %s, divisor %u, mask 0x%04X",
                   value.address_kind == AddressKind::BANK ? "Bank" : "Address", value.address, value.offset,
                   value.rule.width, value.rule.is_signed ? "signed" : "unsigned", value.rule.divisor,

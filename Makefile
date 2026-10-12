@@ -18,7 +18,7 @@ NODE_CONFIG := geopro.yaml
 TRACE_CONFIG := geopro-trace.yaml
 
 # Component sources with no ESPHome dependency, built and tested on the host.
-PURE_MODULES := frame poll_scheduler value_decoder
+PURE_MODULES := frame poll_scheduler value_decoder session
 PURE_SRCS := $(addprefix $(COMPONENT_DIR)/,$(addsuffix .cpp,$(PURE_MODULES)))
 TEST_SRCS := $(wildcard tests/*.cpp)
 TEST_BIN := $(BUILD_DIR)/tests

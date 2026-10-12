@@ -1,7 +1,6 @@
 #include "doctest.h"
 
 #include "frame.h"
-#include "poll_scheduler.h"
 #include "register_map.h"
 #include "value_decoder.h"
 
@@ -16,8 +15,6 @@ using esphome::geopro_202s::DecodeRule;
 using esphome::geopro_202s::Frame;
 using esphome::geopro_202s::FrameDecoder;
 using esphome::geopro_202s::frame_checksum;
-using esphome::geopro_202s::PollGroup;
-using esphome::geopro_202s::PollScheduler;
 using esphome::geopro_202s::Registration;
 
 namespace {
@@ -194,70 +191,6 @@ TEST_CASE("every status bit decodes its own bit of the status word") {
     CHECK(decode_rows(STATUS_WORD, {0x00, bit.second}, rows) == only_this);
     CHECK(decode_rows(STATUS_WORD, {0xFF, static_cast<uint8_t>(~bit.second)}, rows) == all_but_this);
   }
-}
-
-TEST_CASE("status bits are read and published without the status-word sensor") {
-  // Only bit rows registered, as when status_word is left out of the config.
-  const auto rows = status_bit_rows();
-
-  PollScheduler scheduler;
-  for (const register_map::Row &row : rows)
-    scheduler.add_value_address(row.registration.address);
-  uint16_t address;
-  REQUIRE(scheduler.next_request(0, address));
-  CHECK(address == STATUS_WORD);
-
-  // compressor and digi2 on.
-  const std::map<std::string, float> expected = {
-      {"compressor", 1}, {"el_heater", 0}, {"digi1", 0}, {"digi2", 1}, {"digi3", 0},
-  };
-  CHECK(decode_rows(STATUS_WORD, {0x00, 0x12}, rows) == expected);
-}
-
-TEST_CASE("rows sharing an address are requested once and decode from one reply") {
-  // A temperature, the status-word sensor and every status bit, as the hub
-  // registers them from the Register map.
-  const auto rows =
-      register_map::rows_named({"outside_temp", "status_word", "compressor", "el_heater", "digi1", "digi2", "digi3"});
-  const auto registrations = register_map::registrations(rows);
-
-  PollScheduler scheduler;
-  for (const Registration &registration : registrations)
-    scheduler.add_value_address(registration.address);
-
-  // Run one cycle, answering each request at once.
-  std::vector<uint16_t> sent;
-  for (uint32_t now = 0; now < 1000; now++) {
-    uint16_t address;
-    if (scheduler.next_request(now, address)) {
-      sent.push_back(address);
-      scheduler.on_frame(address, now);
-    }
-  }
-  CHECK(sent == std::vector<uint16_t>{0x12, STATUS_WORD});
-
-  // One status-word reply feeds the word and all five bits, and nothing else.
-  const std::map<std::string, float> expected = {
-      {"status_word", 0x8019}, {"compressor", 1}, {"el_heater", 1}, {"digi1", 1}, {"digi2", 0}, {"digi3", 0},
-  };
-  CHECK(decode_rows(STATUS_WORD, {0x80, 0x19}, rows) == expected);
-}
-
-TEST_CASE("a Bank row moved to the value cadence still decodes") {
-  // comp_lock as the Register map has it, but read every value interval.
-  register_map::Row row = register_map::rows_named({"comp_lock"})[0];
-  row.group = PollGroup::VALUE;
-
-  PollScheduler scheduler;
-  scheduler.add_address(row.group, row.registration.address);
-  uint16_t address;
-  REQUIRE(scheduler.next_request(0, address));
-  CHECK(address == 0x0B);
-
-  // The Reply is still a full Bank, with comp_lock at offset 14.
-  std::vector<uint8_t> data(31, 0x00);
-  data[14] = 0xFB;
-  CHECK(decode_rows(0x0B, data, {row}) == std::map<std::string, float>{{"comp_lock", -5}});
 }
 
 TEST_CASE("a zero divisor produces nothing") {
