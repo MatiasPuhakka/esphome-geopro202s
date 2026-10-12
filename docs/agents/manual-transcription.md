@@ -27,7 +27,7 @@ Copy the words from the text layer, which keeps the spelling as printed, and tak
 - runs in the order the PDF drew it, so a table comes out column by column and a chart's labels land among the paragraphs around it.
 - splits and reorders characters: on p. 21 the printed 65°C came out as `5°` and `6C` on separate lines, and ≥ and ≤ as `>` and `<`.
 - holds the page furniture that ADR 0006 leaves out, such as the doubled banner `Geopro 202SGeopro 202S`, the page number and the key legend.
-- lacks text drawn inside images. None of the labels on the Asennusohje's drawings, pp. 20–24, are in it, so they come from the render.
+- lacks text drawn inside images. None of the labels on the Asennusohje's drawings, pp. 20–23, are in it, so they come from the render.
 
 ## 3. Crop each figure
 
