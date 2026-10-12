@@ -30,10 +30,10 @@ function pageNumbers(args) {
 
 function run(argv) {
   if (argv.length < 4) fail(USAGE, 2);
-  const [path, outdir, scaleArg, ...args] = argv;
+  const [path, outdir, scaleArg, ...pageArgs] = argv;
   const scale = Number(scaleArg);
   if (!(scale > 0)) fail(`${USAGE}\n${scaleArg} is not a scale`, 2);
-  const pages = pageNumbers(args);
+  const pages = pageNumbers(pageArgs);
   const doc = $.PDFDocument.alloc.initWithURL($.NSURL.fileURLWithPath(path));
   if (doc.isNil()) fail(`can't open ${path} as a PDF`);
   const count = doc.pageCount;

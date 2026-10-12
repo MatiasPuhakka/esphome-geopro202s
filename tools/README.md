@@ -1,6 +1,6 @@
 # tools
 
-Scripts for watching and analysing the heat pump through Home Assistant, for reading the Node directly, and for reading the manual PDFs. They use plain Python 3.11 or newer and need nothing installed, except that the Node client needs `aioesphomeapi`, which comes with ESPHome, and the two PDF tools are JavaScript for macOS's `osascript`.
+Scripts for watching and analysing the heat pump through Home Assistant, for reading the Node directly, and for reading the manual PDFs. The Python tools need Python 3.11 or newer and nothing installed, except that the Node client needs `aioesphomeapi`, which comes with ESPHome. The two PDF tools are JavaScript that macOS runs with `osascript`.
 
 ## Home Assistant client
 

@@ -48,7 +48,8 @@ $(TEST_BIN): $(TEST_SRCS) $(PURE_SRCS) $(wildcard $(COMPONENT_DIR)/*.h) $(wildca
 	@mkdir -p $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -DNODE_TRACE='"$(CURDIR)/$(NODE_TRACE)"' -I$(COMPONENT_DIR) -Itests -I$(BUILD_DIR) -o $@ $(TEST_SRCS) $(PURE_SRCS)
 
-# Runs the Python tools' tests offline against recorded Home Assistant JSON, with the stdlib only.
+# Runs the tools' tests offline with the stdlib only: the Python tools against recorded Home
+# Assistant JSON, and on macOS the PDF tools against the manual PDFs.
 tools-test:
 	python3 -I -m unittest discover -t . -s tools/tests
 

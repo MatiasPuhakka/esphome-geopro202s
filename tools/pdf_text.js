@@ -13,7 +13,7 @@ function fail(message, status = 1) {
   $.exit(status);
 }
 
-// The pages the arguments name, in order.
+// The pages the arguments name, in order. tools/pdf_png.js reads its pages the same way.
 function pageNumbers(args) {
   const pages = [];
   for (const arg of args) {
@@ -28,8 +28,8 @@ function pageNumbers(args) {
 
 function run(argv) {
   if (argv.length < 2) fail(USAGE, 2);
-  const [path, ...args] = argv;
-  const pages = pageNumbers(args);
+  const [path, ...pageArgs] = argv;
+  const pages = pageNumbers(pageArgs);
   const doc = $.PDFDocument.alloc.initWithURL($.NSURL.fileURLWithPath(path));
   if (doc.isNil()) fail(`can't open ${path} as a PDF`);
   const count = doc.pageCount;
