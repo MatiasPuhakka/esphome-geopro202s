@@ -1,0 +1,11 @@
+# The manuals are Markdown transcriptions of the PDFs
+
+`manuals/` held each PDF next to a condensed Finnish paraphrase that said the PDF wins where they disagree. Neither people nor agents could settle a question in the paraphrase, every page citation in the repo named the PDF, and reading the PDF here takes a PDFKit script. We chose to replace each paraphrase with a full transcription that becomes the copy everyone reads (#80). The PDFs stay in `manuals/` as the archive, the source a transcription is checked against.
+
+A transcription keeps the PDF's Finnish text as printed, typos included, because the Controller shows these labels and CONTEXT.md uses them. Repeated page furniture (the banner, the logo, the page number, the key legend at the foot of a page) is left out. Each PDF page starts with an anchor, `<a id="s21"></a>` for PDF page 21, counted from 1 as the repo's page citations already are, so a citation anywhere in the repo can link to its page. `make check-manual-links`, run in CI, fails when such a link points at a manual or anchor that doesn't exist. Markdown links resolve from the citing file's folder, and code comments name the path from the repo root.
+
+A figure, chart or drawing is cropped from the page into an image under a folder named after the transcription, and a Finnish description follows it, written so an agent can use the figure without seeing it. A screen is a code block holding the screen's text, and a key icon is the key's name in brackets. A table with merged cells that Markdown can't express is an inline HTML table. A merged cell that holds one sentence per row stays a Markdown table, with each sentence in its row, as on p. 21.
+
+What the repo knows that the manual doesn't, such as a conflict between two pages or a misspelt label, goes in a quoted block that starts with **Repo note**, in English. The manual's own text stays as printed, and anything observed on the Node stays in `docs/controller.md`.
+
+We chose Markdown over HTML. GitHub renders Markdown and shows HTML files as source, Markdown diffs line by line, and an agent reads it for fewer tokens. HTML's advantages are captions and merged table cells, which the conventions above cover.
