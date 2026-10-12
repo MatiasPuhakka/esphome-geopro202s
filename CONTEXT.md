@@ -160,3 +160,12 @@ _Avoid_: parser, protocol handler
 **Poll scheduler**:
 The part of the Component that decides which Address to request next, with one Read request in flight at a time.
 _Avoid_: poller, request queue
+
+**Session**:
+The part of the Component that turns received bytes and the time into Read requests and decoded Values. It composes the Frame codec, Poll scheduler and value decoder, owns the Register map entries, and decides what counts as a Reply and when a request is done. It has no clock and no ESPHome includes. Each decoded Value carries the id of its entry.
+_Avoid_: driver, transport
+
+**Hub**:
+The ESPHome-facing class (`Geopro202sComponent`). It moves UART bytes and the time into the Session, sends the Read requests the Session returns, and publishes the Values it hands back. It is the only code that touches the UART or an entity.
+_Avoid_: adapter, controller (that is the Ouman unit)
+
