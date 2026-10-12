@@ -11,9 +11,15 @@ EntryId Session::add_value(PollGroup group, const Registration &registration) {
 
 SessionOutput Session::feed(const uint8_t *bytes, size_t len, uint32_t now) {
   SessionOutput output;
+  if (len == 0)
+    return output;
+  if (now - this->last_bytes_at_ > SILENCE_GAP_MS)
+    this->decoder_.reset();
+  this->last_bytes_at_ = now;
   for (const Frame &frame : this->decoder_.feed(bytes, len)) {
-    // A frame without data is a read request (an echo of our own, say), not a reply.
-    if (frame.data.empty())
+    // Only a Frame with Command byte 0x06 is a Reply. The Session ignores any other, such as
+    // the Node's own Read request echoed back, whether or not it carries data.
+    if (frame.command != FRAME_CMD_REPLY)
       continue;
     this->scheduler_.on_frame(frame.address, now);
     output.answered.push_back(frame.address);

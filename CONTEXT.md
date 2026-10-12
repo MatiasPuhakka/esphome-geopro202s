@@ -109,6 +109,10 @@ _Avoid_: message type, type byte
 The last byte of a Frame: the low byte of the sum of every byte from the Command byte up to the Checksum.
 _Avoid_: CRC
 
+**False start**:
+A 0x02 on the bus that doesn't begin a Frame, from line noise or from the tail of a Reply the Node caught partway, as at boot. Since 0x02 is never escaped, it looks like a start byte until the bytes after it fail to make a Frame.
+_Avoid_: stale frame (the bytes a false start leaves held)
+
 **Address**:
 The 16-bit number a Read request asks for; either a single Value or a Bank.
 _Avoid_: id, sensor id, register

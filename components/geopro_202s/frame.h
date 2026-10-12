@@ -13,6 +13,7 @@ namespace geopro_202s {
 // read request and 0x06 in a reply; the decoder accepts any value there.
 static const uint8_t FRAME_START = 0x02;
 static const uint8_t FRAME_CMD_READ = 0x81;
+static const uint8_t FRAME_CMD_REPLY = 0x06;
 static const uint8_t FRAME_MIN_LENGTH = 0x02;
 static const uint8_t FRAME_MAX_LENGTH = 0x21;
 static const size_t FRAME_OVERHEAD = 4;
@@ -32,6 +33,9 @@ class FrameDecoder {
  public:
   // Returns the complete, checksum-verified frames the new bytes finish.
   std::vector<Frame> feed(const uint8_t *bytes, size_t len);
+
+  // Drops the bytes of a frame not yet complete.
+  void reset() { this->buffer_.clear(); }
 
  protected:
   void drain_(std::vector<Frame> &out);
