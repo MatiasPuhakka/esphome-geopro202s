@@ -6,6 +6,6 @@ So a change to a name, kind, unit or state class is a Home Assistant migration, 
 
 Three migrations were considered in #26:
 
-- **State class of settings.** The 24 Bank settings, `hp_mode` and `status_word` lose `state_class: measurement` (#75). Cost: 26 statistics repairs; IDs and history stay.
+- **State class of settings.** The 24 Bank settings (`hp_mode` is one of them) and `status_word` lose `state_class: measurement` (#75). A setting changes only when someone edits it on the Controller, and an enum like `hp_mode` or a bitfield like the Status word has no meaningful mean or minimum, so their statistics say nothing. Cost: 25 statistics repairs; IDs and history stay.
 - **hp_mode.** The numeric entity stays as it is. #64 decides how to show the mode's name.
 - **L1 -20°C and L1 +20°C.** Both are renamed in firmware to `L1 miinus 20°C` and `L1 plus 20°C` (#76). Cost: both entities are new, so both old ones and their history are orphaned, and the Home Assistant repo's references change with them. Renaming only the entity ID in Home Assistant's registry would have kept the statistics, but the registry isn't in this repo, so a fresh install would repeat the `_2` ambiguity.

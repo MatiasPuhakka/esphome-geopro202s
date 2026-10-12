@@ -161,7 +161,8 @@ def _hours(key, address):
     )
 
 
-STATUS_WORD = Value("status_word", EntityKind.SENSOR, 0x2D, U16, state_class=STATE_CLASS_MEASUREMENT, accuracy=0)
+# A bitfield has no meaningful statistics, so the Status word has no state class (docs/adr/0004).
+STATUS_WORD = Value("status_word", EntityKind.SENSOR, 0x2D, U16, accuracy=0)
 
 
 def _status_bit(key, mask, icon):
@@ -172,8 +173,9 @@ def _status_bit(key, mask, icon):
 
 
 # Bank settings, one helper per type of setting: each reads the byte at `offset` in
-# `bank` and sets its own presentation. All four publish with state class measurement
-# and no decimals today; #26 decides whether that changes.
+# `bank` and sets its own presentation. All four publish with no decimals and no state
+# class: a setting changes only when someone edits it on the Controller, so its
+# statistics would say nothing (docs/adr/0004).
 def _bank_setting(key, bank, offset, decode, **entity_options):
     return Value(
         key, EntityKind.SENSOR, bank, decode,
@@ -187,29 +189,24 @@ _TEMP_ICON = "mdi:temperature-celsius"
 def _bank_temperature(key, bank, offset, icon=_TEMP_ICON, decode=S8):
     return _bank_setting(
         key, bank, offset, decode,
-        unit=UNIT_CELSIUS, device_class=DEVICE_CLASS_TEMPERATURE,
-        state_class=STATE_CLASS_MEASUREMENT, accuracy=0, icon=icon,
+        unit=UNIT_CELSIUS, device_class=DEVICE_CLASS_TEMPERATURE, accuracy=0, icon=icon,
     )
 
 
 def _bank_duration(key, bank, offset, unit, decode=S8):
     return _bank_setting(
         key, bank, offset, decode,
-        unit=unit, device_class=DEVICE_CLASS_DURATION,
-        state_class=STATE_CLASS_MEASUREMENT, accuracy=0, icon="mdi:clock",
+        unit=unit, device_class=DEVICE_CLASS_DURATION, accuracy=0, icon="mdi:clock",
     )
 
 
 def _bank_percentage(key, bank, offset, icon):
-    return _bank_setting(
-        key, bank, offset, S8,
-        unit=UNIT_PERCENT, state_class=STATE_CLASS_MEASUREMENT, accuracy=0, icon=icon,
-    )
+    return _bank_setting(key, bank, offset, S8, unit=UNIT_PERCENT, accuracy=0, icon=icon)
 
 
 def _bank_mode(key, bank, offset):
     """A setting whose number picks one of a menu's choices."""
-    return _bank_setting(key, bank, offset, S8, state_class=STATE_CLASS_MEASUREMENT, accuracy=0, icon="mdi:gauge")
+    return _bank_setting(key, bank, offset, S8, accuracy=0, icon="mdi:gauge")
 
 
 VALUES = (

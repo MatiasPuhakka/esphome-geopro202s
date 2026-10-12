@@ -161,10 +161,11 @@ These log scrapers in `.scratch/` match log formats the Node no longer writes: E
 make tools-test
 ```
 
-The tests run offline against JSON recorded from Home Assistant and the Node and trimmed in `tests/fixtures/`:
+The tests run offline against the files in `tests/fixtures/`: JSON recorded from Home Assistant and the Node and trimmed, and an old copy of the contract.
 
 - `states.json`, `history_day.json` and `history_nordpool.json`: Home Assistant on 2026-10-10.
 - `states_before_flash.json` and `states_after_flash.json`: the Geopro entities in the states snapshots from before and after the first flash in #11, on 2026-10-09.
+- `entity_contract_flash.txt`: `tests/entity-contract.txt` from before #75 dropped the Bank settings' and the Status word's state class, so its state classes match the #11 snapshots'. The flash check tests replay those snapshots against it rather than against the live contract, which each Home Assistant migration changes.
 - `history_run_watch.json`: history for the entities `run_watch.py` reads, in two windows of 2026-10-09 (10:31 to 10:39 and 18:37 to 18:56 Finnish time). `ReplayHomeAssistant` in `fakes.py` answers from it as Home Assistant would have at a fake clock's time.
 - `history_2026-10-09_day.json`: the recorded day for the model and the run detector, 2026-10-09 09:40 to 2026-10-10 09:40, with the compressor and heater Status bits, M1, M9, M4, M10, the ML settings and the phase currents. `tests/recorded.py` says how it was trimmed. `ReplayHomeAssistant` serves it to the `cycles.py` and `profile.py` tests.
 - `node_session.json`: the Node's entities and 75 s of its state messages after the #11 flash, taken from its log. `RecordedNode` in `fakes.py` stands in for `aioesphomeapi` with it.
