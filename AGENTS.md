@@ -6,6 +6,7 @@
 - **Checks** are the `Makefile` targets that `.github/workflows/ci.yml` runs. The `esphome` on PATH may be older than 2026.9; pass `ESPHOME=/path/to/esphome` to make.
 - **Secrets**: `secrets.yaml` (next to `geopro.yaml`) and `.env` are gitignored. Keep their values out of output, docs and commits.
 - **Changes that alter what the Node runs** (the Component, `node.yaml`, the ESPHome version), and any raw bus trace capture, follow `docs/agents/verification.md`.
+- **Manual PDFs**: to read a page, crop a figure or transcribe a page, follow `docs/agents/manual-transcription.md`.
 - **Handoffs**: write a session's handoff doc to `.scratch/` (gitignored).
 
 ## Agent skills

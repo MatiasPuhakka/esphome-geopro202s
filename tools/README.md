@@ -1,6 +1,6 @@
 # tools
 
-Scripts for watching and analysing the heat pump through Home Assistant, and for reading the Node directly. They use plain Python 3.11 or newer and need nothing installed, except that the Node client needs `aioesphomeapi`, which comes with ESPHome.
+Scripts for watching and analysing the heat pump through Home Assistant, for reading the Node directly, and for reading the manual PDFs. The Python tools need Python 3.11 or newer and nothing installed, except that the Node client needs `aioesphomeapi`, which comes with ESPHome. The two PDF tools are JavaScript that macOS runs with `osascript`.
 
 ## Home Assistant client
 
@@ -127,6 +127,13 @@ Both replace the `.scratch/cycles/scripts/` versions, which read saved history f
 python3 tools/check_manual_links.py
 ```
 
+`pdf_text.js` prints the text layer of some pages of a PDF, each under a marker with its page number. `pdf_png.js` renders pages to PNG files at a scale. Both read the PDF with PDFKit, so they run on macOS only. `docs/agents/manual-transcription.md` uses them to transcribe a manual page.
+
+```sh
+tools/pdf_text.js "manuals/Geopro 202S Käsikirja.pdf" 21-23
+tools/pdf_png.js "manuals/Geopro 202S Käsikirja.pdf" .scratch/pages 3 22    # .scratch/pages/page-22.png
+```
+
 ## Controller model and run detector
 
 Both are pure: no Home Assistant, no clock. `plant.py` looks up the entities they read in the contract and turns history rows into their inputs.
@@ -146,7 +153,7 @@ These log scrapers in `.scratch/` match log formats the Node no longer writes: E
 - `.scratch/live/scripts/summary_quiet.py`
 - `.scratch/alarm11/scripts/series.py`
 
-`run_watch.py`, `fetch.py`, `compare_entities.py`, `count_states.py`, `device_info.py`, `cycles.py` and `profile.py` in `.scratch/` have their ports above, and `day_run.py` has had one since #42.
+`run_watch.py`, `fetch.py`, `compare_entities.py`, `count_states.py`, `device_info.py`, `cycles.py` and `profile.py` in `.scratch/` have their ports above, and `day_run.py` has had one since #42. `.scratch/alarm11/scripts/pdftext.js` and `pdfpage2png.js` became `pdf_text.js` and `pdf_png.js`.
 
 ## Tests
 
@@ -163,3 +170,5 @@ The tests run offline against JSON recorded from Home Assistant and the Node and
 - `node_session.json`: the Node's entities and 75 s of its state messages after the #11 flash, taken from its log. `RecordedNode` in `fakes.py` stands in for `aioesphomeapi` with it.
 
 `tests/expected/` holds what the scripts in `.scratch/` printed for these fixtures before they moved here, and the ports must print the same. Fixtures must hold no token, key or password, no `context` (context and user IDs), and nothing beyond the entities a test needs; `test_fixtures.py` checks the first two.
+
+`test_pdf_tools.py` runs the two PDF tools against the Käsikirja PDF. It needs macOS and skips elsewhere, CI included.
