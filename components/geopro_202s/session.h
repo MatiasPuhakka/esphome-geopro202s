@@ -12,6 +12,19 @@
 namespace esphome {
 namespace geopro_202s {
 
+// The Session drops a partial Frame once no bytes have arrived for longer than this, so a
+// false start (line noise, or the tail of a Reply caught at boot) can't hold back the
+// Replies after it. It goes by silence, not by Read requests sent or given up, so it needs
+// nothing from the scheduler: a Frame's bytes arrive about 2 ms apart at 4800 baud, and
+// bytes followed by a pause will never complete one.
+// 100 ms is the old hub's value. Only a stalled loop splits a Frame, and the longest stall
+// in the Node's logs (96 ms, publishing a Bank's Values at DEBUG level) comes between a
+// Reply and the next Read request. Between Replies the bus is quiet for REQUEST_GAP_MS, the
+// 13 ms Read request and the Controller's latency, which can add up to less than 100 ms.
+// A false start just before a Reply may then swallow it, and the retry, REPLY_TIMEOUT_MS
+// later, gets through.
+static const uint32_t SILENCE_GAP_MS = 100;
+
 // Identifies one registered value. Ids count up from 0 in the order add_value() is called,
 // so the hub can keep its entities in a vector indexed by id.
 using EntryId = size_t;
@@ -48,6 +61,8 @@ class Session {
   FrameDecoder decoder_;
   PollScheduler scheduler_;
   std::vector<Registration> registrations_;
+  // The `now` of the last bytes passed to feed().
+  uint32_t last_bytes_at_{0};
 };
 
 }  // namespace geopro_202s

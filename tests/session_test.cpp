@@ -17,6 +17,7 @@ using esphome::geopro_202s::REPLY_TIMEOUT_MS;
 using esphome::geopro_202s::REQUEST_GAP_MS;
 using esphome::geopro_202s::Session;
 using esphome::geopro_202s::SessionOutput;
+using esphome::geopro_202s::SILENCE_GAP_MS;
 
 namespace {
 
@@ -99,18 +100,35 @@ TEST_CASE("a Reply for the in-flight Address publishes its Value and completes t
   CHECK(bus.request() == 0x21);
 }
 
-TEST_CASE("a Frame without data is not a Reply") {
+TEST_CASE("a Read request echoed back on the bus is not a Reply") {
   // The Node's own Read request, echoed back on the bus.
-  Bus bus(register_map::rows_named({"outside_temp"}));
+  Bus bus(register_map::rows_named({"outside_temp", "tank_top"}));
   CHECK(bus.request() == 0x12);
   SessionOutput output;
   bus.receive(frame(0x81, 0x12, {}), &output);
   CHECK(output.answered.empty());
   CHECK(output.values.empty());
 
-  // The request is still in flight.
+  // The request is still in flight, so tank_top waits.
   bus.advance(REQUEST_GAP_MS);
   CHECK(bus.request() == 0xFFFF);
+}
+
+TEST_CASE("a Frame with data and a Command byte other than 0x06 is not a Reply") {
+  // Stand-ins for a write acknowledgement or an error Frame, which would carry data.
+  for (uint8_t command : {0x00, 0x15, 0x81}) {
+    CAPTURE(command);
+    Bus bus(register_map::rows_named({"outside_temp", "tank_top"}));
+    CHECK(bus.request() == 0x12);
+    SessionOutput output;
+    bus.receive(frame(command, 0x12, {0xFE, 0x0C}), &output);
+    CHECK(output.answered.empty());
+    CHECK(output.values.empty());
+
+    // The request is still in flight, so tank_top waits.
+    bus.advance(REQUEST_GAP_MS);
+    CHECK(bus.request() == 0xFFFF);
+  }
 }
 
 TEST_CASE("a Reply for another Address publishes but does not complete the request") {
@@ -156,6 +174,38 @@ TEST_CASE("a Frame split across feeds is decoded when it completes") {
   const auto bytes = reply(0x12, {0xFE, 0x0C});
   CHECK(bus.receive({bytes.begin(), bytes.begin() + 4}).empty());
   CHECK(bus.receive({bytes.begin() + 4, bytes.end()}) == std::map<std::string, float>{{"outside_temp", -5.0f}});
+}
+
+TEST_CASE("a partial Frame is kept when the rest arrives within the silence gap") {
+  Bus bus(register_map::rows_named({"outside_temp"}));
+  CHECK(bus.request() == 0x12);
+  const auto bytes = reply(0x12, {0xFE, 0x0C});
+  CHECK(bus.receive({bytes.begin(), bytes.begin() + 4}).empty());
+  bus.advance(SILENCE_GAP_MS);
+  CHECK(bus.receive({bytes.begin() + 4, bytes.end()}) == std::map<std::string, float>{{"outside_temp", -5.0f}});
+}
+
+TEST_CASE("a partial Frame is dropped when the silence gap passes before the rest arrives") {
+  Bus bus(register_map::rows_named({"outside_temp"}));
+  CHECK(bus.request() == 0x12);
+  const auto bytes = reply(0x12, {0xFE, 0x0C});
+  CHECK(bus.receive({bytes.begin(), bytes.begin() + 4}).empty());
+  bus.advance(SILENCE_GAP_MS + 1);
+  CHECK(bus.receive({bytes.begin() + 4, bytes.end()}).empty());
+
+  // A whole Frame after it decodes.
+  CHECK(bus.receive(bytes) == std::map<std::string, float>{{"outside_temp", -5.0f}});
+}
+
+TEST_CASE("a feed with no bytes doesn't end the silence") {
+  Bus bus(register_map::rows_named({"outside_temp"}));
+  CHECK(bus.request() == 0x12);
+  const auto bytes = reply(0x12, {0xFE, 0x0C});
+  CHECK(bus.receive({bytes.begin(), bytes.begin() + 4}).empty());
+  bus.advance(SILENCE_GAP_MS);
+  CHECK(bus.receive({}).empty());
+  bus.advance(1);
+  CHECK(bus.receive({bytes.begin() + 4, bytes.end()}).empty());
 }
 
 TEST_CASE("status bits are read and published without the status-word sensor") {

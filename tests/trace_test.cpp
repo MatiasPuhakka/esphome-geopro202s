@@ -83,8 +83,9 @@ struct Replay {
 // Plays the trace through a Session built from the real Register map rows, as the hub would:
 // time advances in 5 ms steps, and each Read request the Session sends gets the trace's Reply
 // for that Address, fed in one byte at a time 20 ms later. The Session asks in its own order,
-// not the trace's, so Replies are matched by Address. Stops before the second cycle (10 s).
-Replay replay_trace(const std::vector<register_map::Row> &rows) {
+// not the trace's, so Replies are matched by Address. `before` is fed at time 0, ahead of the
+// first Read request. Stops before the second cycle (10 s).
+Replay replay_trace(const std::vector<register_map::Row> &rows, const std::vector<uint8_t> &before = {}) {
   std::map<uint16_t, TraceLine> replies;
   uint16_t requested = 0;
   for (const TraceLine &line : read_trace()) {
@@ -99,6 +100,7 @@ Replay replay_trace(const std::vector<register_map::Row> &rows) {
     session.add_value(row.group, row.registration);
 
   Replay replay;
+  replay.answered = session.feed(before.data(), before.size(), 0).answered;
   for (uint32_t now = 0; now < 5000; now += 5) {
     std::array<uint8_t, 6> request;
     if (!session.next_request(now, request))
@@ -181,6 +183,23 @@ TEST_CASE("node trace: the Session asks for every Address the trace covers once,
   CHECK(asked == traced);
   // Every Reply was answered, once, in the order the Session asked.
   CHECK(replay.answered.size() == 17);
+}
+
+TEST_CASE("node trace: after a false start, every later Reply decodes once and at most one Address misses its cycle") {
+  // A Length byte promising 33 more bytes: line noise, or the tail of a Reply caught at boot.
+  // Without a reset the Frame codec held every later Reply until 37 bytes had arrived, and the
+  // first two Addresses published late, twice each.
+  const Replay replay = replay_trace(register_map::all_rows(), {0x02, 0x06, 0x21});
+
+  std::set<uint16_t> traced;
+  for (const TraceLine &line : read_trace())
+    if (line.sent)
+      traced.insert(requested_address(line));
+  REQUIRE(traced.size() == 17);
+
+  const std::set<uint16_t> answered(replay.answered.begin(), replay.answered.end());
+  CHECK(replay.answered.size() == answered.size());
+  CHECK(answered.size() >= traced.size() - 1);
 }
 
 TEST_CASE("node trace: every row whose Address the trace covers decodes to its expected Value") {
