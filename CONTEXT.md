@@ -18,10 +18,10 @@ _Avoid_: module, YAML protocol copy (the older implementation in YAML that the C
 
 ## Plant
 
-These terms use the Finnish labels from the Käsikirja (`manuals/Geopro 202S Käsikirja.pdf`). `docs/controller.md` has the rules that use them, with page numbers.
+These terms use the Finnish labels from the Käsikirja, transcribed in [`manuals/kasikirja.md`](manuals/kasikirja.md). `docs/controller.md` has the rules that use them, with page numbers.
 
 **M-number**:
-One of the Controller's measurement inputs, M1 to M11 (Mittaus 1–11, terminals Mitt.1–Mitt.11; Käsikirja pp. 10, 39). The manual also calls the valve-motor outputs M1–M3 (p. 28); this glossary calls those Moott. L1, Moott. L2 and Moott. JV. The Register map reads these Addresses:
+One of the Controller's measurement inputs, M1 to M11 (Mittaus 1–11, terminals Mitt.1–Mitt.11; Käsikirja pp. [10](manuals/kasikirja.md#s10), [39](manuals/kasikirja.md#s39)). The manual also calls the valve-motor outputs M1–M3 ([p. 28](manuals/kasikirja.md#s28)); this glossary calls those Moott. L1, Moott. L2 and Moott. JV. The Register map reads these Addresses:
 
 | M | Display label | Measures | Address |
 |---|---|---|---|
@@ -68,7 +68,7 @@ The M10 temperature at which the Controller always stops the compressor.
 _Avoid_: compressor lock
 
 **ML Ohjaustapa**:
-Which heat sources the ML circuit may use: Kompr.+sähköv. (0), Kompressori (1) or Sähkövastus (2). The manual's menu is ML Ohjaustavat (p. 21); this is its singular.
+Which heat sources the ML circuit may use: Kompr.+sähköv. (0), Kompressori (1) or Sähkövastus (2). The manual's menu is ML Ohjaustavat ([p. 21](manuals/kasikirja.md#s21)); this is its singular.
 _Avoid_: heat pump mode
 
 **Run**:

@@ -38,7 +38,14 @@ def broken_links(root, paths):
 # The tracked files that cite manual pages: docs, code and configs. Skips the PDFs, images, JSON
 # fixtures and traces, and this checker's tests, whose links are made up.
 CITING_SUFFIXES = {".md", ".py", ".h", ".cpp", ".yaml", ".yml", ".txt"}
-SKIPPED_PREFIX = "tools/tests/"
+OWN_TESTS = "tools/tests/test_check_manual_links.py"
+
+
+def citing(paths):
+    """The paths, of those given, whose files may cite a manual page."""
+    return [
+        path for path in paths if Path(path).suffix in CITING_SUFFIXES and path != OWN_TESTS
+    ]
 
 
 def main():
@@ -46,12 +53,7 @@ def main():
     tracked = subprocess.run(
         ["git", "ls-files", "-z"], cwd=root, capture_output=True, text=True, check=True
     ).stdout.split("\0")
-    citing = [
-        path
-        for path in tracked
-        if Path(path).suffix in CITING_SUFFIXES and not path.startswith(SKIPPED_PREFIX)
-    ]
-    broken = broken_links(root, citing)
+    broken = broken_links(root, citing(tracked))
     for path, number, link in broken:
         print(f"{path}:{number}: {link} doesn't resolve")
     sys.exit(1 if broken else 0)

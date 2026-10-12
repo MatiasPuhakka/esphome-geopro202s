@@ -4,9 +4,9 @@
 key with the hub. Add a key by adding a row here; the hub needs no change.
 
 The comment above each row says where its meaning comes from: the Käsikirja
-(`manuals/Geopro 202S Käsikirja.pdf`) label and page, and for a measurement its
-M-number (CONTEXT.md lists them). Pages are PDF page indexes, as in
-docs/controller.md. "Observed" marks what comes from the Node or the owner
+label and its page, as a link into the transcription such as
+manuals/kasikirja.md#s21 for p. 21, and for a measurement its M-number
+(CONTEXT.md lists them). "Observed" marks what comes from the Node or the owner
 rather than the manual, with the issue or log it comes from. The bottom of this
 file lists the Bank bytes no row reads yet.
 """
@@ -145,8 +145,8 @@ def _temperature(key, address):
 
 
 def _valve(key, address):
-    # Only 0-10 V / 2-10 V motors report a position (Käsikirja pp. 27, 28); a
-    # 3-point motor reads 0 %.
+    # Only 0-10 V / 2-10 V motors report a position (manuals/kasikirja.md#s27,
+    # manuals/kasikirja.md#s28); a 3-point motor reads 0 %.
     return Value(
         key, EntityKind.SENSOR, address, U8,
         unit=UNIT_PERCENT, state_class=STATE_CLASS_MEASUREMENT, accuracy=0, icon="mdi:valve",
@@ -210,36 +210,37 @@ def _bank_mode(key, bank, offset):
 
 
 VALUES = (
-    # Measurements, from the Mittaukset display and its table (p. 10)
-    # M1 Ulkolämpö, p. 10
+    # Measurements, from the Mittaukset display and its table (manuals/kasikirja.md#s10)
+    # M1 Ulkolämpö, manuals/kasikirja.md#s10
     _temperature("outside_temp", 0x12),
-    # M3 L1 Huone, p. 10
+    # M3 L1 Huone, manuals/kasikirja.md#s10
     _temperature("l1_room", 0x15),
-    # M2 L1 Menovesi, p. 10
+    # M2 L1 Menovesi, manuals/kasikirja.md#s10
     _temperature("l1_supply", 0x14),
-    # M6 Mittaus 6, p. 10
+    # M6 Mittaus 6, manuals/kasikirja.md#s10
     _temperature("free_measurement", 0x1B),
-    # M7 Yläosa tulo, p. 10
+    # M7 Yläosa tulo, manuals/kasikirja.md#s10
     _temperature("tank_top_in", 0x18),
-    # M9 VaraajaYlä, p. 10
+    # M9 VaraajaYlä, manuals/kasikirja.md#s10
     _temperature("tank_top", 0x21),
-    # M4 VaraajaKeski, p. 10
+    # M4 VaraajaKeski, manuals/kasikirja.md#s10
     _temperature("tank_middle", 0x17),
-    # M10 VaraajaAla, p. 10
+    # M10 VaraajaAla, manuals/kasikirja.md#s10
     _temperature("tank_bottom", 0x22),
-    # M8 Maaliuos, p. 10
+    # M8 Maaliuos, manuals/kasikirja.md#s10
     _temperature("brine", 0x19),
-    # Asento % of the L1 valve motor (Moott. L1), p. 27. Observed: this unit's L1
-    # motor is 3-point and reads 0 % (#16).
+    # Asento % of the L1 valve motor (Moott. L1), manuals/kasikirja.md#s27. Observed:
+    # this unit's L1 motor is 3-point and reads 0 % (#16).
     _valve("valve_l1", 0x31),
-    # Asento % of the JV motor (Moott. JV), pp. 27, 28. Observed: this unit's JV
-    # motor is 3-point and reads 0 % (#16).
+    # Asento % of the JV motor (Moott. JV), manuals/kasikirja.md#s27,
+    # manuals/kasikirja.md#s28. Observed: this unit's JV motor is 3-point and reads 0 %
+    # (#16).
     _valve("valve_dhw", 0x33),
-    # Sähköv.Aika, p. 10; a counter, not an M-number. Observed: never published 0
-    # in the Node logs of 2026-10-09 (#10).
+    # Sähköv.Aika, manuals/kasikirja.md#s10; a counter, not an M-number. Observed:
+    # never published 0 in the Node logs of 2026-10-09 (#10).
     _hours("hours_eh", 0x3A),
-    # Kompr.Aika, p. 10; a counter, not an M-number. Observed: never published 0
-    # in the Node logs of 2026-10-09 (#10).
+    # Kompr.Aika, manuals/kasikirja.md#s10; a counter, not an M-number. Observed:
+    # never published 0 in the Node logs of 2026-10-09 (#10).
     _hours("hours_comp", 0x3B),
     # Not in the manual. Observed: 0xFE07 at idle (2026-10-09 trace). docs/controller.md,
     # Status word, has what each bit did.
@@ -248,80 +249,88 @@ VALUES = (
     # Status word bits. The manual doesn't describe the Status word, so every bit
     # here is observed.
     # Observed: the only bit that changed during compressor runs (Node logs from
-    # 2026-10-07, not in the repo). Rele 2 switches the compressor (p. 39).
+    # 2026-10-07, not in the repo). Rele 2 switches the compressor
+    # (manuals/kasikirja.md#s39).
     _status_bit("compressor", 0x10, "mdi:engine"),
     # Observed: went on when S1 joined a compressor run (Node log from 2026-10-08,
-    # not in the repo). Rele 1 switches the electric heater (p. 39).
+    # not in the repo). Rele 1 switches the electric heater
+    # (manuals/kasikirja.md#s39).
     _status_bit("el_heater", 0x08, "mdi:radiator"),
-    # digi1-digi3: p. 39 wires Dig 1 to the Lisälämpöpainike, Dig 2 to
-    # Kompressorin ylivirtaussuoja and Dig 3 to Sähkövastuksen ylikuumenemissuoja,
-    # and p. 20 lists their alarms. Observed: all three bits read on at idle
-    # (Status word 0xFE07, 2026-10-09 trace), so which input each bit reports, and
-    # whether on means a closed contact, is unverified.
+    # digi1-digi3: the wiring diagram (manuals/kasikirja.md#s39) wires Dig 1 to the
+    # Lisälämpöpainike, Dig 2 to Kompressorin ylivirtaussuoja and Dig 3 to
+    # Sähkövastuksen ylikuumenemissuoja, and the alarm list (manuals/kasikirja.md#s20)
+    # has their alarms. Observed: all three bits read on at idle (Status word
+    # 0xFE07, 2026-10-09 trace), so which input each bit reports, and whether on
+    # means a closed contact, is unverified.
     _status_bit("digi1", 0x01, "mdi:numeric-1-box"),
     _status_bit("digi2", 0x02, "mdi:numeric-2-box"),
     _status_bit("digi3", 0x04, "mdi:numeric-3-box"),
 
     # Bank 0x0C: heating circuit L1. Every row matched the Controller's display on
     # 2026-10-09 (#10).
-    # L1 Käyrä -20, Säätökäyrien as, p. 6
+    # L1 Käyrä -20, Säätökäyrien as, manuals/kasikirja.md#s6
     _bank_temperature("l1_minus20", 0x0C, 0, "mdi:chart-line"),
-    # L1 Käyrä 0, p. 6
+    # L1 Käyrä 0, manuals/kasikirja.md#s6
     _bank_temperature("l1_zero", 0x0C, 1, "mdi:chart-line"),
-    # L1 Käyrä +20, p. 6
+    # L1 Käyrä +20, manuals/kasikirja.md#s6
     _bank_temperature("l1_plus20", 0x0C, 2, "mdi:chart-line"),
-    # Minimiraja, L1 Aset.arvot, p. 8
+    # Minimiraja, L1 Aset.arvot, manuals/kasikirja.md#s8
     _bank_temperature("l1_min_limit", 0x0C, 3),
-    # Maksimiraja, L1 Aset.arvot, p. 8
+    # Maksimiraja, L1 Aset.arvot, manuals/kasikirja.md#s8
     _bank_temperature("l1_max_limit", 0x0C, 4),
-    # Yöalennus v. (Yöalennus vaikutus), L1 Aset.arvot, p. 8
+    # Yöalennus v. (Yöalennus vaikutus), L1 Aset.arvot, manuals/kasikirja.md#s8
     _bank_temperature("l1_night_effect", 0x0C, 5),
-    # Syyskuivaus, L1 Aset.arvot, pp. 8, 9
+    # Syyskuivaus, L1 Aset.arvot, manuals/kasikirja.md#s8, manuals/kasikirja.md#s9
     _bank_temperature("l1_autumn_dry", 0x0C, 14),
-    # Ulkol.hidas (Ulkolämpötilan hidastus), huoltotila L1 Asetusarvot, p. 26
+    # Ulkol.hidas (Ulkolämpötilan hidastus), huoltotila L1 Asetusarvot,
+    # manuals/kasikirja.md#s26
     _bank_duration("l1_out_temp_delay", 0x0C, 19, UNIT_HOUR),
-    # Esikorotus h, huoltotila L1 Asetusarvot, p. 26: the duration (0-5 h), not the
-    # user menu's Esikorotus amount in °C (p. 9). Observed: setting it from 0 h to
-    # 1 h at the display moved the Value from 0 to 1 on 2026-10-09 (#10, #21).
+    # Esikorotus h, huoltotila L1 Asetusarvot, manuals/kasikirja.md#s26: the duration
+    # (0-5 h), not the user menu's Esikorotus amount in °C (manuals/kasikirja.md#s9).
+    # Observed: setting it from 0 h to 1 h at the display moved the Value from 0
+    # to 1 on 2026-10-09 (#10, #21).
     _bank_duration("l1_pre_increase", 0x0C, 23, UNIT_HOUR),
 
     # Bank 0x2C: L1 settings. Every row matched the Controller's display on
     # 2026-10-09 (#10).
-    # Vent.kesäsulk (venttiilin kesäsulkeutuminen), L1 Aset.arvot, pp. 8, 9
+    # Vent.kesäsulk (venttiilin kesäsulkeutuminen), L1 Aset.arvot,
+    # manuals/kasikirja.md#s8, manuals/kasikirja.md#s9
     _bank_temperature("l1_summer_close", 0x2C, 8),
 
-    # Bank 0x0B: ML settings, p. 21 (the Settings table in docs/controller.md).
-    # Every row matched the Controller's display on 2026-10-09 (#10).
-    # Var.ylä talvi, p. 21
+    # Bank 0x0B: ML settings, manuals/kasikirja.md#s21 (the Settings table in
+    # docs/controller.md). Every row matched the Controller's display on
+    # 2026-10-09 (#10).
+    # Var.ylä talvi, manuals/kasikirja.md#s21
     _bank_temperature("winter_temp", 0x0B, 1),
-    # Var.ylä kesä, p. 21
+    # Var.ylä kesä, manuals/kasikirja.md#s21
     _bank_temperature("summer_temp", 0x0B, 2),
-    # VaraajaAlaEro, pp. 21, 26
+    # VaraajaAlaEro, manuals/kasikirja.md#s21, manuals/kasikirja.md#s26
     _bank_temperature("bottom_diff", 0x0B, 3),
-    # VaraajaYläEro, pp. 21, 26
+    # VaraajaYläEro, manuals/kasikirja.md#s21, manuals/kasikirja.md#s26
     _bank_temperature("top_diff", 0x0B, 4),
-    # VaraajaAlaMin, p. 21
+    # VaraajaAlaMin, manuals/kasikirja.md#s21
     _bank_temperature("tank_min", 0x0B, 5),
-    # SV_viiveaika, p. 21
+    # SV_viiveaika, manuals/kasikirja.md#s21
     _bank_duration("delay_time", 0x0B, 6, UNIT_MINUTE),
-    # VarYläEroSv, p. 21
+    # VarYläEroSv, manuals/kasikirja.md#s21
     _bank_temperature("top_eh_diff", 0x0B, 7),
-    # Lisälämmitys, p. 21
+    # Lisälämmitys, manuals/kasikirja.md#s21
     _bank_temperature("extra_heating", 0x0B, 8),
-    # Lisäläm.aika, p. 21
+    # Lisäläm.aika, manuals/kasikirja.md#s21
     _bank_duration("extra_time", 0x0B, 9, UNIT_HOUR),
-    # ML Ohjaustapa, the ML Ohjaustavat screen, pp. 13, 21: Kompr.+sähköv.,
-    # Kompressori or Sähkövastus, with no codes given. The codes follow the menu
-    # order: 0 Kompr.+sähköv., 1 Kompressori, 2 Sähkövastus. The owner confirmed
-    # them on 2026-10-11; 0 also matched the display in #10.
+    # ML Ohjaustapa, the ML Ohjaustavat screen, manuals/kasikirja.md#s13,
+    # manuals/kasikirja.md#s21: Kompr.+sähköv., Kompressori or Sähkövastus, with no
+    # codes given. The codes follow the menu order: 0 Kompr.+sähköv.,
+    # 1 Kompressori, 2 Sähkövastus. The owner confirmed them on 2026-10-11; 0 also
+    # matched the display in #10.
     _bank_mode("hp_mode", 0x0B, 10),
-    # Maaliuos häl, pp. 21, 26
+    # Maaliuos häl, manuals/kasikirja.md#s21, manuals/kasikirja.md#s26
     _bank_temperature("brine_alert", 0x0B, 11),
-    # JV Esiavaus, pp. 21, 26
+    # JV Esiavaus, manuals/kasikirja.md#s21, manuals/kasikirja.md#s26
     _bank_percentage("dhw_pre", 0x0B, 12, "mdi:valve"),
-    # JV Esto, pp. 21, 26
+    # JV Esto, manuals/kasikirja.md#s21, manuals/kasikirja.md#s26
     _bank_duration("dhw_lock", 0x0B, 13, UNIT_SECOND, decode=U8),
-    # Kompr.esto, pp. 21, 23
+    # Kompr.esto, manuals/kasikirja.md#s21, manuals/kasikirja.md#s23
     _bank_temperature("comp_lock", 0x0B, 14, "mdi:thermometer-off"),
 )
 

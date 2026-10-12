@@ -2,8 +2,6 @@
 
 A transcription of `Geopro 202S Käsikirja.pdf` (in this folder). Each PDF page starts at an anchor `#sN`, where N is the PDF page index counted from 1; in the Käsikirja it equals the printed page number. [ADR 0006](../docs/adr/0006-manuals-are-markdown-transcriptions.md) sets the other conventions: figures, screens, key icons, what's left out, and the **Repo note** blocks the repo adds.
 
-All 44 pages are transcribed. `geopro-202s-manual.md` still paraphrases them until #84 retires it.
-
 ---
 
 <a id="s1"></a>
@@ -506,7 +504,7 @@ Syyskuivaus=2
 
 Viestin luvut ovat valkoisella. Toisen puhelimen nuolessa on kärki kummassakin päässä.
 
-> **Repo note:** the Asennusohje (p. 16) gives +19 °C as the factory value of the summer closing (Vent.kesäsulk); this page, the screen on p. 8 and the factory list on p. 29 give 30 °C.
+> **Repo note:** the Asennusohje ([p. 16](asennusohje.md#s16)) gives +19 °C as the factory value of the summer closing (Vent.kesäsulk); this page, the screen on p. 8 and the factory list on p. 29 give 30 °C.
 
 ---
 
@@ -2901,6 +2899,8 @@ Kuvan kuvaus: kytkentäkuva samaan tapaan kuin D-25-liittimellä. Vasemmalla on 
 </table>
 
 > **Repo note:** this page draws no jumper between B and D; pp. 35 and 39 join B and D with one (hyppylanka).
+
+> **Repo note:** RX and TX are the PC's signals. Terminal A goes to the PC's RX, so it carries the data the Controller sends, and terminal C goes to the PC's TX, the data the Controller receives. Page 39 names them from the same end: EIA-232 RX on A, EIA-232 TX on C.
 
 ### Geopro 202S huolto-ohjeita:
 
