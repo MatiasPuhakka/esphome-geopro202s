@@ -14,15 +14,18 @@ namespace geopro_202s {
 
 // The Session drops a partial Frame once no bytes have arrived for longer than this, so a
 // false start (line noise, or the tail of a Reply caught at boot) can't hold back the
-// Replies after it. It goes by silence, not by Read requests sent or given up, so it needs
-// nothing from the scheduler: a Frame's bytes arrive about 2 ms apart at 4800 baud, and
-// bytes followed by a pause will never complete one.
-// 100 ms is the old hub's value. Only a stalled loop splits a Frame, and the longest stall
-// in the Node's logs (96 ms, publishing a Bank's Values at DEBUG level) comes between a
-// Reply and the next Read request. Between Replies the bus is quiet for REQUEST_GAP_MS, the
-// 13 ms Read request and the Controller's latency, which can add up to less than 100 ms.
-// A false start just before a Reply may then swallow it, and the retry, REPLY_TIMEOUT_MS
-// later, gets through.
+// Replies after it. It resets after a silence, instead of when it sends or gives up a Read
+// request, because a Frame's bytes arrive about 2 ms apart at 4800 baud. A silence alone
+// then shows that the held bytes will never complete a Frame, and the reset needs nothing
+// from the Poll scheduler.
+// 100 ms is the old hub's MESSAGE_TIMEOUT (98d6fe2^). A Frame's bytes go this long without
+// a feed only when the loop stalls. The longest stall in the Node's 2026-10-09 logs, 96 ms
+// in ESPHome's "took a long time" warning, was the hub publishing a Bank's Values with
+// DEBUG logging, after the Reply had ended and before the next Read request went out.
+// The silence before a Reply is REQUEST_GAP_MS, the 13 ms Read request and the Controller's
+// latency (only the latency if the Node hears its own echo), so it can be shorter than
+// 100 ms. A false start shortly before a Reply then swallows it, and the retry,
+// REPLY_TIMEOUT_MS later, gets through.
 static const uint32_t SILENCE_GAP_MS = 100;
 
 // Identifies one registered value. Ids count up from 0 in the order add_value() is called,

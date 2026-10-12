@@ -17,6 +17,7 @@ using esphome::geopro_202s::build_read_request;
 using esphome::geopro_202s::Frame;
 using esphome::geopro_202s::FrameDecoder;
 using esphome::geopro_202s::Session;
+using esphome::geopro_202s::SessionOutput;
 
 // The Makefile passes the trace's absolute path, so the tests find it from any working directory.
 #ifndef NODE_TRACE
@@ -56,6 +57,15 @@ std::vector<TraceLine> read_trace() {
 
 uint16_t requested_address(const TraceLine &request) {
   return static_cast<uint16_t>(request.bytes[3] << 8 | request.bytes[4]);
+}
+
+// The Addresses the trace has a Read request for.
+std::set<uint16_t> traced_addresses() {
+  std::set<uint16_t> traced;
+  for (const TraceLine &line : read_trace())
+    if (line.sent)
+      traced.insert(requested_address(line));
+  return traced;
 }
 
 // Feeds a Reply to the decoder one byte at a time, as the Component reads the bus.
@@ -100,7 +110,12 @@ Replay replay_trace(const std::vector<register_map::Row> &rows, const std::vecto
     session.add_value(row.group, row.registration);
 
   Replay replay;
-  replay.answered = session.feed(before.data(), before.size(), 0).answered;
+  auto record = [&](const SessionOutput &output) {
+    replay.answered.insert(replay.answered.end(), output.answered.begin(), output.answered.end());
+    for (const auto &value : output.values)
+      replay.published[rows[value.index].key] = value.value;
+  };
+  record(session.feed(before.data(), before.size(), 0));
   for (uint32_t now = 0; now < 5000; now += 5) {
     std::array<uint8_t, 6> request;
     if (!session.next_request(now, request))
@@ -110,12 +125,8 @@ Replay replay_trace(const std::vector<register_map::Row> &rows, const std::vecto
     auto reply = replies.find(address);
     REQUIRE_MESSAGE(reply != replies.end(), "the Session asked for an Address the trace has no Reply for");
     now += 20;
-    for (uint8_t byte : reply->second.bytes) {
-      auto output = session.feed(&byte, 1, now);
-      replay.answered.insert(replay.answered.end(), output.answered.begin(), output.answered.end());
-      for (const auto &value : output.values)
-        replay.published[rows[value.index].key] = value.value;
-    }
+    for (uint8_t byte : reply->second.bytes)
+      record(session.feed(&byte, 1, now));
   }
   return replay;
 }
@@ -167,10 +178,7 @@ TEST_CASE("node trace: each Reply is one Frame for the requested Address, with C
 TEST_CASE("node trace: the Session asks for every Address the trace covers once, with a request build_read_request() makes") {
   const Replay replay = replay_trace(register_map::all_rows());
 
-  std::set<uint16_t> traced;
-  for (const TraceLine &line : read_trace())
-    if (line.sent)
-      traced.insert(requested_address(line));
+  const std::set<uint16_t> traced = traced_addresses();
   REQUIRE(traced.size() == 17);
 
   std::set<uint16_t> asked;
@@ -185,16 +193,13 @@ TEST_CASE("node trace: the Session asks for every Address the trace covers once,
   CHECK(replay.answered.size() == 17);
 }
 
-TEST_CASE("node trace: after a false start, every later Reply decodes once and at most one Address misses its cycle") {
-  // A Length byte promising 33 more bytes: line noise, or the tail of a Reply caught at boot.
-  // Without a reset the Frame codec held every later Reply until 37 bytes had arrived, and the
-  // first two Addresses published late, twice each.
+TEST_CASE("node trace: after a false start, every later Reply is answered once and at most one Address misses its cycle") {
+  // 02 06 21 is a false start whose Length byte promises a 37-byte Frame. Without a reset the
+  // Frame codec held every later Reply until 37 bytes had arrived, and the first two Addresses
+  // were answered late, twice each.
   const Replay replay = replay_trace(register_map::all_rows(), {0x02, 0x06, 0x21});
 
-  std::set<uint16_t> traced;
-  for (const TraceLine &line : read_trace())
-    if (line.sent)
-      traced.insert(requested_address(line));
+  const std::set<uint16_t> traced = traced_addresses();
   REQUIRE(traced.size() == 17);
 
   const std::set<uint16_t> answered(replay.answered.begin(), replay.answered.end());

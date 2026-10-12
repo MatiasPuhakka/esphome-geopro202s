@@ -100,28 +100,23 @@ TEST_CASE("a Reply for the in-flight Address publishes its Value and completes t
   CHECK(bus.request() == 0x21);
 }
 
-TEST_CASE("a Read request echoed back on the bus is not a Reply") {
-  // The Node's own Read request, echoed back on the bus.
-  Bus bus(register_map::rows_named({"outside_temp", "tank_top"}));
-  CHECK(bus.request() == 0x12);
-  SessionOutput output;
-  bus.receive(frame(0x81, 0x12, {}), &output);
-  CHECK(output.answered.empty());
-  CHECK(output.values.empty());
-
-  // The request is still in flight, so tank_top waits.
-  bus.advance(REQUEST_GAP_MS);
-  CHECK(bus.request() == 0xFFFF);
-}
-
-TEST_CASE("a Frame with data and a Command byte other than 0x06 is not a Reply") {
-  // Stand-ins for a write acknowledgement or an error Frame, which would carry data.
-  for (uint8_t command : {0x00, 0x15, 0x81}) {
+TEST_CASE("a Frame with a Command byte other than 0x06 is not a Reply, with or without data") {
+  // The Node's own Read request echoed back on the bus, and stand-ins for a write
+  // acknowledgement or an error Frame, which would carry data.
+  const std::vector<std::vector<uint8_t>> frames = {
+      frame(0x81, 0x12, {}),
+      frame(0x00, 0x12, {0xFE, 0x0C}),
+      frame(0x15, 0x12, {0xFE, 0x0C}),
+      frame(0x81, 0x12, {0xFE, 0x0C}),
+  };
+  for (const std::vector<uint8_t> &bytes : frames) {
+    const uint8_t command = bytes[1], length = bytes[2];
     CAPTURE(command);
+    CAPTURE(length);
     Bus bus(register_map::rows_named({"outside_temp", "tank_top"}));
     CHECK(bus.request() == 0x12);
     SessionOutput output;
-    bus.receive(frame(command, 0x12, {0xFE, 0x0C}), &output);
+    bus.receive(bytes, &output);
     CHECK(output.answered.empty());
     CHECK(output.values.empty());
 

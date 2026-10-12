@@ -17,8 +17,8 @@ SessionOutput Session::feed(const uint8_t *bytes, size_t len, uint32_t now) {
     this->decoder_.reset();
   this->last_bytes_at_ = now;
   for (const Frame &frame : this->decoder_.feed(bytes, len)) {
-    // Only a Frame with Command byte 0x06 is a Reply. Any other, such as our own Read
-    // request echoed back or a Frame with data and another Command byte, is ignored.
+    // Only a Frame with Command byte 0x06 is a Reply. The Session ignores any other, such as
+    // the Node's own Read request echoed back, whether or not it carries data.
     if (frame.command != FRAME_CMD_REPLY)
       continue;
     this->scheduler_.on_frame(frame.address, now);
