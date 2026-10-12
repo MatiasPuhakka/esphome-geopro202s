@@ -1,4 +1,5 @@
-"""Tests register_map.py: each row's entity kind, and the checks it runs on its rows when it loads.
+"""Tests register_map.py: each row's entity kind, which rows have no state class, and the
+checks it runs on its rows when it loads.
 
 Plain Python: run with `python3 -m unittest discover -s tests -p '*_test.py'`.
 """
@@ -105,6 +106,17 @@ class EntityKindTest(unittest.TestCase):
     def test_a_row_without_an_entity_kind_is_rejected(self):
         with self.assertRaisesRegex(TypeError, "entity_kind"):
             Value("no_kind", address=0x12, decode=register_map.CENTI_S16)
+
+
+class StateClassTest(unittest.TestCase):
+    def test_settings_and_the_status_word_have_no_state_class(self):
+        # A setting changes only when someone edits it on the Controller, and the Status
+        # word is a bitfield, so their statistics would say nothing (ADR 0004).
+        for value in register_map.VALUES:
+            if value.address_kind is not register_map.AddressKind.BANK and value is not register_map.STATUS_WORD:
+                continue
+            with self.subTest(value.key):
+                self.assertIsNone(value.state_class)
 
 
 if __name__ == "__main__":

@@ -16,6 +16,8 @@ from tools.tests.fakes import FIXTURES, TempFile, client_for, node_for
 # The commit the tests pretend the Node was built from. The #11 snapshots predate the
 # revision sensor (#45), so the tests add its state and its one message.
 REVISION = "02b5199"
+# The contract the #11 snapshots match. The live one has migrated since (#75).
+FLASH_CONTRACT = FIXTURES / "entity_contract_flash.txt"
 
 
 def snapshot(name):
@@ -37,13 +39,17 @@ def counts(test):
     return {**node.count_states(0), "Komponentin versio": 1}
 
 
+def flash_contract():
+    return contract.load(FLASH_CONTRACT)
+
+
 def by_id(states, entity_id):
     return next(s for s in states if s["entity_id"] == entity_id)
 
 
 class CheckAfterTest(unittest.TestCase):
     def check(self, after=None, node_counts=None, expected=REVISION, before=None):
-        return flash_check.check_after(contract.load(), after_states() if after is None else after,
+        return flash_check.check_after(flash_contract(), after_states() if after is None else after,
                                        counts(self) if node_counts is None else node_counts, expected,
                                        before)
 
@@ -110,12 +116,12 @@ class CheckAfterTest(unittest.TestCase):
         self.assertEqual(result.problems, [
             'sensor.geopro_maaliuos (brine, "Maaliuos"): reads unavailable',
             'sensor.geopro_maaliuos (brine, "Maaliuos"): the Node has no entity named "Maaliuos"',
-            'the Node has entities entity-contract.txt lacks: "Maaliuos lämpötila".'
+            'the Node has entities entity_contract_flash.txt lacks: "Maaliuos lämpötila".'
             ' Was one renamed, or does the Node run a build of another node.yaml?'])
 
     def test_an_entity_with_no_recorded_id_fails(self):
         # Such as a new entity, before its ID is recorded.
-        text = contract.CONTRACT.read_text(encoding="utf-8").replace(
+        text = FLASH_CONTRACT.read_text(encoding="utf-8").replace(
             '"Maaliuos" sensor.geopro_maaliuos', '"Maaliuos" ' + contract.NO_ENTITY_ID)
         path = TempFile(self, text).path
 
@@ -191,7 +197,7 @@ class CheckAfterTest(unittest.TestCase):
                       " of 02b5199 with changes matches\n", result.text())
 
     def test_a_node_without_the_revision_sensor_fails(self):
-        text = contract.CONTRACT.read_text(encoding="utf-8").replace(
+        text = FLASH_CONTRACT.read_text(encoding="utf-8").replace(
             'component_revision: text_sensor "Komponentin versio" sensor.geopro_komponentin_versio\n', "")
         node_counts = counts(self)
         del node_counts["Komponentin versio"]
@@ -235,7 +241,7 @@ class BeforeTest(unittest.TestCase):
         directory = phase_dir(self)
         client, _ = client_for(self, States(snapshot("states_before_flash.json")))
 
-        result = flash_check.before(client, directory, now=BEFORE_TIME)
+        result = flash_check.before(client, directory, now=BEFORE_TIME, entity_contract=flash_contract())
 
         self.assertEqual(json.loads((directory / "states-before.json").read_text()),
                          snapshot("states_before_flash.json"))
@@ -247,14 +253,14 @@ class BeforeTest(unittest.TestCase):
         # The #11 before snapshot is from the YAML protocol copy, which had no revision sensor.
         client, _ = client_for(self, States(snapshot("states_before_flash.json")))
 
-        text = flash_check.before(client, phase_dir(self), now=BEFORE_TIME).text()
+        text = flash_check.before(client, phase_dir(self), now=BEFORE_TIME, entity_contract=flash_contract()).text()
 
         self.assertIn("note: Home Assistant has no sensor.geopro_komponentin_versio (component_revision) yet\n", text)
         self.assertTrue(text.endswith("passed: 36 of 37 Node entities in Home Assistant\n"), text)
 
     def test_notes_a_new_entity_whose_id_is_not_recorded_yet(self):
         # A flash that adds an entity: its ID can only be recorded once Home Assistant has it.
-        text = contract.CONTRACT.read_text(encoding="utf-8").replace(
+        text = FLASH_CONTRACT.read_text(encoding="utf-8").replace(
             '"Komponentin versio" sensor.geopro_komponentin_versio', '"Komponentin versio" ' + contract.NO_ENTITY_ID)
         client, _ = client_for(self, States(snapshot("states_before_flash.json")))
 
@@ -268,7 +274,7 @@ class AfterTest(unittest.TestCase):
     def setUp(self):
         self.directory = phase_dir(self)
         client, _ = client_for(self, States(snapshot("states_before_flash.json")))
-        flash_check.before(client, self.directory, now=BEFORE_TIME)
+        flash_check.before(client, self.directory, now=BEFORE_TIME, entity_contract=flash_contract())
         self.node, self.api = node_for(self)
         # The recorded session predates the revision sensor, which the Node sends once, on subscribing.
         self.api.session["entities"].append({"key": 99, "platform": "text_sensor", "name": "Komponentin versio"})
@@ -276,7 +282,7 @@ class AfterTest(unittest.TestCase):
 
     def after(self, expected=REVISION):
         return flash_check.after(self.node, self.client, expected, seconds=0, directory=self.directory,
-                                 now=AFTER_TIME)
+                                 now=AFTER_TIME, entity_contract=flash_contract())
 
     def test_checks_the_node_and_home_assistant_in_one_go(self):
         result = self.after()
