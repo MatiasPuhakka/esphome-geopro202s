@@ -1,6 +1,7 @@
 # Trace capture overlay: the Node's config plus ESPHome's UART debug logging.
 # Flash it temporarily to record the raw bus; docs/agents/verification.md has the steps.
-# It holds no credentials: geopro.yaml reads them through !secret from secrets.yaml.
+# It holds no credentials: node.yaml reads them through !secret from the secrets.yaml
+# next to geopro.yaml.
 #
 # The debug option logs every chunk the Node sends (">>>") and receives ("<<<") as hex,
 # in the same format as tests/traces/node-2026-10-09.log. A chunk ends after 100 ms of

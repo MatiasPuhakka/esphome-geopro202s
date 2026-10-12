@@ -111,7 +111,7 @@ class CheckAfterTest(unittest.TestCase):
             'sensor.geopro_maaliuos (brine, "Maaliuos"): reads unavailable',
             'sensor.geopro_maaliuos (brine, "Maaliuos"): the Node has no entity named "Maaliuos"',
             'the Node has entities entity-contract.txt lacks: "Maaliuos lämpötila".'
-            ' Was one renamed, or does the Node run a build of another geopro.yaml?'])
+            ' Was one renamed, or does the Node run a build of another node.yaml?'])
 
     def test_an_entity_with_no_recorded_id_fails(self):
         # Such as a new entity, before its ID is recorded.
@@ -200,7 +200,7 @@ class CheckAfterTest(unittest.TestCase):
                                          node_counts, REVISION)
 
         self.assertEqual(result.problems, [
-            "geopro.yaml sets no component_revision, so the flash check can't tell which build the Node runs"])
+            "node.yaml sets no component_revision, so the flash check can't tell which build the Node runs"])
 
     def test_matches_a_revision_abbreviated_to_another_length(self):
         result = self.check(expected="02b51993cfa8")

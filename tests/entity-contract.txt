@@ -49,7 +49,7 @@ dhw_pre: sensor unit=% device_class=- state_class=measurement accuracy=0 icon=md
 dhw_lock: sensor unit=s device_class=duration state_class=measurement accuracy=0 icon=mdi:clock entity_category=-
 comp_lock: sensor unit=°C device_class=temperature state_class=measurement accuracy=0 icon=mdi:thermometer-off entity_category=-
 
-# Every entity in geopro.yaml: platform, name and the entity ID Home Assistant has
+# Every entity in node.yaml: platform, name and the entity ID Home Assistant has
 # for it, from tests/ha-entity-ids.txt.
 component_revision: text_sensor "Komponentin versio" sensor.geopro_komponentin_versio
 outside_temp: sensor "Ulkolämpötila" sensor.geopro_ulkol_mp_tila

@@ -1,0 +1,130 @@
+# The Node's settings, shared by the two configs that build it: geopro.yaml (the
+# Component from this checkout) and addon/geopro-202s.yaml (the Home Assistant add-on,
+# the Component from main). Each of those names its own Component source, because a
+# local path resolves against the config that includes this file.
+# Entity names match the YAML protocol copy this file used to hold, so Home Assistant
+# keeps the entity IDs and their history.
+# The API key and OTA password come from the secrets.yaml next to the including config.
+# Built with ESPHome 2026.9.1, the Home Assistant add-on's version.
+
+esphome:
+  name: "geopro-202s"
+  friendly_name: Geopro
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: INFO
+  baud_rate: 0
+
+uart:
+  tx_pin: GPIO4
+  rx_pin: GPIO16
+  baud_rate: 4800
+  data_bits: 8
+  parity: NONE
+  stop_bits: 1
+  rx_buffer_size: 512
+
+# Dropped from the earlier configs:
+# - l1_room and free_measurement: both read 0 °C here, and the YAML protocol copy never
+#   requested them.
+# - valve_l1 and valve_dhw: both valve motors here are 3-point, so they always read 0 %
+#   (see "Valve positions" in the README).
+geopro_202s:
+  id: geopro
+  component_revision:
+    name: "Komponentin versio"
+  outside_temp:
+    name: "Ulkolämpötila"
+  l1_supply:
+    name: "L1 menovesi"
+  tank_top_in:
+    name: "Varaaja ylä tulo"
+  tank_top:
+    name: "Varaaja ylä"
+  tank_middle:
+    name: "Varaaja keski"
+  tank_bottom:
+    name: "Varaaja ala"
+  brine:
+    name: "Maaliuos"
+  hours_eh:
+    name: "Sähkövastus tunnit"
+  hours_comp:
+    name: "Kompressori tunnit"
+  status_word:
+    name: "Tila Muuttuja"
+  compressor:
+    name: "Kompressori"
+  el_heater:
+    name: "Sähkövastus"
+  l1_minus20:
+    name: "L1 -20°C"
+  l1_zero:
+    name: "L1 0°C"
+  l1_plus20:
+    name: "L1 +20°C"
+  l1_night_effect:
+    name: "L1 Yöalennus vaikutus"
+  l1_min_limit:
+    name: "L1 Minimiraja"
+  l1_max_limit:
+    name: "L1 Maksimiraja"
+  l1_autumn_dry:
+    name: "L1 Syyskuivaus"
+  l1_out_temp_delay:
+    name: "L1 Ulkolämpötilan hidastus"
+  l1_pre_increase:
+    name: "L1 Esikorotus"
+  l1_summer_close:
+    name: "L1 venttiilin kesäsulku"
+  hp_mode:
+    name: "ML Ohjaustapa"
+  tank_min:
+    name: "ML VaraajaAlaMin"
+  delay_time:
+    name: "ML SV_viiveaika"
+  summer_temp:
+    name: "ML VarYlä Kesä"
+  winter_temp:
+    name: "ML VarYlä Talvi"
+  extra_heating:
+    name: "ML Lisälämmitys"
+  extra_time:
+    name: "ML Lisälämmitys aika"
+  comp_lock:
+    name: "ML Kompuran esto"
+  top_eh_diff:
+    name: "ML VarYlaEroSV"
+  bottom_diff:
+    name: "ML VaraajaAlaEro"
+  top_diff:
+    name: "ML VaraajaYläEro"
+  dhw_pre:
+    name: "ML JV esiavaus"
+  dhw_lock:
+    name: "ML JV Esto"
+  brine_alert:
+    name: "ML Maaliuos hälytys"
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+ethernet:
+  type: LAN8720
+  mdc_pin: GPIO23
+  mdio_pin: GPIO18
+  clk:
+    pin: GPIO17
+    mode: CLK_OUT
+  phy_addr: 0
+  power_pin: GPIO12

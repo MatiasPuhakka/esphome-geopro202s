@@ -1,6 +1,6 @@
 # Verifying a change on the Node
 
-Host tests and CI cover building and decoding. The Node on the real bus covers the rest. Verify any change that alters what the Node runs: the Component, `geopro.yaml` or the ESPHome version. Ask the owner before flashing.
+Host tests and CI cover building and decoding. The Node on the real bus covers the rest. Verify any change that alters what the Node runs: the Component, `node.yaml` or the ESPHome version. Ask the owner before flashing.
 
 The flash check in `tools/flash_check.py` runs the checks in three phases: `before`, `after` and `overnight`. Each phase prints a report and exits with status 1 when a check fails. See `tools/README.md`.
 
@@ -14,7 +14,7 @@ The flash check in `tools/flash_check.py` runs the checks in three phases: `befo
 
 ## How a change reaches the Node
 
-- **Home Assistant add-on.** It builds `/config/esphome/geopro-202s.yaml`, a copy of `geopro.yaml` whose Component source is `github://MatiasPuhakka/esphome-geopro202s@main`. A change reaches the Node only after it is merged to `main` and the add-on installs it, and the add-on may serve a cached copy of `main` for up to a day ([ADR 0005](../adr/0005-node-is-built-from-main.md)). A change to `geopro.yaml` is also made in the copy by hand.
+- **Home Assistant add-on.** It builds `/config/esphome/geopro-202s.yaml`, which holds `addon/geopro-202s.yaml`: `node.yaml` and the Component, both fetched from `main` on every build ([ADR 0005](../adr/0005-node-is-built-from-main.md)). A change reaches the Node when it is merged to `main` and the add-on installs it, with no edit in the add-on. Only a change to `addon/geopro-202s.yaml` itself is pasted into the add-on by hand, after it merges.
 - **Local build.** To test before merging, `make compile-node` (or `esphome compile geopro.yaml`), then `esphome upload geopro.yaml --device <Node address>`. The build lands in `.esphome/build/geopro-202s/`. This flashes the checkout's Component, so the Node then runs code that isn't on `main`; the next add-on install replaces it.
 
 ## Before flashing

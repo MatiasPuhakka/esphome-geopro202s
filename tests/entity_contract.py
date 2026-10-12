@@ -194,7 +194,7 @@ def contract_text(keys_config, node_config, platforms, entity_ids):
         "# Every key in tests/all-keys.yaml: platform and entity options (- for unset).",
         *key_lines(keys_config, platforms),
         "",
-        "# Every entity in geopro.yaml: platform, name and the entity ID Home Assistant has",
+        "# Every entity in node.yaml: platform, name and the entity ID Home Assistant has",
         "# for it, from tests/ha-entity-ids.txt.",
         *node_lines(node_config, platforms, entity_ids),
         "",

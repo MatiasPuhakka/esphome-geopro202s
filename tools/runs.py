@@ -21,7 +21,7 @@ DRAWING_ABOVE_A = 4.0
 # stopped. A stop can pass through 3 to 4 A for one Shelly reading.
 IDLE_BELOW_A = 3.0
 # The Node reads the Status word once per value interval, the Component's default of 10 s that
-# geopro.yaml keeps, so a Status-bit edge can lag the current by up to this.
+# node.yaml keeps, so a Status-bit edge can lag the current by up to this.
 VALUE_INTERVAL = timedelta(seconds=10)
 
 
