@@ -90,7 +90,7 @@ def status_bit(mask):
 @dataclass(frozen=True)
 class Value:
     # The config key and the entity kind. Home Assistant knows the entity by its kind
-    # and its name in geopro.yaml.
+    # and its name in node.yaml.
     key: str
     entity_kind: EntityKind
     # The address read for this value (for settings, the bank), where the value

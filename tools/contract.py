@@ -41,7 +41,7 @@ class Entity:
 
 class Contract:
     def __init__(self, entities, path):
-        # The Node's entities by key, in geopro.yaml's order.
+        # The Node's entities by key, in node.yaml's order.
         self.entities = entities
         self.path = path
 

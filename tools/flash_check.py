@@ -181,7 +181,7 @@ def check_after(entity_contract, after_states, counts, expected_revision, before
     revision_entity = entity_contract.entities.get(REVISION_KEY)
     revision = states.get(revision_entity.entity_id) if revision_entity else None
     if revision_entity is None:
-        result.problems.append("geopro.yaml sets no %s, so the flash check can't tell which build the Node runs"
+        result.problems.append("node.yaml sets no %s, so the flash check can't tell which build the Node runs"
                                % REVISION_KEY)
     # An unavailable revision fails as an unavailable entity, below.
     elif revision is not None and revision["state"] != "unavailable":
@@ -216,7 +216,7 @@ def check_after(entity_contract, after_states, counts, expected_revision, before
     extra = [name for name in counts if name not in names]
     if extra:
         result.problems.append("the Node has entities %s lacks: %s. Was one renamed, or does the Node run a build"
-                               " of another geopro.yaml?"
+                               " of another node.yaml?"
                                % (entity_contract.path.name, ", ".join('"%s"' % name for name in extra)))
     if before_states is not None:
         result.notes += _changes_since(before_states, states, entity_contract)

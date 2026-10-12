@@ -15,7 +15,7 @@ brine: sensor unit=°C device_class=temperature state_class=measurement accuracy
 compressor: binary_sensor unit=- device_class=running state_class=- accuracy=- icon=mdi:engine entity_category=-
 hp_mode: sensor unit=- device_class=- state_class=measurement accuracy=0 icon=mdi:gauge entity_category=-
 
-# Every entity in geopro.yaml: platform, name and the entity ID Home Assistant has
+# Every entity in node.yaml: platform, name and the entity ID Home Assistant has
 brine: sensor "Maaliuos" sensor.geopro_maaliuos
 compressor: binary_sensor "Kompressori" binary_sensor.geopro_kompressori
 hp_mode: sensor "ML Ohjaustapa" (no entity ID recorded)
@@ -45,7 +45,7 @@ class CommittedContractTest(unittest.TestCase):
         keys = list(contract.load().entities)
 
         self.assertEqual(keys[:3], ["component_revision", "outside_temp", "l1_supply"])
-        # tests/all-keys.yaml sets l1_room; geopro.yaml doesn't, so the Node has no such entity.
+        # tests/all-keys.yaml sets l1_room; node.yaml doesn't, so the Node has no such entity.
         self.assertNotIn("l1_room", keys)
 
 

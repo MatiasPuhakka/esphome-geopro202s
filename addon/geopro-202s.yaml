@@ -1,0 +1,18 @@
+# The Node's config in the Home Assistant ESPHome add-on, kept there by hand as
+# /config/esphome/geopro-202s.yaml. Paste this file in whole when it changes, which is
+# only when the source or the refresh changes: the Node's settings live in node.yaml.
+# Both the settings and the geopro_202s Component come from main, fetched on every
+# build, so an install builds what main holds then (ADR 0005).
+# The API key and OTA password come from the add-on's secrets.yaml.
+
+packages:
+  node:
+    url: https://github.com/MatiasPuhakka/esphome-geopro202s
+    ref: main
+    files: [node.yaml]
+    refresh: 0s
+
+external_components:
+  - source: github://MatiasPuhakka/esphome-geopro202s@main
+    components: [geopro_202s]
+    refresh: 0s

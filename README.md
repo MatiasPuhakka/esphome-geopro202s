@@ -121,7 +121,7 @@ Each row names its entity kind, so editing a decode rule never moves a value to 
 
 ### Home Assistant entity contract
 
-Home Assistant keys each entity on its platform (sensor or binary sensor) and name, and keeps long-term statistics in its unit and state class. Change one of those and the old entity loses its history or Home Assistant raises a statistics repair. `tests/entity-contract.txt` records, for every key in `tests/all-keys.yaml`, the platform, unit, device class, state class, accuracy, icon and entity category, and for every entity in `geopro.yaml`, its name and the entity ID Home Assistant has for it.
+Home Assistant keys each entity on its platform (sensor or binary sensor) and name, and keeps long-term statistics in its unit and state class. Change one of those and the old entity loses its history or Home Assistant raises a statistics repair. `tests/entity-contract.txt` records, for every key in `tests/all-keys.yaml`, the platform, unit, device class, state class, accuracy, icon and entity category, and for every entity in `node.yaml`, its name and the entity ID Home Assistant has for it.
 
 `make check-contract` rebuilds the file from `esphome config` and fails with a diff when it changed. If the change is deliberate, run `make update-contract` and commit the new file, so the migration gets reviewed. Both need ESPHome 2026.9 and a `secrets.yaml` next to `geopro.yaml`. Every ESPHome target stops with a message when the `ESPHOME` variable (by default the `esphome` on PATH) names another version, so point it at a 2026.9 install when needed, for example `make check-contract ESPHOME=venv/bin/esphome`. The contract targets run the `python` next to that `esphome`.
 
