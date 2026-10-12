@@ -40,6 +40,8 @@ Crop every figure, chart and drawing that ADR 0006 says becomes an image, with t
    sips -c <height> <width> --cropOffset <y> <x> .scratch/pages/page-<N>.png --out manuals/<transcription>/s<N>-<name>.png
    ```
 
+   `sips` reads `--cropOffset 0 0` as no offset and crops the middle of the image, so a box at the top-left corner starts at `1 1`.
+
 3. A drawing printed sideways, such as the Asennusohje's p. 20, gets turned upright: `sips -r 90 <file>` turns it 90° clockwise.
 
 ## 4. Write the page
