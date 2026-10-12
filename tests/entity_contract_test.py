@@ -61,10 +61,10 @@ esphome:
 geopro_202s:
   id: geopro
   l1_minus20:
-    name: L1 -20°C
+    name: L1 miinus 20°C
     state_class: measurement
   l1_plus20:
-    name: L1 +20°C
+    name: L1 plus 20°C
     state_class: measurement
   compressor:
     name: Kompressori
@@ -77,20 +77,25 @@ NODE_PLATFORMS = {"l1_minus20": "sensor", "l1_plus20": "sensor", "compressor": "
 
 class NodeContractTest(unittest.TestCase):
     def test_gives_each_entity_the_id_home_assistant_has_for_its_friendly_name(self):
-        # Both names slugify to l1_20_c, so Home Assistant added _2 to the second one.
         entity_ids = [
-            ("sensor.geopro_l1_20_c_2", "Geopro L1 +20°C"),
-            ("sensor.geopro_l1_20_c", "Geopro L1 -20°C"),
+            ("sensor.geopro_l1_plus_20_c", "Geopro L1 plus 20°C"),
+            ("sensor.geopro_l1_miinus_20_c", "Geopro L1 miinus 20°C"),
             ("binary_sensor.geopro_kompressori", "Geopro Kompressori"),
         ]
         self.assertEqual(
             entity_contract.node_lines(NODE_CONFIG, NODE_PLATFORMS, entity_ids),
             [
-                'l1_minus20: sensor "L1 -20°C" sensor.geopro_l1_20_c',
-                'l1_plus20: sensor "L1 +20°C" sensor.geopro_l1_20_c_2',
+                'l1_minus20: sensor "L1 miinus 20°C" sensor.geopro_l1_miinus_20_c',
+                'l1_plus20: sensor "L1 plus 20°C" sensor.geopro_l1_plus_20_c',
                 'compressor: binary_sensor "Kompressori" binary_sensor.geopro_kompressori',
             ],
         )
+
+    def test_fails_on_two_names_that_would_get_the_same_entity_id(self):
+        # Before #76 Home Assistant had these two as sensor.geopro_l1_20_c and sensor.geopro_l1_20_c_2.
+        config = NODE_CONFIG.replace("L1 miinus 20°C", "L1 -20°C").replace("L1 plus 20°C", "L1 +20°C")
+        with self.assertRaisesRegex(ValueError, r'l1_minus20 \("L1 -20°C"\) and l1_plus20 \("L1 \+20°C"\)'):
+            entity_contract.node_lines(config, NODE_PLATFORMS, [])
 
     def test_looks_up_a_text_sensor_among_home_assistants_sensors(self):
         config = (

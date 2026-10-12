@@ -125,7 +125,9 @@ Home Assistant keys each entity on its platform (sensor or binary sensor) and na
 
 `make check-contract` rebuilds the file from `esphome config` and fails with a diff when it changed. If the change is deliberate, run `make update-contract` and commit the new file, so the migration gets reviewed. Both need ESPHome 2026.9 and a `secrets.yaml` next to `geopro.yaml`. Every ESPHome target stops with a message when the `ESPHOME` variable (by default the `esphome` on PATH) names another version, so point it at a 2026.9 install when needed, for example `make check-contract ESPHOME=venv/bin/esphome`. The contract targets run the `python` next to that `esphome`.
 
-The entity IDs come from `tests/ha-entity-ids.txt`, a snapshot of Home Assistant's `/api/states` that keeps only each Node entity's ID and friendly name. An entity with no ID there, such as a new or renamed one, shows in the contract as `(no entity ID recorded)`. After a flash that changes entity IDs, record them again:
+`make check-contract` also fails when two of the Node's names would give Home Assistant the same entity ID, because Home Assistant then adds `_2` to the second one. `L1 -20°C` and `L1 +20°C` did that until #76.
+
+The entity IDs come from `tests/ha-entity-ids.txt`, a snapshot of Home Assistant's `/api/states` that keeps only each Node entity's ID and friendly name. An entity with no ID there, such as a new or renamed one, shows in the contract as `(no entity ID recorded)`. Home Assistant gives a new entity an ID unlike the Node's others, so a change that adds or renames one records its ID by hand first; `docs/agents/verification.md` has the steps. After a flash that changes entity IDs, record them again:
 
 1. Put `HA_URL` (such as `http://homeassistant.local:8123`) and a long-lived `ACCESS_TOKEN` in the environment, for example from the gitignored `.env` with `set -a; . ./.env; set +a`.
 2. Run `make check-node-config`, then `python3 tests/entity_contract.py record-ids build/node-config.out`.
