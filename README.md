@@ -146,7 +146,7 @@ This logic lives in `poll_scheduler.h`/`poll_scheduler.cpp`, which also have no 
 The component counts bus errors: frames with a bad checksum, received bytes that end up in no frame, timeouts (each one a retry or a give-up), and replies that decode no values. Once per `bank_interval` it logs the counts since the last check as one warning, and logs nothing when all are zero:
 
 ```
-[W][geopro_202s]: Bus errors in the last 60 s: Checksum failures 1, discarded bytes 8, timeouts 2 (retries 1, give-ups 1), Replies that decoded nothing 0
+[W][geopro_202s]: Bus errors in the last 60 s: checksum failures 1, discarded bytes 8, timeouts 2 (retries 1, give-ups 1), replies that decoded nothing 0
 ```
 
 ### Component revision
