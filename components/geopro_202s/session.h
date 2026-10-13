@@ -107,7 +107,7 @@ class Session {
 class BusErrorReport {
  public:
   void set_interval(uint32_t interval_ms) { this->interval_ms_ = interval_ms; }
-  uint32_t interval() const { return this->interval_ms_; }
+  uint32_t interval_ms() const { return this->interval_ms_; }
 
   // Once an interval has passed since the last check, checks `counters`, a Session's latest
   // counts: returns true and sets `errors` to the counts since the last check when any is

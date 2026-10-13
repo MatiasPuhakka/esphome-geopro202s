@@ -37,18 +37,19 @@ void Geopro202sComponent::loop() {
 }
 
 // Logs the bus errors counted since the last check at WARN, which the Node's INFO logger
-// keeps, and nothing when there are none. The bank cycle sets the cadence, not the value
-// cycle: every Address is read at least once per bank interval, so one line covers a pass
-// over the whole Register map, and a Controller that stops answering costs one line a
-// minute at the default intervals instead of six.
+// keeps, and nothing when there are none. The bank interval sets the cadence, not the value
+// interval: it is the shortest span in which every Address gets read, and a Controller that
+// stops answering costs one line a minute at the default intervals instead of six. The
+// report keeps its own clock, so its spans aren't aligned with the bank cycle, but there is
+// still at most one line per bank interval.
 void Geopro202sComponent::report_bus_errors_(uint32_t now) {
   Counters errors;
   if (!this->bus_error_report_.take(now, this->session_.counters(), errors))
     return;
   ESP_LOGW(TAG,
-           "Bus errors in the last %u s: Checksum failures %u, discarded bytes %u, timeouts %u (retries %u, "
-           "give-ups %u), Replies that decoded nothing %u",
-           (unsigned) (this->bus_error_report_.interval() / 1000), (unsigned) errors.checksum_failures,
+           "Bus errors in the last %u s: checksum failures %u, discarded bytes %u, timeouts %u (retries %u, "
+           "give-ups %u), replies that decoded nothing %u",
+           (unsigned) (this->bus_error_report_.interval_ms() / 1000), (unsigned) errors.checksum_failures,
            (unsigned) errors.discarded_bytes, (unsigned) errors.timeouts(), (unsigned) errors.retries,
            (unsigned) errors.give_ups, (unsigned) errors.undecoded_replies);
 }
