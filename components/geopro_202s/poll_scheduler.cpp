@@ -25,7 +25,7 @@ void PollScheduler::add_address(PollGroup group, uint16_t address) {
     this->add_value_address(address);
 }
 
-bool PollScheduler::next_request(uint32_t now, uint16_t &address) {
+bool PollScheduler::next_request(uint32_t now, uint16_t &address, std::vector<RequestEvent> &events) {
   this->start_due_cycles_(now);
 
   if (this->in_flight_) {
@@ -35,8 +35,10 @@ bool PollScheduler::next_request(uint32_t now, uint16_t &address) {
       this->attempts_++;
       this->sent_at_ = now;
       address = this->in_flight_address_;
+      events.push_back(RequestEvent{RequestEvent::Kind::RETRY, address});
       return true;
     }
+    events.push_back(RequestEvent{RequestEvent::Kind::GIVE_UP, this->in_flight_address_});
     this->finish_request_(now);
   }
 

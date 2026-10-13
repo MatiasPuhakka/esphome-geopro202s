@@ -34,13 +34,23 @@ class FrameDecoder {
   // Returns the complete, checksum-verified frames the new bytes finish.
   std::vector<Frame> feed(const uint8_t *bytes, size_t len);
 
-  // Drops the bytes of a frame not yet complete.
-  void reset() { this->buffer_.clear(); }
+  // Drops the bytes of a frame not yet complete, and counts them as discarded.
+  void reset();
+
+  // Counts since construction, never reset. A frame whose checksum fails counts one
+  // checksum failure. Every byte that ends up in no frame counts as discarded: the bytes
+  // of a failed frame, bytes before a start byte, a start byte whose length byte is out
+  // of range, and the bytes reset() drops.
+  uint32_t checksum_failures() const { return this->checksum_failures_; }
+  uint32_t discarded_bytes() const { return this->discarded_bytes_; }
 
  protected:
   void drain_(std::vector<Frame> &out);
+  void discard_(size_t count);
 
   std::vector<uint8_t> buffer_;
+  uint32_t checksum_failures_{0};
+  uint32_t discarded_bytes_{0};
 };
 
 }  // namespace geopro_202s

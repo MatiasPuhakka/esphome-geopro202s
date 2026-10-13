@@ -77,6 +77,26 @@ TEST_CASE("bad checksum followed by a good frame") {
   check_temp_5_00(feed(decoder, bytes));
 }
 
+TEST_CASE("a bad checksum counts one checksum failure, and its bytes are discarded") {
+  FrameDecoder decoder;
+  // TEMP_6_00 with a wrong Checksum. Its data holds a 0x02, which waits as a possible start
+  // until the bytes after it rule it out.
+  std::vector<uint8_t> bytes = {0x02, 0x06, 0x04, 0x00, 0x01, 0x02, 0x58, 0xFF};
+  bytes.insert(bytes.end(), TEMP_5_00.begin(), TEMP_5_00.end());
+  check_temp_5_00(feed(decoder, bytes));
+  CHECK(decoder.checksum_failures() == 1);
+  CHECK(decoder.discarded_bytes() == 8);
+}
+
+TEST_CASE("good frames count no errors") {
+  FrameDecoder decoder;
+  std::vector<uint8_t> bytes = TEMP_6_00;
+  bytes.insert(bytes.end(), TEMP_5_00.begin(), TEMP_5_00.end());
+  CHECK(feed(decoder, bytes).size() == 2);
+  CHECK(decoder.checksum_failures() == 0);
+  CHECK(decoder.discarded_bytes() == 0);
+}
+
 TEST_CASE("good frame inside the span of a false start is still found") {
   FrameDecoder decoder;
   std::vector<uint8_t> bytes = {0x02, 0x06, 0x04, 0x00};
@@ -98,6 +118,8 @@ TEST_CASE("length byte below 2") {
     std::vector<uint8_t> bytes = {0x02, 0x06, length, 0x7F};
     bytes.insert(bytes.end(), TEMP_5_00.begin(), TEMP_5_00.end());
     check_temp_5_00(feed(decoder, bytes));
+    CHECK(decoder.discarded_bytes() == 4);
+    CHECK(decoder.checksum_failures() == 0);
   }
 }
 
@@ -106,15 +128,20 @@ TEST_CASE("bytes before the start byte are skipped") {
   std::vector<uint8_t> bytes = {0x00, 0xFF, 0x58};
   bytes.insert(bytes.end(), TEMP_5_00.begin(), TEMP_5_00.end());
   check_temp_5_00(feed(decoder, bytes));
+  CHECK(decoder.discarded_bytes() == 3);
 }
 
-TEST_CASE("reset drops a partial frame, and the next frame decodes") {
+TEST_CASE("reset drops a partial frame and counts its bytes, and the next frame decodes") {
   FrameDecoder decoder;
   CHECK(feed(decoder, {0x02, 0x06, 0x04, 0x00}).empty());
   decoder.reset();
+  CHECK(decoder.discarded_bytes() == 4);
+  decoder.reset();
+  CHECK(decoder.discarded_bytes() == 4);
   // The partial frame's rest, which would have completed it.
   CHECK(feed(decoder, {0x01, 0x01, 0xF4, 0x00}).empty());
   check_temp_5_00(feed(decoder, TEMP_5_00));
+  CHECK(decoder.discarded_bytes() == 8);
 }
 
 TEST_CASE("several frames in one feed") {

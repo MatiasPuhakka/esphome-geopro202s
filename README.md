@@ -143,6 +143,12 @@ Only one request is on the bus at a time. The next request goes out 50 ms after 
 
 This logic lives in `poll_scheduler.h`/`poll_scheduler.cpp`, which also have no ESPHome dependencies and are covered by `make test`.
 
+The component counts bus errors: frames with a bad checksum, received bytes that end up in no frame, timeouts (each one a retry or a give-up), and replies that decode no values. Once per `bank_interval` it logs the counts since the last check as one warning, and logs nothing when all are zero:
+
+```
+[W][geopro_202s]: Bus errors in the last 60 s: Checksum failures 1, discarded bytes 8, timeouts 2 (retries 1, give-ups 1), Replies that decoded nothing 0
+```
+
 ### Component revision
 
 Each build records the git commit the component was built from, so you can tell which code the flashed firmware runs. A `github://` source gives the commit ESPHome cloned; a local source gives the checkout's commit, with `-dirty` appended when a file in `components/geopro_202s` has uncommitted changes. If git isn't available, or the component's directory isn't tracked in a git repository, the build logs a warning and records `unknown`.

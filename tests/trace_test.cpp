@@ -14,6 +14,7 @@
 #include <vector>
 
 using esphome::geopro_202s::build_read_request;
+using esphome::geopro_202s::Counters;
 using esphome::geopro_202s::Frame;
 using esphome::geopro_202s::FrameDecoder;
 using esphome::geopro_202s::Session;
@@ -88,14 +89,17 @@ struct Replay {
   std::vector<std::array<uint8_t, 6>> requests;
   std::vector<uint16_t> answered;
   std::map<std::string, float> published;  // by Register map key
+  Counters counters;                       // at the end
 };
 
 // Plays the trace through a Session built from the real Register map rows, as the hub would:
 // time advances in 5 ms steps, and each Read request the Session sends gets the trace's Reply
 // for that Address, fed in one byte at a time 20 ms later. The Session asks in its own order,
 // not the trace's, so Replies are matched by Address. `before` is fed at time 0, ahead of the
-// first Read request. Stops before the second cycle (10 s).
-Replay replay_trace(const std::vector<register_map::Row> &rows, const std::vector<uint8_t> &before = {}) {
+// first Read request. With `echo`, each Read request is also fed back as it is sent, as a
+// Node that hears itself on the bus would receive it. Stops before the second cycle (10 s).
+Replay replay_trace(const std::vector<register_map::Row> &rows, const std::vector<uint8_t> &before = {},
+                    bool echo = false) {
   std::map<uint16_t, TraceLine> replies;
   uint16_t requested = 0;
   for (const TraceLine &line : read_trace()) {
@@ -121,6 +125,9 @@ Replay replay_trace(const std::vector<register_map::Row> &rows, const std::vecto
     if (!session.next_request(now, request))
       continue;
     replay.requests.push_back(request);
+    if (echo)
+      for (uint8_t byte : request)
+        record(session.feed(&byte, 1, now));
     const uint16_t address = static_cast<uint16_t>(request[3] << 8 | request[4]);
     auto reply = replies.find(address);
     REQUIRE_MESSAGE(reply != replies.end(), "the Session asked for an Address the trace has no Reply for");
@@ -128,6 +135,7 @@ Replay replay_trace(const std::vector<register_map::Row> &rows, const std::vecto
     for (uint8_t byte : reply->second.bytes)
       record(session.feed(&byte, 1, now));
   }
+  replay.counters = session.counters();
   return replay;
 }
 
@@ -191,6 +199,20 @@ TEST_CASE("node trace: the Session asks for every Address the trace covers once,
   CHECK(asked == traced);
   // Every Reply was answered, once, in the order the Session asked.
   CHECK(replay.answered.size() == 17);
+}
+
+TEST_CASE("node trace: replaying it counts no bus errors, with or without the Node's Read requests echoed back") {
+  for (bool echo : {false, true}) {
+    CAPTURE(echo);
+    const Replay replay = replay_trace(register_map::all_rows(), {}, echo);
+    CHECK(replay.answered.size() == 17);
+    CHECK(replay.counters.checksum_failures == 0);
+    CHECK(replay.counters.discarded_bytes == 0);
+    CHECK(replay.counters.retries == 0);
+    CHECK(replay.counters.give_ups == 0);
+    CHECK(replay.counters.undecoded_replies == 0);
+    CHECK_FALSE(replay.counters.any());
+  }
 }
 
 TEST_CASE("node trace: after a false start, every later Reply is answered once and at most one Address misses its cycle") {

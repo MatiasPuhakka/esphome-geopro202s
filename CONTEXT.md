@@ -113,6 +113,10 @@ _Avoid_: CRC
 A 0x02 on the bus that doesn't begin a Frame, from line noise or from the tail of a Reply the Node caught partway, as at boot. Since 0x02 is never escaped, it looks like a start byte until the bytes after it fail to make a Frame.
 _Avoid_: stale frame (the bytes a false start leaves held)
 
+**Bus error**:
+One of the faults the Session counts: a Frame whose Checksum fails, a received byte that ends up in no Frame (including the bytes of a False start dropped after a silence), a timeout, or a Reply that decodes no Values. After a timeout the Poll scheduler sends the Read request once more (a retry) or drops it until its next cycle (a give-up), so every timeout is one or the other. A Reply that decodes nothing still answers its Read request. A Frame with a Command byte other than 0x06, such as the Node's own Read request echoed back, is not a bus error. The Hub logs the counts at WARN once per bank cycle when any is non-zero (#37).
+_Avoid_: comms error, fault
+
 **Address**:
 The 16-bit number a Read request asks for; either a single Value or a Bank.
 _Avoid_: id, sensor id, register
@@ -166,7 +170,7 @@ The part of the Component that decides which Address to request next, with one R
 _Avoid_: poller, request queue
 
 **Session**:
-The part of the Component that turns received bytes and the time into Read requests and decoded Values. It composes the Frame codec, Poll scheduler and value decoder, owns the Register map entries, and decides what counts as a Reply and when a request is done. It has no clock and no ESPHome includes. Each decoded Value carries the id of its entry.
+The part of the Component that turns received bytes and the time into Read requests and decoded Values. It composes the Frame codec, Poll scheduler and value decoder, owns the Register map entries, decides what counts as a Reply and when a request is done, and counts Bus errors. It has no clock and no ESPHome includes. Each decoded Value carries the id of its entry.
 _Avoid_: driver, transport
 
 **Hub**:

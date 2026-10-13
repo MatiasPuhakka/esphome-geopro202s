@@ -36,7 +36,10 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
 
   // Poll intervals, in milliseconds. Codegen always sets both from the config (default 10 s and 60 s).
   void set_value_interval(uint32_t interval_ms) { this->session_.set_value_interval(interval_ms); }
-  void set_bank_interval(uint32_t interval_ms) { this->session_.set_bank_interval(interval_ms); }
+  void set_bank_interval(uint32_t interval_ms) {
+    this->session_.set_bank_interval(interval_ms);
+    this->bus_error_report_.set_interval(interval_ms);
+  }
 
   // The Component's git revision, stamped by codegen: a short commit hash, "-dirty"
   // when built from uncommitted changes, or "unknown". The text sensor is optional.
@@ -62,6 +65,7 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
 
   void add_value_(PollGroup group, const Registration &registration, const Target &target);
   void publish_(const SessionOutput &output);
+  void report_bus_errors_(uint32_t now);
 
   const char *component_revision_{"unknown"};
   text_sensor::TextSensor *component_revision_text_sensor_{nullptr};
@@ -70,6 +74,9 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
 
   // Where each registered value publishes, indexed by the EntryId the Session gave it.
   std::vector<Target> targets_{};
+
+  // When to log the Session's bus errors, every bank interval (see report_bus_errors_()).
+  BusErrorReport bus_error_report_{};
 };
 
 } // namespace geopro_202s
