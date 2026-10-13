@@ -14,6 +14,8 @@
 #include <vector>
 
 using esphome::geopro_202s::build_read_request;
+using esphome::geopro_202s::COUNTER_FIELDS;
+using esphome::geopro_202s::CounterField;
 using esphome::geopro_202s::Counters;
 using esphome::geopro_202s::Frame;
 using esphome::geopro_202s::FrameDecoder;
@@ -206,12 +208,10 @@ TEST_CASE("node trace: replaying it counts no bus errors, with or without the No
     CAPTURE(echo);
     const Replay replay = replay_trace(register_map::all_rows(), {}, echo);
     CHECK(replay.answered.size() == 17);
-    CHECK(replay.counters.checksum_failures == 0);
-    CHECK(replay.counters.discarded_bytes == 0);
-    CHECK(replay.counters.retries == 0);
-    CHECK(replay.counters.give_ups == 0);
-    CHECK(replay.counters.undecoded_replies == 0);
-    CHECK_FALSE(replay.counters.any());
+    for (const CounterField &field : COUNTER_FIELDS) {
+      CAPTURE(field.label);
+      CHECK(replay.counters.*field.count == 0);
+    }
   }
 }
 

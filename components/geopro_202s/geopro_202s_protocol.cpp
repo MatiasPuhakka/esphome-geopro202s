@@ -36,7 +36,7 @@ void Geopro202sComponent::loop() {
   this->report_bus_errors_(now);
 }
 
-// Logs the bus errors counted since the last check at WARN, which the Node's INFO logger
+// Logs the bus errors counted since the last line at WARN, which the Node's INFO logger
 // keeps, and nothing when there are none. The bank interval sets the cadence, not the value
 // interval: it is the shortest span in which every Address gets read, and a Controller that
 // stops answering costs one line a minute at the default intervals instead of six. The
@@ -44,14 +44,10 @@ void Geopro202sComponent::loop() {
 // still at most one line per bank interval.
 void Geopro202sComponent::report_bus_errors_(uint32_t now) {
   Counters errors;
-  if (!this->bus_error_report_.take(now, this->session_.counters(), errors))
+  uint32_t span_ms;
+  if (!this->bus_error_report_.take(now, this->session_.bank_interval(), this->session_.counters(), errors, span_ms))
     return;
-  ESP_LOGW(TAG,
-           "Bus errors in the last %u s: checksum failures %u, discarded bytes %u, timeouts %u (retries %u, "
-           "give-ups %u), replies that decoded nothing %u",
-           (unsigned) (this->bus_error_report_.interval_ms() / 1000), (unsigned) errors.checksum_failures,
-           (unsigned) errors.discarded_bytes, (unsigned) errors.timeouts(), (unsigned) errors.retries,
-           (unsigned) errors.give_ups, (unsigned) errors.undecoded_replies);
+  ESP_LOGW(TAG, "Bus errors in the last %u s: %s", (unsigned) (span_ms / 1000), errors.describe().c_str());
 }
 
 void Geopro202sComponent::publish_(const SessionOutput &output) {

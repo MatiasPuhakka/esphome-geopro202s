@@ -11,7 +11,10 @@
 #include <vector>
 
 using esphome::geopro_202s::BusErrorReport;
+using esphome::geopro_202s::COUNTER_FIELDS;
+using esphome::geopro_202s::CounterField;
 using esphome::geopro_202s::Counters;
+using esphome::geopro_202s::DEFAULT_BANK_INTERVAL_MS;
 using esphome::geopro_202s::EntryId;
 using esphome::geopro_202s::frame_checksum;
 using esphome::geopro_202s::PollGroup;
@@ -74,16 +77,18 @@ struct Bus {
   void advance(uint32_t ms) { now += ms; }
 };
 
-// A Session's counts in a fixed order, so one CHECK shows them all: Checksum failures,
-// discarded bytes, timeouts, retries, give-ups, Replies that decoded nothing.
+// A Session's counts in the order of COUNTER_FIELDS, so one CHECK shows them all: Checksum
+// failures, discarded bytes, retries, give-ups, Replies that decoded nothing.
 std::vector<uint32_t> counts(const Counters &counters) {
-  return {counters.checksum_failures, counters.discarded_bytes, counters.timeouts(),
-          counters.retries,           counters.give_ups,        counters.undecoded_replies};
+  std::vector<uint32_t> out;
+  for (const CounterField &field : COUNTER_FIELDS)
+    out.push_back(counters.*field.count);
+  return out;
 }
 
 std::vector<uint32_t> counts(const Session &session) { return counts(session.counters()); }
 
-const std::vector<uint32_t> NO_ERRORS = {0, 0, 0, 0, 0, 0};
+const std::vector<uint32_t> NO_ERRORS = {0, 0, 0, 0, 0};
 
 }  // namespace
 
@@ -94,7 +99,7 @@ TEST_CASE("counters: a Reply with a bad Checksum counts a Checksum failure, and 
   bytes.back() ^= 0xFF;
   REQUIRE(bytes.size() == 8);
   CHECK(bus.receive(bytes).empty());
-  CHECK(counts(bus.session) == std::vector<uint32_t>{1, 8, 0, 0, 0, 0});
+  CHECK(counts(bus.session) == std::vector<uint32_t>{1, 8, 0, 0, 0});
 }
 
 TEST_CASE("counters: since() gives the counts after an earlier reading, and any() whether one is non-zero") {
@@ -110,7 +115,7 @@ TEST_CASE("counters: since() gives the counts after an earlier reading, and any(
   CHECK_FALSE(first.since(first).any());
 
   // Reading the counts doesn't reset them.
-  CHECK(counts(bus.session) == std::vector<uint32_t>{0, 0, 1, 1, 0, 0});
+  CHECK(counts(bus.session) == std::vector<uint32_t>{0, 0, 1, 0, 0});
 
   bus.advance(REPLY_TIMEOUT_MS);
   CHECK(bus.request() == 0xFFFF);
@@ -118,8 +123,30 @@ TEST_CASE("counters: since() gives the counts after an earlier reading, and any(
   bytes.back() ^= 0xFF;
   bus.receive(bytes);
   const Counters second = bus.session.counters();
-  CHECK(counts(second.since(first)) == std::vector<uint32_t>{1, 8, 1, 0, 1, 0});
-  CHECK(counts(second.since(start)) == std::vector<uint32_t>{1, 8, 2, 1, 1, 0});
+  CHECK(counts(second.since(first)) == std::vector<uint32_t>{1, 8, 0, 1, 0});
+  CHECK(counts(second.since(start)) == std::vector<uint32_t>{1, 8, 1, 1, 0});
+}
+
+TEST_CASE("counters: since() and any() cover every count") {
+  for (const CounterField &field : COUNTER_FIELDS) {
+    CAPTURE(field.label);
+    Counters earlier;
+    Counters later;
+    later.*field.count = 2;
+    CHECK(later.any());
+    CHECK(later.since(earlier).*field.count == 2);
+    CHECK_FALSE(later.since(later).any());
+  }
+}
+
+TEST_CASE("counters: describe() names every count, in a line for the log") {
+  Counters counters;
+  counters.checksum_failures = 1;
+  counters.discarded_bytes = 8;
+  counters.retries = 1;
+  counters.give_ups = 1;
+  CHECK(counters.describe() ==
+        "checksum failures 1, discarded bytes 8, retries 1, give-ups 1, replies that decoded nothing 0");
 }
 
 TEST_CASE("counters: since() is right across a count wrapping at 2^32") {
@@ -130,11 +157,12 @@ TEST_CASE("counters: since() is right across a count wrapping at 2^32") {
   CHECK(later.since(earlier).retries == 3);
 }
 
-TEST_CASE("bus error report: once per interval, with the counts since the last one, and only when there are any") {
+TEST_CASE("bus error report: once per interval, with the counts and the time since the last line, and only when there are any") {
   Bus bus(register_map::rows_named({"outside_temp"}));
   BusErrorReport report;
-  report.set_interval(60000);
   Counters errors;
+  uint32_t span_ms = 0;
+  auto take = [&]() { return report.take(bus.now, 60000, bus.session.counters(), errors, span_ms); };
 
   // A Checksum failure and a timeout early in the first interval.
   std::vector<uint8_t> bad = reply(0x12, {0xFE, 0x0C});
@@ -143,33 +171,51 @@ TEST_CASE("bus error report: once per interval, with the counts since the last o
   CHECK(bus.request() == 0x12);
   bus.advance(REPLY_TIMEOUT_MS);
   CHECK(bus.request() == 0x12);
-  CHECK_FALSE(report.take(bus.now, bus.session.counters(), errors));
+  CHECK_FALSE(take());
 
   bus.now = 59999;
-  CHECK_FALSE(report.take(bus.now, bus.session.counters(), errors));
+  CHECK_FALSE(take());
   bus.now = 60000;
-  REQUIRE(report.take(bus.now, bus.session.counters(), errors));
-  CHECK(counts(errors) == std::vector<uint32_t>{1, 8, 1, 1, 0, 0});
+  REQUIRE(take());
+  CHECK(counts(errors) == std::vector<uint32_t>{1, 8, 1, 0, 0});
+  CHECK(span_ms == 60000);
 
-  // An error right after a report waits for the next interval.
+  // An error right after a line waits for the next interval. A loop that runs late
+  // stretches the span.
   bus.receive(bad);
   bus.advance(1);
-  CHECK_FALSE(report.take(bus.now, bus.session.counters(), errors));
-  bus.now = 120000;
-  REQUIRE(report.take(bus.now, bus.session.counters(), errors));
-  CHECK(counts(errors) == std::vector<uint32_t>{1, 8, 0, 0, 0, 0});
+  CHECK_FALSE(take());
+  bus.now = 120007;
+  REQUIRE(take());
+  CHECK(counts(errors) == std::vector<uint32_t>{1, 8, 0, 0, 0});
+  CHECK(span_ms == 60007);
 
-  // An interval with no errors reports nothing.
-  bus.now = 180000;
-  CHECK_FALSE(report.take(bus.now, bus.session.counters(), errors));
+  // An interval with no errors logs nothing.
+  bus.now = 180007;
+  CHECK_FALSE(take());
 
-  // The quiet interval moved the report on, so an error now waits for the next one.
+  // The quiet interval moved the next check on, so an error now waits for it, and the
+  // line's span runs from the last line.
   bus.receive(bad);
-  bus.now = 239999;
-  CHECK_FALSE(report.take(bus.now, bus.session.counters(), errors));
-  bus.now = 240000;
-  REQUIRE(report.take(bus.now, bus.session.counters(), errors));
-  CHECK(counts(errors) == std::vector<uint32_t>{1, 8, 0, 0, 0, 0});
+  bus.now = 240006;
+  CHECK_FALSE(take());
+  bus.now = 240007;
+  REQUIRE(take());
+  CHECK(counts(errors) == std::vector<uint32_t>{1, 8, 0, 0, 0});
+  CHECK(span_ms == 120000);
+}
+
+TEST_CASE("bus error report: the interval passed on each call sets the cadence") {
+  Bus bus(register_map::rows_named({"outside_temp"}));
+  BusErrorReport report;
+  Counters errors;
+  uint32_t span_ms = 0;
+  std::vector<uint8_t> bad = reply(0x12, {0xFE, 0x0C});
+  bad.back() ^= 0xFF;
+  bus.receive(bad);
+  CHECK_FALSE(report.take(9999, 10000, bus.session.counters(), errors, span_ms));
+  CHECK(report.take(10000, 10000, bus.session.counters(), errors, span_ms));
+  CHECK(span_ms == 10000);
 }
 
 TEST_CASE("counters: a partial Frame dropped after a silence counts its bytes as discarded") {
@@ -180,7 +226,7 @@ TEST_CASE("counters: a partial Frame dropped after a silence counts its bytes as
   CHECK(counts(bus.session) == NO_ERRORS);
   bus.advance(SILENCE_GAP_MS + 1);
   CHECK(bus.receive(bytes).size() == 1);
-  CHECK(counts(bus.session) == std::vector<uint32_t>{0, 4, 0, 0, 0, 0});
+  CHECK(counts(bus.session) == std::vector<uint32_t>{0, 4, 0, 0, 0});
 }
 
 TEST_CASE("counters: bytes before a start byte are discarded") {
@@ -190,7 +236,7 @@ TEST_CASE("counters: bytes before a start byte are discarded") {
   const auto good = reply(0x12, {0xFE, 0x0C});
   bytes.insert(bytes.end(), good.begin(), good.end());
   CHECK(bus.receive(bytes).size() == 1);
-  CHECK(counts(bus.session) == std::vector<uint32_t>{0, 3, 0, 0, 0, 0});
+  CHECK(counts(bus.session) == std::vector<uint32_t>{0, 3, 0, 0, 0});
 }
 
 TEST_CASE("counters: a timeout counts a retry, and a second one a give-up") {
@@ -198,10 +244,12 @@ TEST_CASE("counters: a timeout counts a retry, and a second one a give-up") {
   CHECK(bus.request() == 0x12);
   bus.advance(REPLY_TIMEOUT_MS);
   CHECK(bus.request() == 0x12);
-  CHECK(counts(bus.session) == std::vector<uint32_t>{0, 0, 1, 1, 0, 0});
+  CHECK(counts(bus.session) == std::vector<uint32_t>{0, 0, 1, 0, 0});
+  CHECK(bus.session.counters().timeouts() == 1);
   bus.advance(REPLY_TIMEOUT_MS);
   CHECK(bus.request() == 0xFFFF);
-  CHECK(counts(bus.session) == std::vector<uint32_t>{0, 0, 2, 1, 1, 0});
+  CHECK(counts(bus.session) == std::vector<uint32_t>{0, 0, 1, 1, 0});
+  CHECK(bus.session.counters().timeouts() == 2);
 }
 
 TEST_CASE("add_value gives ids counting up from 0, and the Session keeps the registrations") {
@@ -282,12 +330,12 @@ TEST_CASE("a Reply that decodes nothing still completes the request, and counts 
   bus.receive(reply(0x0B, {0x00, 0x01}), &output);
   CHECK(output.answered == std::vector<uint16_t>{0x0B});
   CHECK(output.values.empty());
-  CHECK(counts(bus.session) == std::vector<uint32_t>{0, 0, 0, 0, 0, 1});
+  CHECK(counts(bus.session) == std::vector<uint32_t>{0, 0, 0, 0, 1});
 
   // It answered the request, so it never times out.
   bus.advance(REPLY_TIMEOUT_MS * 2);
   CHECK(bus.request() == 0xFFFF);
-  CHECK(counts(bus.session) == std::vector<uint32_t>{0, 0, 0, 0, 0, 1});
+  CHECK(counts(bus.session) == std::vector<uint32_t>{0, 0, 0, 0, 1});
 }
 
 TEST_CASE("a silent Controller gets a retry and then the next Address") {
@@ -394,6 +442,13 @@ TEST_CASE("a Bank row moved to the value cadence still publishes") {
   std::vector<uint8_t> data(31, 0x00);
   data[14] = 0xFB;
   CHECK(bus.receive(reply(0x0B, data)) == std::map<std::string, float>{{"comp_lock", -5}});
+}
+
+TEST_CASE("the Session's bank interval is the scheduler's, which the hub's bus error report reads") {
+  Session session;
+  CHECK(session.bank_interval() == DEFAULT_BANK_INTERVAL_MS);
+  session.set_bank_interval(30000);
+  CHECK(session.bank_interval() == 30000);
 }
 
 TEST_CASE("the intervals set on the Session reach the scheduler") {

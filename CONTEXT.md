@@ -114,7 +114,7 @@ A 0x02 on the bus that doesn't begin a Frame, from line noise or from the tail o
 _Avoid_: stale frame (the bytes a false start leaves held)
 
 **Bus error**:
-Something the Session counts: a Frame whose Checksum fails, a received byte that ends up in no Frame (including the bytes of a False start dropped after a silence), a timeout, or a Reply that decodes no Values. After a timeout the Poll scheduler sends the Read request once more (a retry) or drops it until its next cycle (a give-up), so every timeout is one or the other. A Reply that decodes nothing still answers its Read request. A Frame with a Command byte other than 0x06, such as the Node's own Read request echoed back, is not a bus error. The Hub logs the counts at WARN once per bank cycle when any is non-zero.
+Something the Session counts: a Frame whose Checksum fails, a received byte that ends up in no Frame (including the bytes of a False start dropped after a silence), a timeout, or a Reply that decodes no Values. After a timeout the Poll scheduler sends the Read request once more (a retry) or drops it until its next cycle (a give-up), so every timeout is one or the other. A Reply that decodes nothing still answers its Read request. A Frame with a Command byte other than 0x06, such as the Node's own Read request echoed back, is not a bus error. The Hub logs the counts at WARN at most once per bank interval, and only when one is non-zero.
 _Avoid_: comms error, fault
 
 **Address**:
