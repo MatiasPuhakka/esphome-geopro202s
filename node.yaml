@@ -3,8 +3,8 @@
 # the Component from main). Each of those names its own Component source, because a
 # local path resolves against the config that includes this file.
 # Entity names match the YAML protocol copy this file used to hold, so Home Assistant
-# keeps the entity IDs and their history. The exceptions are L1 miinus 20°C and
-# L1 plus 20°C, renamed on purpose in #76 (ADR 0004).
+# keeps the entity IDs and their history. The exceptions are L1 20°C below zero and
+# L1 20°C above zero, renamed on purpose in #76 (ADR 0004).
 # The API key and OTA password come from the secrets.yaml next to the including config.
 # Built with ESPHome 2026.9.1, the Home Assistant add-on's version.
 
@@ -64,11 +64,11 @@ geopro_202s:
   el_heater:
     name: "Sähkövastus"
   l1_minus20:
-    name: "L1 miinus 20°C"
+    name: "L1 20°C below zero"
   l1_zero:
     name: "L1 0°C"
   l1_plus20:
-    name: "L1 plus 20°C"
+    name: "L1 20°C above zero"
   l1_night_effect:
     name: "L1 Yöalennus vaikutus"
   l1_min_limit:

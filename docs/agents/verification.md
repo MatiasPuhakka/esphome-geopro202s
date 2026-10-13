@@ -25,7 +25,7 @@ python3 tools/flash_check.py before
 
 This saves Home Assistant's states to `.scratch/flash-check/states-before.json` and starts a new check. Its notes list any Node entity Home Assistant doesn't have yet, such as one the flash adds. Entity IDs are a contract ([ADR 0004](../adr/0004-entity-ids-stay-stable.md)), recorded in `tests/entity-contract.txt`.
 
-**A flash that adds or renames an entity.** Home Assistant 2026.10 builds a new entity's ID from the Node's area, the Node's friendly name and the entity's name, and turns ° into deg: `L1 miinus 20°C` becomes `sensor.garage_geopro_l1_miinus_20degc`. The Node's other entities are older and read `sensor.geopro_*`. So, as in #63 and #76:
+**A flash that adds or renames an entity.** Home Assistant 2026.10 builds a new entity's ID from the Node's area, the Node's friendly name and the entity's name, and turns ° into deg: `L1 20°C below zero` becomes `sensor.garage_geopro_l1_20degc_below_zero`. The Node's other entities are older and read `sensor.geopro_*`. So, as in #63 and #76:
 
 1. In the change, add the entity's `sensor.geopro_*` ID by hand to `tests/ha-entity-ids.txt`, with a comment saying so, and run `make update-contract`.
 2. After the flash, rename the new entity in Home Assistant to that ID (the entity's settings, Entity ID). A name change in `node.yaml` leaves the old entity behind as unavailable; delete it.
