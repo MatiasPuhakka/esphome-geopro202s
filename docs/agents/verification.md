@@ -16,16 +16,6 @@ The flash check in `tools/flash_check.py` runs the checks in three phases: `befo
 - **Local build.** To test before merging, `make compile-node` (or `esphome compile geopro.yaml`), then `esphome upload geopro.yaml --device <Node address>`. The build lands in `.esphome/build/geopro-202s/`. This flashes the checkout's Component, so the Node then runs code that isn't on `main`; the next add-on install replaces it.
 - **Encrypted OTA.** `node.yaml` sets `ota: encryption: {}`, which encrypts uploads with the API key and needs no password ([ADR 0007](../adr/0007-ota-uses-the-api-key.md)). The Node refuses an upload that doesn't encrypt with that key, so upload with ESPHome 2026.9.x and the real `secrets.yaml` next to the config; the upload log says `Encrypted connection established`.
 
-### Switching from the OTA password to encryption (#85)
-
-Delete this section once the owner has removed `ota_password` from both `secrets.yaml` files (step 3).
-
-The firmware that ran before #85 (ESPHome 2026.9.1) has the password but also offers encryption, since it has the API key, and skips the password check on an encrypted upload. So the install that ships #85 already uploads encrypted, and the old password is never sent. Firmware older than 2026.9.0 offers no encryption and the upload stops; `tools/device_info.py` shows the Node's version.
-
-1. Run the before phase, merge, install from the add-on, then run the after phase with `--revision origin/main`.
-2. Upload the same commit from a clean checkout: `make compile-node`, then `esphome upload geopro.yaml --device <Node address>`. Check the log for `Encrypted connection established`, then run the after phase again. This proves that a local upload works with encrypted OTA.
-3. The owner removes `ota_password` from the add-on's `secrets.yaml` and from the one next to `geopro.yaml`. No config reads it after #85.
-
 ## Before flashing
 
 ```
@@ -37,7 +27,7 @@ This saves Home Assistant's states to `.scratch/flash-check/states-before.json` 
 **A flash that adds or renames an entity.** Home Assistant 2026.10 builds a new entity's ID from the Node's area, the Node's friendly name and the entity's name, and turns ° into deg: `L1 20°C below zero` becomes `sensor.garage_geopro_l1_20degc_below_zero`. The Node's other entities are older and read `sensor.geopro_*`. So, as in #63 and #76:
 
 1. In the change, add the entity's `sensor.geopro_*` ID by hand to `tests/ha-entity-ids.txt`, with a comment saying so, and run `make update-contract`.
-2. After the flash, rename the new entity in Home Assistant to that ID (the entity's settings, Entity ID). A name change in `node.yaml` leaves the old entity behind as unavailable; delete it.
+2. After the flash, rename the new entity in Home Assistant to that ID (the entity's settings, Entity ID, or the WebSocket command `config/entity_registry/update` with `new_entity_id`). After a name change in `node.yaml`, Home Assistant removed the old entity on its own when #76 was installed on 2026-10-13. If one stays behind as unavailable, delete it.
 3. Then run the after phase. It fails until Home Assistant has the recorded ID.
 
 ## After flashing
