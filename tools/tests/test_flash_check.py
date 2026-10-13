@@ -340,7 +340,9 @@ class OvernightTest(unittest.TestCase):
                                      entity_contract=contract.load(TempFile(self, text).path), **kwargs)
 
     def test_summarises_the_history_since_the_after_phase_and_fails_on_unavailable_states(self):
-        # Counted by hand from fixtures/history_day.json, as in test_day_run.
+        # Counted by hand from fixtures/history_day.json, as in test_day_run. The fixture keeps
+        # only three of the brine's changes, so the brine, the one temperature Value here, also
+        # reads as frozen between them.
         self.assertEqual(self.overnight().text(), """\
 window 2026-10-09 19:21:30+03:00 -> 2026-10-10 19:21:30+03:00 Europe/Helsinki
 binary_sensor.geopro_kompressori             changes    6  unavailable 1  off -> off
@@ -349,7 +351,9 @@ sensor.geopro_ml_varyl_kes                   changes    4  unavailable 1  50.0 -
 entities: 3 | unavailable/unknown states: 2
 FAIL binary_sensor.geopro_kompressori (compressor, "Kompressori"): 1 unavailable or unknown state
 FAIL sensor.geopro_ml_varyl_kes (summer_temp, "ML VarYlä Kesä"): 1 unavailable or unknown state
-failed: 2 problems
+FAIL every temperature Value held one value from 2026-10-09 19:22:46 to 2026-10-10 18:05:45, 1362 min;\
+ past 60 min the Controller may be serving frozen measurements (docs/controller.md)
+failed: 3 problems
 """)
 
     def test_asks_for_the_contracts_entities_from_the_after_time(self):
@@ -382,6 +386,91 @@ failed: 2 problems
             self.overnight(text)
 
         self.assertIn("Home Assistant has no history for sensor.geopro_varaaja_yl (tank_top", str(raised.exception))
+
+
+# Two temperature Values and a Status bit, in the format of tests/entity-contract.txt.
+FREEZE_CONTRACT = """\
+tank_top: sensor unit=°C device_class=temperature state_class=measurement accuracy=2 icon=mdi:thermometer entity_category=-
+brine: sensor unit=°C device_class=temperature state_class=measurement accuracy=2 icon=mdi:thermometer entity_category=-
+compressor: binary_sensor unit=- device_class=running state_class=- accuracy=- icon=mdi:engine entity_category=-
+
+tank_top: sensor "Varaaja ylä" sensor.geopro_varaaja_yl
+brine: sensor "Maaliuos" sensor.geopro_maaliuos
+compressor: binary_sensor "Kompressori" binary_sensor.geopro_kompressori
+"""
+
+
+class HistoryRows:
+    """A Home Assistant transport that answers a history request with the given rows, each
+    (Finnish time, state), the first stamped with the start as Home Assistant does."""
+
+    def __init__(self, rows):
+        self.rows = rows
+
+    def __call__(self, url, headers):
+        parts = urllib.parse.urlsplit(url)
+        assert urllib.parse.unquote(parts.path).startswith("/api/history/period/"), url
+        ids = urllib.parse.parse_qs(parts.query)["filter_entity_id"][0].split(",")
+        return json.dumps([[{"entity_id": entity_id, "state": state, "last_changed": "2026-10-12T%s+03:00" % time}
+                            for time, state in self.rows[entity_id]] for entity_id in ids]).encode()
+
+
+class OvernightFreezeTest(unittest.TestCase):
+    """The 2026-10-12 freeze, cut down: from 09:52 the Controller served the same temperatures
+    until it was power-cycled, while the compressor's Status bit kept updating."""
+
+    def overnight(self, rows):
+        client, _ = client_for(self, HistoryRows(rows))
+        return flash_check.overnight(client, phase_dir(self), start="2026-10-12T09:00:00+03:00",
+                                     end="2026-10-12T12:30:00+03:00",
+                                     entity_contract=contract.load(TempFile(self, FREEZE_CONTRACT).path))
+
+    def rows(self, **changes):
+        rows = {
+            "sensor.geopro_varaaja_yl": [("09:00:00", "50.0"), ("09:49:26", "50.5"), ("09:52:24", "50.7"),
+                                         ("11:46:29", "59.4"), ("11:50:23", "59.5")],
+            "sensor.geopro_maaliuos": [("09:00:00", "5.0"), ("09:31:06", "4.5"), ("11:46:29", "10.1"),
+                                       ("11:47:03", "10.2")],
+            "binary_sensor.geopro_kompressori": [("09:00:00", "on"), ("10:20:00", "off"), ("10:21:00", "on"),
+                                                 ("11:46:30", "off")],
+        }
+        for entity_id, extra in changes.items():
+            rows["sensor.geopro_" + entity_id] = sorted(rows["sensor.geopro_" + entity_id] + extra)
+        return rows
+
+    def test_fails_when_every_temperature_value_holds_one_value_past_the_threshold(self):
+        result = self.overnight(self.rows())
+
+        self.assertEqual(result.problems, [
+            "every temperature Value held one value from 2026-10-12 09:52:24 to 11:46:29, 114 min; past 60 min"
+            " the Controller may be serving frozen measurements (docs/controller.md)"])
+
+    def test_a_node_reboot_ends_the_stretch(self):
+        # At 11:16 the Node rebooted, and the frozen values came back the same.
+        result = self.overnight(self.rows(varaaja_yl=[("11:16:19", "unavailable"), ("11:16:27", "50.7")],
+                                          maaliuos=[("11:16:19", "unavailable"), ("11:16:27", "4.5")]))
+
+        self.assertEqual(result.problems[-1],
+                         "every temperature Value held one value from 2026-10-12 09:52:24 to 11:16:19, 83 min;"
+                         " past 60 min the Controller may be serving frozen measurements (docs/controller.md)")
+
+    def test_a_stretch_still_held_at_the_end_counts(self):
+        rows = self.rows()
+        rows["sensor.geopro_varaaja_yl"] = rows["sensor.geopro_varaaja_yl"][:3]
+        rows["sensor.geopro_maaliuos"] = rows["sensor.geopro_maaliuos"][:2]
+
+        result = self.overnight(rows)
+
+        self.assertIn("from 2026-10-12 09:52:24 to 12:30:00, 157 min;", result.problems[0])
+
+    def test_passes_when_any_temperature_value_moves(self):
+        # The tank top held still the whole time, but the brine changed at least every 40 min.
+        result = self.overnight(self.rows(maaliuos=[("10:20:00", "4.4"), ("11:00:00", "4.3")]))
+
+        self.assertEqual(result.problems, [])
+        self.assertTrue(result.text().endswith(
+            "\npassed: 3 entities, no unavailable or unknown state, no 60 min with every temperature Value"
+            " held still\n"), result.text())
 
 
 def git(*args):
@@ -429,7 +518,7 @@ class CommandLineTest(unittest.TestCase):
             flash_check.main(["overnight", "--dir", str(directory), "--end", "2026-10-10T19:21:30+03:00"])
 
         self.assertEqual(raised.exception.code, 1)
-        self.assertTrue(out.getvalue().endswith("\nfailed: 2 problems\n"), out.getvalue())
+        self.assertTrue(out.getvalue().endswith("\nfailed: 3 problems\n"), out.getvalue())
 
 
 if __name__ == "__main__":
