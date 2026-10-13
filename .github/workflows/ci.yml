@@ -50,7 +50,7 @@ jobs:
           restore-keys: esphome-build-${{ matrix.esphome }}-
       - run: make check-config
       - run: |
-          printf 'api_encryption_key: "%s"\n' "$(head -c 32 /dev/urandom | base64)" > secrets.yaml
+          make dummy-secrets
           make check-node-config
           make check-trace-config
       # Reuses the secrets.yaml written above.
