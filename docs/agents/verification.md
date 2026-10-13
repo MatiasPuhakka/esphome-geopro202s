@@ -51,7 +51,7 @@ Its notes list the Geopro entities gone since the before snapshot, and each unit
 python3 tools/flash_check.py overnight
 ```
 
-This summarises each entity's history from the after phase until now: state changes, unavailable or unknown states, and the first and last value. It fails on any unavailable or unknown state. A Bank setting nobody touched can show a single state for the whole night, so one flat history doesn't fail it. It also fails when every temperature Value the Node publishes (its M-numbers) holds one value for longer than 60 minutes at once, as on 2026-10-12 when the Controller served frozen measurements; an unavailable state ends a hold. `docs/controller.md` ("Frozen measurements") has the freeze and the normal holds the threshold comes from. The after phase doesn't check this, because 75 s can't tell a freeze from a quiet tank. `--start` and `--end` set another window.
+This summarises each entity's history from the after phase until now: state changes, unavailable or unknown states, and the first and last value. It fails on any unavailable or unknown state. A Bank setting nobody touched can show a single state for the whole night, so one flat history doesn't fail it. It also fails when every temperature Value the Node publishes (its M-numbers) holds one value for longer than a threshold at once, as on 2026-10-12 when the Controller served frozen measurements; an unavailable state ends a hold. [Frozen measurements](../controller.md#frozen-measurements) gives the threshold, the freeze and the normal holds it comes from. The after phase doesn't check this, because 75 s can't tell a freeze from a quiet tank. `--start` and `--end` set another window.
 
 ## Capturing a raw bus trace
 
