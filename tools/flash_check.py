@@ -5,7 +5,8 @@ after:     check the running Component revision; that every entity in tests/enti
            exists in Home Assistant with its recorded entity ID, unit and classes and doesn't read
            unavailable or unknown; and that each sensor publishes again within its value or bank
            interval. Needs aioesphomeapi, so run it with the Python that has ESPHome installed.
-overnight: summarise each entity's history since the after phase, the next morning.
+overnight: summarise each entity's history since the after phase, the next morning, and check that
+           no unavailable or unknown state and no frozen temperatures show up in it.
 
 Each prints its report and exits with status 1 if a check failed. The phases keep their files
 in .scratch/flash-check/ at the repo root.
@@ -19,7 +20,7 @@ import importlib.util
 import json
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 if not __package__:
@@ -29,7 +30,7 @@ if not __package__:
 from tools import compare_entities, contract, day_run, device_info  # noqa: E402
 from tools.contract import RECORD_IDS  # noqa: E402
 from tools.day_run import MISSING_STATES  # noqa: E402
-from tools.ha import LOCAL, HomeAssistant  # noqa: E402
+from tools.ha import LOCAL, HomeAssistant, local_time  # noqa: E402
 from tools.node import Node, count_state_messages, read_device_info  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -45,6 +46,14 @@ REVISION_KEY = "component_revision"
 # What the firmware reports when its build couldn't read git (components/geopro_202s/revision.py).
 # Home Assistant's state for an entity with no value reads the same.
 UNKNOWN_REVISION = "unknown"
+# The temperature Values: the M-numbers the Register map reads, M1 to M10 without M5 (CONTEXT.md).
+# The overnight phase checks those the contract has.
+TEMPERATURE_KEYS = ("outside_temp", "l1_supply", "l1_room", "tank_middle", "free_measurement", "tank_top_in", "brine",
+                    "tank_top", "tank_bottom")
+# How long every temperature Value may hold one value at once before the overnight phase fails:
+# in normal running no such stretch reached 20 min, and the 2026-10-12 freeze held 83 min between
+# Node reboots ("Frozen measurements" in docs/controller.md).
+FREEZE_MINUTES = 60
 # Units Home Assistant converts between for display, so it can show a Value in another unit
 # of the same kind than the Node sends: after #11 it showed the Node's 2 h as 120.0 min.
 CONVERTIBLE_UNITS = ({"μs", "ms", "s", "min", "h", "d", "w"}, {"°C", "°F", "K"})
@@ -144,7 +153,8 @@ def after(node, client, expected_revision, seconds=DEFAULT_SECONDS, directory=PH
 
 def overnight(client, directory=PHASE_DIR, start=None, end=None, entity_contract=None):
     """Summarises each Node entity's history from the after phase (or start) to end (or now), and
-    fails on any unavailable or unknown state."""
+    fails on any unavailable or unknown state, and when every temperature Value held one value for
+    longer than FREEZE_MINUTES at once."""
     entity_contract = entity_contract or contract.load()
     files = PhaseFiles(directory)
     start = start or files.times().get("after")
@@ -161,7 +171,66 @@ def overnight(client, directory=PHASE_DIR, start=None, end=None, entity_contract
         if missing[entity.entity_id]:
             result.problems.append("%s: %s" % (_about(entity),
                                                _plural(missing[entity.entity_id], "unavailable or unknown state")))
+    _check_freeze(result, history, entity_contract)
     return result
+
+
+def _check_freeze(result, history, entity_contract):
+    """Fails the result if every temperature Value held one value for longer than FREEZE_MINUTES."""
+    temperatures = [entity_contract.entity_id(key) for key in TEMPERATURE_KEYS if key in entity_contract.entities]
+    if not temperatures:
+        return
+    result.checked += ", no %d min with every temperature Value held still" % FREEZE_MINUTES
+    stretch = _longest_stretch_held(history, temperatures)
+    if stretch is None:
+        return
+    start, end = stretch
+    if end - start > timedelta(minutes=FREEZE_MINUTES):
+        end_format = "%H:%M:%S" if end.date() == start.date() else "%Y-%m-%d %H:%M:%S"
+        result.problems.append(
+            "every temperature Value held one value from %s to %s, %d min; past %d min the Controller may be"
+            " serving frozen measurements (docs/controller.md)"
+            % (start.strftime("%Y-%m-%d %H:%M:%S"), end.strftime(end_format), (end - start).total_seconds() // 60,
+               FREEZE_MINUTES))
+
+
+def _holds(rows, end):
+    """(start, end) of each stretch in which an entity held one value. An unavailable or unknown
+    state ends one, as when the Node reboots, and the last runs to the end of the window."""
+    holds, start, value = [], None, None
+    for row in rows:
+        if row["state"] == value:
+            continue
+        when = local_time(row["last_changed"])
+        if start is not None:
+            holds.append((start, when))
+        start, value = (None, None) if row["state"] in MISSING_STATES else (when, row["state"])
+    if start is not None:
+        holds.append((start, end))
+    return holds
+
+
+def _longest_stretch_held(history, entity_ids):
+    """The longest (start, end) in which every one of the entities held one value, or None."""
+    common = _holds(history.series[entity_ids[0]], history.end)
+    for entity_id in entity_ids[1:]:
+        common = _overlaps(common, _holds(history.series[entity_id], history.end))
+    return max(common, key=lambda stretch: stretch[1] - stretch[0], default=None)
+
+
+def _overlaps(first, second):
+    """The stretches in which a stretch of first and one of second overlap. Both lists are in time
+    order and their stretches don't overlap each other."""
+    overlaps, i, j = [], 0, 0
+    while i < len(first) and j < len(second):
+        start, end = max(first[i][0], second[j][0]), min(first[i][1], second[j][1])
+        if start < end:
+            overlaps.append((start, end))
+        if first[i][1] < second[j][1]:
+            i += 1
+        else:
+            j += 1
+    return overlaps
 
 
 def _convertible(unit, other):
@@ -328,7 +397,7 @@ def main(argv=None):
     after_phase.add_argument("--seconds", type=float, default=DEFAULT_SECONDS,
                              help="how long to count the Node's state messages (default: %(default)s)")
     overnight_phase = phases.add_parser("overnight", parents=[common],
-                                        help="summarise each entity's history since the after phase")
+                                        help="summarise and check each entity's history since the after phase")
     overnight_phase.add_argument("--start", help="ISO 8601 time (default: when the after phase ran)")
     overnight_phase.add_argument("--end", help="ISO 8601 time (default: now)")
     args = parser.parse_args(argv)

@@ -69,7 +69,7 @@ python3 tools/flash_check.py overnight                                # the next
 
 - `before` saves Home Assistant's states.
 - `after` counts the Node's state messages for 75 s (`--seconds`), then saves Home Assistant's states and checks both against `tests/entity-contract.txt`. `verification.md` lists what fails it. The expected revision is what a local build of this checkout stamps; `--revision` names another commit or ref.
-- `overnight` runs `day_run.py`'s summary for the contract's entities from the time the after phase ran (`--start`, `--end`), and fails on any unavailable or unknown state.
+- `overnight` runs `day_run.py`'s summary for the contract's entities from the time the after phase ran (`--start`, `--end`), and fails on any unavailable or unknown state, and when every temperature Value holds one value for longer than 60 minutes at once (`FREEZE_MINUTES`; "Frozen measurements" in `docs/controller.md`).
 
 The phases keep `states-before.json`, `states-after.json` and `times.json` in `.scratch/flash-check/` (`--dir`). Running `before` again starts a new check.
 

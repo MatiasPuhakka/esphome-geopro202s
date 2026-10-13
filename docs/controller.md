@@ -119,8 +119,35 @@ From the wiring diagram on [p. 39][s39] and the alarm list on [p. 20][s20].
 | Rele 2 | 71–72 | the compressor |
 | Rele 1 | 73–75 | the electric heater |
 
+## Frozen measurements
+
+**Observed:** on 2026-10-12 the Controller served frozen temperatures over the bus for about two hours. From 09:52, when the Node booted (Component c974f4d), every Reply carried the same M1–M10 values until the owner power-cycled the Controller at about 11:45. Home Assistant's history shows each temperature Value holding one value from 09:52:24 to 11:46:29, M9 at 50.7 °C while the Controller's display showed 59 °C at about 11:45. The Node rebooted at 11:16 and went unavailable for a moment again at 11:20, and both times the same values came back. Over the same time the compressor hour counter kept counting (8209 h at 10:15, 8210 h at 11:15), and the Status word kept the compressor bit on, matching the running compressor. The first Replies after the power cycle carried live values (M9 59.4 °C). The request pacing was the same as in the earlier f3c1da8 build, so what triggers a freeze is unknown.
+
+The overnight phase of the flash check (`docs/agents/verification.md`) fails when every temperature Value holds one value for longer than 60 minutes at once. Home Assistant's ESPHome integration skips a state that didn't change, so a hold is the time between two state changes in the history. An unavailable or unknown state ends a hold, so a Node reboot starts the count again.
+
+The threshold comes from Home Assistant's raw history from 2026-10-03 05:58 to 2026-10-13 10:19, about 10 days. Up to the #11 flash at 19:21 on 2026-10-09 the Node ran the YAML protocol copy, which published about once a minute; after it, the Component. The measurement leaves out:
+
+- the freeze, 2026-10-12 09:52 to 11:47;
+- 2026-10-09 09:27 to 10:32 and 12:00 to 12:51. Every Value stopped at once and came back with a jump no plant makes in one step: brine went from 7.2 to 22.0 °C, then from 6.9 to 21.5 °C. The owner had switched the unit off around 09:30 (diagnosis notes); the cause of the second stretch isn't recorded. The overnight phase would fail on the first, which is right, since Home Assistant had no live temperatures;
+- the time each Value was unavailable, such as the Node outage from 2026-10-06 08:43 to 2026-10-07 11:30.
+
+The longest hold of each temperature Value in the rest. `node.yaml` doesn't publish M3 and M6, so they're not here:
+
+| M | Value | Longest hold | When |
+|---|---|---|---|
+| M1 | outside_temp | 514 min | 2026-10-11 00:12–08:46 |
+| M2 | l1_supply | 493 min | 2026-10-06 00:30–08:43 |
+| M4 | tank_middle | 54 min | 2026-10-09 06:30–07:24 |
+| M7 | tank_top_in | 200 min | 2026-10-05 11:45–15:05 |
+| M8 | brine | 325 min | 2026-10-08 02:36–08:01 |
+| M9 | tank_top | 82 min | 2026-10-09 04:25–05:47 |
+| M10 | tank_bottom | 672 min | 2026-10-05 04:08–15:20 |
+
+The check needs all seven to hold at once, so a threshold under the single holds above still passes normal running. The longest stretch in which no temperature Value changed was 19 min (2026-10-03 07:54–08:13), and 6.8 min since the Component (2026-10-12 05:17–05:23). The freeze's longest stretch between Node reboots was 83 min, 09:52:24 to 11:16:19. 60 minutes sits between the two and catches a freeze within the first hour of a night.
+
 ## Open questions
 
+- What makes the Controller freeze its measurements on the bus, and whether anything short of a power cycle clears it.
 - Whether VaraajaYlä uses M1 or the averaged outdoor temperature.
 - How the tank-top and tank-bottom calls combine, and whether the 5-minute wait also applies to tank-top starts.
 - Which factory values for VaraajaAlaEro and VaraajaYläEro are right.
