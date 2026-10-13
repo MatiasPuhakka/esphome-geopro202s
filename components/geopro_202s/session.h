@@ -7,6 +7,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace esphome {
@@ -64,7 +65,30 @@ struct Counters {
 
   // Whether any count is non-zero.
   bool any() const;
+
+  // Every count with its label, for the hub's log line.
+  std::string describe() const;
 };
+
+// One count in Counters and the label the log line gives it.
+struct CounterField {
+  uint32_t Counters::*count;
+  const char *label;
+};
+
+// Every count in Counters, in the order the log line lists them. since(), any() and
+// describe() loop over this, so adding a count takes a member and a row here. Timeouts have
+// no row: each one is a retry or a give-up.
+static const CounterField COUNTER_FIELDS[] = {
+    {&Counters::checksum_failures, "checksum failures"},
+    {&Counters::discarded_bytes, "discarded bytes"},
+    {&Counters::retries, "retries"},
+    {&Counters::give_ups, "give-ups"},
+    {&Counters::undecoded_replies, "replies that decoded nothing"},
+};
+
+static_assert(sizeof(Counters) == sizeof(COUNTER_FIELDS) / sizeof(COUNTER_FIELDS[0]) * sizeof(uint32_t),
+              "every count in Counters needs a row in COUNTER_FIELDS");
 
 // The loop's decisions with no I/O: received bytes and the time go in, Read requests and
 // decoded Values come out. It owns what counts as a Reply, when a request is done and
@@ -74,6 +98,7 @@ class Session {
  public:
   void set_value_interval(uint32_t interval_ms) { this->scheduler_.set_value_interval(interval_ms); }
   void set_bank_interval(uint32_t interval_ms) { this->scheduler_.set_bank_interval(interval_ms); }
+  uint32_t bank_interval() const { return this->scheduler_.bank_interval(); }
 
   // Registers a value and returns its id. The scheduler reads each Address once,
   // however many values share it.
@@ -101,22 +126,21 @@ class Session {
   uint32_t last_bytes_at_{0};
 };
 
-// Decides when the hub reports bus errors: at most once per interval, with the counts since
-// the last time it checked, and only when one of them is non-zero. The hub picks the
-// interval. Like the Session it has no clock; intervals start at time 0.
+// Decides when the hub logs a line of bus errors: at most once per interval, and only when a
+// count is non-zero. The hub picks the interval and passes it on every call. Like the Session
+// it has no clock; time 0 counts as the first check and the first line.
 class BusErrorReport {
  public:
-  void set_interval(uint32_t interval_ms) { this->interval_ms_ = interval_ms; }
-  uint32_t interval_ms() const { return this->interval_ms_; }
-
-  // Once an interval has passed since the last check, checks `counters`, a Session's latest
-  // counts: returns true and sets `errors` to the counts since the last check when any is
-  // non-zero. Returns false otherwise.
-  bool take(uint32_t now, const Counters &counters, Counters &errors);
+  // Once `interval_ms` has passed since the last check, checks `counters`, a Session's latest
+  // counts. When any count has grown since the last check, returns true and sets `errors` to
+  // the growth and `span_ms` to the time since the last line. Returns false otherwise.
+  // Checks that find nothing only add zeros, so `errors` also holds the counts since the last
+  // line.
+  bool take(uint32_t now, uint32_t interval_ms, const Counters &counters, Counters &errors, uint32_t &span_ms);
 
  protected:
-  uint32_t interval_ms_{DEFAULT_BANK_INTERVAL_MS};
   uint32_t checked_at_{0};
+  uint32_t logged_at_{0};
   Counters checked_;
 };
 

@@ -5,17 +5,28 @@ namespace geopro_202s {
 
 Counters Counters::since(const Counters &earlier) const {
   Counters counts;
-  counts.checksum_failures = this->checksum_failures - earlier.checksum_failures;
-  counts.discarded_bytes = this->discarded_bytes - earlier.discarded_bytes;
-  counts.retries = this->retries - earlier.retries;
-  counts.give_ups = this->give_ups - earlier.give_ups;
-  counts.undecoded_replies = this->undecoded_replies - earlier.undecoded_replies;
+  for (const CounterField &field : COUNTER_FIELDS)
+    counts.*field.count = this->*field.count - earlier.*field.count;
   return counts;
 }
 
 bool Counters::any() const {
-  return this->checksum_failures != 0 || this->discarded_bytes != 0 || this->retries != 0 || this->give_ups != 0 ||
-         this->undecoded_replies != 0;
+  for (const CounterField &field : COUNTER_FIELDS)
+    if (this->*field.count != 0)
+      return true;
+  return false;
+}
+
+std::string Counters::describe() const {
+  std::string line;
+  for (const CounterField &field : COUNTER_FIELDS) {
+    if (!line.empty())
+      line += ", ";
+    line += field.label;
+    line += ' ';
+    line += std::to_string(this->*field.count);
+  }
+  return line;
 }
 
 EntryId Session::add_value(PollGroup group, const Registration &registration) {
@@ -69,8 +80,9 @@ Counters Session::counters() const {
   return counters;
 }
 
-bool BusErrorReport::take(uint32_t now, const Counters &counters, Counters &errors) {
-  if (now - this->checked_at_ < this->interval_ms_)
+bool BusErrorReport::take(uint32_t now, uint32_t interval_ms, const Counters &counters, Counters &errors,
+                          uint32_t &span_ms) {
+  if (now - this->checked_at_ < interval_ms)
     return false;
   const Counters since = counters.since(this->checked_);
   this->checked_at_ = now;
@@ -78,6 +90,8 @@ bool BusErrorReport::take(uint32_t now, const Counters &counters, Counters &erro
   if (!since.any())
     return false;
   errors = since;
+  span_ms = now - this->logged_at_;
+  this->logged_at_ = now;
   return true;
 }
 

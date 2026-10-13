@@ -53,6 +53,7 @@ class PollScheduler {
   void add_address(PollGroup group, uint16_t address);
   void set_value_interval(uint32_t interval_ms) { this->value_interval_ms_ = interval_ms; }
   void set_bank_interval(uint32_t interval_ms) { this->bank_interval_ms_ = interval_ms; }
+  uint32_t bank_interval() const { return this->bank_interval_ms_; }
 
   // Returns true and sets `address` when a read request should be sent now.
   // The first call starts a cycle of every value and bank address. A timeout is noticed

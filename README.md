@@ -143,10 +143,10 @@ Only one request is on the bus at a time. The next request goes out 50 ms after 
 
 This logic lives in `poll_scheduler.h`/`poll_scheduler.cpp`, which also have no ESPHome dependencies and are covered by `make test`.
 
-The component counts bus errors: frames with a bad checksum, received bytes that end up in no frame, timeouts (each one a retry or a give-up), and replies that decode no values. Once per `bank_interval` it logs the counts since the last check as one warning, and logs nothing when all are zero:
+The component counts bus errors: frames with a bad checksum, received bytes that end up in no frame, timeouts (each one a retry or a give-up), and replies that decode no values. At most once per `bank_interval` it logs one warning with the counts since the last warning, and how long ago that was. It logs nothing while all counts stay zero:
 
 ```
-[W][geopro_202s]: Bus errors in the last 60 s: checksum failures 1, discarded bytes 8, timeouts 2 (retries 1, give-ups 1), replies that decoded nothing 0
+[W][geopro_202s]: Bus errors in the last 180 s: checksum failures 1, discarded bytes 8, retries 1, give-ups 1, replies that decoded nothing 0
 ```
 
 ### Component revision
