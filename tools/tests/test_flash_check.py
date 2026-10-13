@@ -11,7 +11,7 @@ from pathlib import Path
 from unittest import mock
 
 from tools import contract, flash_check
-from tools.tests.fakes import FIXTURES, TempFile, client_for, node_for
+from tools.tests.fakes import FIXTURES, FakeClock, ReplayHomeAssistant, TempFile, client_for, node_for
 
 # The commit the tests pretend the Node was built from. The #11 snapshots predate the
 # revision sensor (#45), so the tests add its state and its one message.
@@ -340,10 +340,11 @@ class OvernightTest(unittest.TestCase):
                                      entity_contract=contract.load(TempFile(self, text).path), **kwargs)
 
     def test_summarises_the_history_since_the_after_phase_and_fails_on_unavailable_states(self):
-        # Counted by hand from fixtures/history_day.json, as in test_day_run. The fixture keeps
-        # only three of the brine's changes, so the brine, the one temperature Value here, also
-        # reads as frozen between them.
-        self.assertEqual(self.overnight().text(), """\
+        # Counted by hand from fixtures/history_day.json, as in test_day_run. The fixture is
+        # trimmed, so what it says about frozen temperatures isn't checked here (OvernightFreezeTest).
+        text = self.overnight().text()
+
+        self.assertTrue(text.startswith("""\
 window 2026-10-09 19:21:30+03:00 -> 2026-10-10 19:21:30+03:00 Europe/Helsinki
 binary_sensor.geopro_kompressori             changes    6  unavailable 1  off -> off
 sensor.geopro_maaliuos                       changes    3  unavailable 0  15.80000 -> 17.60000
@@ -351,10 +352,7 @@ sensor.geopro_ml_varyl_kes                   changes    4  unavailable 1  50.0 -
 entities: 3 | unavailable/unknown states: 2
 FAIL binary_sensor.geopro_kompressori (compressor, "Kompressori"): 1 unavailable or unknown state
 FAIL sensor.geopro_ml_varyl_kes (summer_temp, "ML VarYlä Kesä"): 1 unavailable or unknown state
-FAIL every temperature Value held one value from 2026-10-09 19:22:46 to 2026-10-10 18:05:45, 1362 min;\
- past 60 min the Controller may be serving frozen measurements (docs/controller.md)
-failed: 3 problems
-""")
+"""), text)
 
     def test_asks_for_the_contracts_entities_from_the_after_time(self):
         self.overnight()
@@ -400,27 +398,15 @@ compressor: binary_sensor "Kompressori" binary_sensor.geopro_kompressori
 """
 
 
-class HistoryRows:
-    """A Home Assistant transport that answers a history request with the given rows, each
-    (Finnish time, state), the first stamped with the start as Home Assistant does."""
-
-    def __init__(self, rows):
-        self.rows = rows
-
-    def __call__(self, url, headers):
-        parts = urllib.parse.urlsplit(url)
-        assert urllib.parse.unquote(parts.path).startswith("/api/history/period/"), url
-        ids = urllib.parse.parse_qs(parts.query)["filter_entity_id"][0].split(",")
-        return json.dumps([[{"entity_id": entity_id, "state": state, "last_changed": "2026-10-12T%s+03:00" % time}
-                            for time, state in self.rows[entity_id]] for entity_id in ids]).encode()
-
-
 class OvernightFreezeTest(unittest.TestCase):
     """The 2026-10-12 freeze, cut down: from 09:52 the Controller served the same temperatures
     until it was power-cycled, while the compressor's Status bit kept updating."""
 
     def overnight(self, rows):
-        client, _ = client_for(self, HistoryRows(rows))
+        # Each entity's (time on 2026-10-12, state) rows, as Home Assistant's history rows.
+        history = [[{"entity_id": entity_id, "state": state, "last_changed": "2026-10-12T%s+03:00" % time}
+                    for time, state in entity_rows] for entity_id, entity_rows in rows.items()]
+        client, _ = client_for(self, ReplayHomeAssistant(FakeClock("2026-10-12T12:30:00+03:00"), history=history))
         return flash_check.overnight(client, phase_dir(self), start="2026-10-12T09:00:00+03:00",
                                      end="2026-10-12T12:30:00+03:00",
                                      entity_contract=contract.load(TempFile(self, FREEZE_CONTRACT).path))
@@ -518,7 +504,9 @@ class CommandLineTest(unittest.TestCase):
             flash_check.main(["overnight", "--dir", str(directory), "--end", "2026-10-10T19:21:30+03:00"])
 
         self.assertEqual(raised.exception.code, 1)
-        self.assertTrue(out.getvalue().endswith("\nfailed: 3 problems\n"), out.getvalue())
+        self.assertIn('\nFAIL binary_sensor.geopro_kompressori (compressor, "Kompressori"): 1 unavailable or unknown'
+                      ' state\n', out.getvalue())
+        self.assertIn("\nfailed: ", out.getvalue())
 
 
 if __name__ == "__main__":

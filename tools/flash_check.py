@@ -50,9 +50,8 @@ UNKNOWN_REVISION = "unknown"
 # The overnight phase checks those the contract has.
 TEMPERATURE_KEYS = ("outside_temp", "l1_supply", "l1_room", "tank_middle", "free_measurement", "tank_top_in", "brine",
                     "tank_top", "tank_bottom")
-# How long every temperature Value may hold one value at once before the overnight phase fails:
-# in normal running no such stretch reached 20 min, and the 2026-10-12 freeze held 83 min between
-# Node reboots ("Frozen measurements" in docs/controller.md).
+# How long every temperature Value may hold one value at once before the overnight phase fails.
+# "Frozen measurements" in docs/controller.md has the holds it comes from.
 FREEZE_MINUTES = 60
 # Units Home Assistant converts between for display, so it can show a Value in another unit
 # of the same kind than the Node sends: after #11 it showed the Node's 2 h as 120.0 min.

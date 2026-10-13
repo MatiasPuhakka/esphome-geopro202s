@@ -58,12 +58,13 @@ class FakeClock:
 
 class ReplayHomeAssistant:
     """A transport that answers from a recorded history file as Home Assistant would have at
-    the clock's time: each entity's state then, and history rows within a window."""
+    the clock's time: each entity's state then, and history rows within a window. A test can
+    give the history instead of a file name: a list of rows per entity, in Home Assistant's form."""
 
-    def __init__(self, clock, name):
+    def __init__(self, clock, name=None, history=None):
         self.clock = clock
         self.rows = {}
-        for rows in json.loads((FIXTURES / name).read_text()):
+        for rows in history if history is not None else json.loads((FIXTURES / name).read_text()):
             self.rows[rows[0]["entity_id"]] = [(datetime.fromisoformat(r["last_changed"]).timestamp(), r)
                                                for r in rows]
 
