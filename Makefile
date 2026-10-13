@@ -28,7 +28,7 @@ NODE_TRACE := tests/traces/node-2026-10-09.log
 # The export runs on plain python3 without ESPHome.
 REGISTER_MAP_ROWS := $(BUILD_DIR)/register_map_rows.inc
 
-.PHONY: test pure-check tools-test check-secrets check-manual-links esphome-version check-config check-node-config check-trace-config check-contract update-contract compile compile-node clean
+.PHONY: test pure-check tools-test check-secrets dummy-secrets check-manual-links esphome-version check-config check-node-config check-trace-config check-contract update-contract compile compile-node clean
 
 test: pure-check $(TEST_BIN)
 	./$(TEST_BIN)
@@ -65,6 +65,16 @@ check-secrets:
 		exit 1; \
 	fi
 
+# Writes a secrets.yaml with a random API key, for CI and any checkout without the real
+# one, so the config checks and compile-node run. It leaves an existing file alone. A
+# dummy key can't flash the Node.
+dummy-secrets:
+	@if [ -e secrets.yaml ]; then \
+		echo "secrets.yaml exists; leaving it alone."; \
+	else \
+		printf 'api_encryption_key: "%s"\n' "$$(head -c 32 /dev/urandom | base64)" > secrets.yaml; \
+	fi
+
 # Stops with a message unless $(ESPHOME) is a $(SUPPORTED_ESPHOME).x release. Every
 # ESPHome target depends on it.
 esphome-version:
@@ -93,8 +103,8 @@ define check_with_warnings
 	@grep -v '^INFO ' $(BUILD_DIR)/$(2).log || true
 endef
 
-# Validates the Node's config. Needs secrets.yaml next to geopro.yaml (CI writes a dummy
-# one).
+# Validates the Node's config. Needs secrets.yaml next to geopro.yaml (dummy-secrets
+# writes one).
 check-node-config: esphome-version
 	$(call check_with_warnings,$(NODE_CONFIG),node-config)
 
@@ -118,7 +128,7 @@ compile: esphome-version
 	$(ESPHOME) compile $(CONFIG_ARDUINO)
 
 # Builds the Node's firmware into .esphome/build/geopro-202s/. Needs secrets.yaml next to
-# geopro.yaml; CI's dummy one is enough to build, not to flash.
+# geopro.yaml; the one dummy-secrets writes is enough to build, not to flash.
 compile-node: esphome-version
 	$(ESPHOME) compile $(NODE_CONFIG)
 

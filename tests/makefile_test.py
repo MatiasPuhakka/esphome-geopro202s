@@ -1,6 +1,7 @@
 # Tests the Makefile's ESPHome targets against a fake esphome script, so they run
-# without ESPHome installed, and check-secrets against a throwaway git repo.
+# without ESPHome installed, and the secrets targets in throwaway directories.
 # `make test` runs it.
+import base64
 import os
 import subprocess
 import tempfile
@@ -130,6 +131,37 @@ class CheckSecretsTest(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('node.yaml:3\n', result.stdout)
         self.assertNotIn('inline-value', result.stdout + result.stderr)
+
+
+class DummySecretsTest(unittest.TestCase):
+    """Runs dummy-secrets in an empty directory, where it writes secrets.yaml."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.dir = Path(tmp.name)
+        self.secrets = self.dir / 'secrets.yaml'
+
+    def make(self):
+        return subprocess.run(
+            ['make', '--no-print-directory', '-f', str(ROOT / 'Makefile'), 'dummy-secrets'],
+            cwd=self.dir, env=make_env(), capture_output=True, text=True)
+
+    def test_writes_a_random_32_byte_api_key_and_nothing_else(self):
+        result = self.make()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        lines = self.secrets.read_text().splitlines()
+        self.assertEqual(len(lines), 1, lines)
+        name, _, value = lines[0].partition(': ')
+        self.assertEqual(name, 'api_encryption_key')
+        self.assertEqual(len(base64.b64decode(value.strip('"'), validate=True)), 32)
+
+    def test_leaves_an_existing_secrets_yaml_alone(self):
+        self.secrets.write_text('api_encryption_key: "real"\n')
+        result = self.make()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.secrets.read_text(), 'api_encryption_key: "real"\n')
+        self.assertIn('secrets.yaml exists', result.stdout)
 
 
 if __name__ == '__main__':

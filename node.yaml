@@ -6,7 +6,7 @@
 # keeps the entity IDs and their history. The exceptions are L1 20°C below zero and
 # L1 20°C above zero, renamed on purpose in #76 (ADR 0004).
 # The API key comes from the secrets.yaml next to the including config. The bare OTA
-# encryption block uses the API key, so OTA needs no secret of its own (#85).
+# encryption block uses the API key, so OTA needs no secret of its own (ADR 0007).
 # Built with ESPHome 2026.9.1, the Home Assistant add-on's version.
 
 esphome:
