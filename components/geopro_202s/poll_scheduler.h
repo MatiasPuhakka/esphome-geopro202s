@@ -30,6 +30,14 @@ static const uint32_t REQUEST_GAP_MS = 50;
 // interval. It sets cadence only; the reply's data length comes from the address.
 enum class PollGroup : uint8_t { VALUE, BANK };
 
+// What the scheduler did with a request whose reply timed out: sent it again (RETRY), or
+// dropped it until its address's next cycle (GIVE_UP). Every timeout is one or the other.
+struct RequestEvent {
+  enum class Kind : uint8_t { RETRY, GIVE_UP };
+  Kind kind;
+  uint16_t address;
+};
+
 // Decides which address to read next. It has no clock of its own: the caller
 // passes the current millis() value on every call, and differences between
 // times are taken modulo 2^32, so the counter wrapping around is harmless.
@@ -47,9 +55,10 @@ class PollScheduler {
   void set_bank_interval(uint32_t interval_ms) { this->bank_interval_ms_ = interval_ms; }
 
   // Returns true and sets `address` when a read request should be sent now.
-  // The first call starts a cycle of every value and bank address.
+  // The first call starts a cycle of every value and bank address. A timeout is noticed
+  // here, so this is where its retry or give-up is added to `events`.
   // (Not std::optional: ESPHome's Arduino ESP32 builds use C++11.)
-  bool next_request(uint32_t now, uint16_t &address);
+  bool next_request(uint32_t now, uint16_t &address, std::vector<RequestEvent> &events);
 
   // Report a received frame. Only a frame for the in-flight address completes it.
   void on_frame(uint16_t address, uint32_t now);

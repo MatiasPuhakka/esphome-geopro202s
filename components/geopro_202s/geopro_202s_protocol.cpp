@@ -32,6 +32,25 @@ void Geopro202sComponent::loop() {
     ESP_LOGD(TAG, "Sending request for address 0x%04X", (unsigned) (request[3] << 8 | request[4]));
     this->write_array(request.data(), request.size());
   }
+
+  this->report_bus_errors_(now);
+}
+
+// Logs the bus errors counted since the last check at WARN, which the Node's INFO logger
+// keeps, and nothing when there are none. The bank cycle sets the cadence, not the value
+// cycle: every Address is read at least once per bank interval, so one line covers a pass
+// over the whole Register map, and a Controller that stops answering costs one line a
+// minute at the default intervals instead of six.
+void Geopro202sComponent::report_bus_errors_(uint32_t now) {
+  Counters errors;
+  if (!this->bus_error_report_.take(now, this->session_.counters(), errors))
+    return;
+  ESP_LOGW(TAG,
+           "Bus errors in the last %u s: Checksum failures %u, discarded bytes %u, timeouts %u (retries %u, "
+           "give-ups %u), Replies that decoded nothing %u",
+           (unsigned) (this->bus_error_report_.interval() / 1000), (unsigned) errors.checksum_failures,
+           (unsigned) errors.discarded_bytes, (unsigned) errors.timeouts(), (unsigned) errors.retries,
+           (unsigned) errors.give_ups, (unsigned) errors.undecoded_replies);
 }
 
 void Geopro202sComponent::publish_(const SessionOutput &output) {

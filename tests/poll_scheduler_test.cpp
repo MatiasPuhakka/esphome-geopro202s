@@ -9,15 +9,31 @@
 using esphome::geopro_202s::PollScheduler;
 using esphome::geopro_202s::REPLY_TIMEOUT_MS;
 using esphome::geopro_202s::REQUEST_GAP_MS;
+using esphome::geopro_202s::RequestEvent;
+
+// In the type's namespace, where comparing vectors of events finds it.
+namespace esphome {
+namespace geopro_202s {
+bool operator==(const RequestEvent &a, const RequestEvent &b) { return a.kind == b.kind && a.address == b.address; }
+}  // namespace geopro_202s
+}  // namespace esphome
 
 namespace {
 
-std::optional<uint16_t> next(PollScheduler &scheduler, uint32_t now) {
+// Adds the call's events to `events`, when given.
+std::optional<uint16_t> next(PollScheduler &scheduler, uint32_t now, std::vector<RequestEvent> *events = nullptr) {
   uint16_t address;
-  if (scheduler.next_request(now, address))
+  std::vector<RequestEvent> call_events;
+  const bool send = scheduler.next_request(now, address, call_events);
+  if (events)
+    events->insert(events->end(), call_events.begin(), call_events.end());
+  if (send)
     return address;
   return std::nullopt;
 }
+
+const RequestEvent::Kind RETRY = RequestEvent::Kind::RETRY;
+const RequestEvent::Kind GIVE_UP = RequestEvent::Kind::GIVE_UP;
 
 // Drives a scheduler alone, with a fake millisecond clock that advances one tick per pass and
 // replies delivered straight to on_frame(). It tests the scheduler's timing rules. tests/
@@ -27,8 +43,10 @@ struct Harness {
 
   PollScheduler scheduler;
   uint32_t now;
+  // Every retry and give-up so far.
+  std::vector<RequestEvent> events;
 
-  std::optional<uint16_t> poll() { return next(this->scheduler, this->now); }
+  std::optional<uint16_t> poll() { return next(this->scheduler, this->now, &this->events); }
 
   void advance(uint32_t ms) { this->now += ms; }
 
@@ -205,6 +223,29 @@ TEST_CASE("a timeout triggers one retry and then moves on") {
   CHECK_FALSE(h.scheduler.in_flight());
   h.advance(REQUEST_GAP_MS);
   CHECK(h.poll() == 0x02);
+}
+
+TEST_CASE("a retry and a give-up are reported with the address") {
+  Harness h;
+  h.scheduler.add_value_address(0x01);
+  h.scheduler.add_value_address(0x02);
+
+  CHECK(h.poll() == 0x01);
+  h.advance(REPLY_TIMEOUT_MS);
+  CHECK(h.poll() == 0x01);
+  CHECK(h.events == std::vector<RequestEvent>{{RETRY, 0x01}});
+
+  h.advance(REPLY_TIMEOUT_MS);
+  CHECK(h.poll() == std::nullopt);
+  CHECK(h.events == std::vector<RequestEvent>{{RETRY, 0x01}, {GIVE_UP, 0x01}});
+
+  // An answered request reports nothing.
+  h.advance(REQUEST_GAP_MS);
+  CHECK(h.poll() == 0x02);
+  h.reply(0x02);
+  h.advance(REPLY_TIMEOUT_MS);
+  h.poll();
+  CHECK(h.events.size() == 2);
 }
 
 TEST_CASE("a reply to the retry completes the request") {

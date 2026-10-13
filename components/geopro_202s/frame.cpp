@@ -21,6 +21,8 @@ std::array<uint8_t, 6> build_read_request(uint16_t address) {
   return frame;
 }
 
+void FrameDecoder::reset() { this->discard_(this->buffer_.size()); }
+
 std::vector<Frame> FrameDecoder::feed(const uint8_t *bytes, size_t len) {
   std::vector<Frame> out;
   for (size_t i = 0; i < len; i++) {
@@ -33,14 +35,13 @@ std::vector<Frame> FrameDecoder::feed(const uint8_t *bytes, size_t len) {
 void FrameDecoder::drain_(std::vector<Frame> &out) {
   auto &buf = this->buffer_;
   while (true) {
-    auto start = std::find(buf.begin(), buf.end(), FRAME_START);
-    buf.erase(buf.begin(), start);
+    this->discard_(std::find(buf.begin(), buf.end(), FRAME_START) - buf.begin());
     if (buf.size() < 3)
       return;
 
     uint8_t length = buf[2];
     if (length < FRAME_MIN_LENGTH || length > FRAME_MAX_LENGTH) {
-      buf.erase(buf.begin());
+      this->discard_(1);
       continue;
     }
 
@@ -49,7 +50,8 @@ void FrameDecoder::drain_(std::vector<Frame> &out) {
       return;
 
     if (frame_checksum(buf.data() + 1, frame_size - 2) != buf[frame_size - 1]) {
-      buf.erase(buf.begin());
+      this->checksum_failures_++;
+      this->discard_(1);
       continue;
     }
 
@@ -60,6 +62,12 @@ void FrameDecoder::drain_(std::vector<Frame> &out) {
     out.push_back(std::move(frame));
     buf.erase(buf.begin(), buf.begin() + frame_size);
   }
+}
+
+// Drops the first `count` buffered bytes.
+void FrameDecoder::discard_(size_t count) {
+  this->buffer_.erase(this->buffer_.begin(), this->buffer_.begin() + count);
+  this->discarded_bytes_ += count;
 }
 
 }  // namespace geopro_202s
