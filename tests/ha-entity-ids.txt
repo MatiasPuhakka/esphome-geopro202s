@@ -1,13 +1,15 @@
 # The entity IDs Home Assistant has for the Node's entities, recorded 2026-10-11
 # from GET /api/states by `python3 tests/entity_contract.py record-ids NODE_OUT`.
+# sensor.geopro_l1_20_c_below_zero and sensor.geopro_l1_20_c_above_zero were added by
+# hand before the #76 flash: they are the IDs the two get renamed to in Home Assistant.
 # entity ID<TAB>friendly name
 binary_sensor.geopro_kompressori	Geopro Kompressori
 binary_sensor.geopro_s_hk_vastus	Geopro Sähkövastus
 sensor.geopro_komponentin_versio	Geopro Komponentin versio
 sensor.geopro_kompressori_tunnit	Geopro Kompressori tunnit
 sensor.geopro_l1_0_c	Geopro L1 0°C
-sensor.geopro_l1_20_c	Geopro L1 -20°C
-sensor.geopro_l1_20_c_2	Geopro L1 +20°C
+sensor.geopro_l1_20_c_above_zero	Geopro L1 20°C above zero
+sensor.geopro_l1_20_c_below_zero	Geopro L1 20°C below zero
 sensor.geopro_l1_esikorotus	Geopro L1 Esikorotus
 sensor.geopro_l1_maksimiraja	Geopro L1 Maksimiraja
 sensor.geopro_l1_menovesi	Geopro L1 menovesi

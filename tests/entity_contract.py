@@ -18,7 +18,9 @@ import difflib
 import importlib.util
 import json
 import os
+import re
 import sys
+import unicodedata
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -164,17 +166,33 @@ def parse_entity_ids(text):
 _HA_DOMAIN = {"text_sensor": "sensor"}
 
 
+def _slug(name):
+    """Close to the slug Home Assistant 2026.10 builds a new entity's ID from: ä to a, ° to deg,
+    every other run of characters outside a-z and 0-9 to one _."""
+    text = unicodedata.normalize("NFKD", name.replace("°", "deg")).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
+
+
 def node_lines(config_text, platforms, entity_ids):
     # Home Assistant names a Node's entity "<friendly_name> <name>" and picks its entity ID
     # once, so look the ID up by that name and the entity's platform.
     node_name = _friendly_name(config_text)
     by_name = {(entity_id.split(".")[0], name): entity_id for entity_id, name in entity_ids}
+    by_slug = {}
     lines = []
     for key, options in _entities(config_text):
         platform = _platform(platforms, key)
         name = options["name"]
         full_name = f"{node_name} {name}" if node_name else name
         domain = _HA_DOMAIN.get(platform, platform)
+        # Two names with one slug get one entity ID, and Home Assistant adds _2 to the second (#76).
+        slug = _slug(name)
+        other_key, other_name = by_slug.setdefault((domain, slug), (key, name))
+        if other_key != key:
+            raise ValueError(
+                f'{other_key} ("{other_name}") and {key} ("{name}") would get the same Home Assistant '
+                f"entity ID, ending in {slug}, and the second one a _2. Rename one (ADR 0004)."
+            )
         entity_id = by_name.get((domain, full_name), "(no entity ID recorded)")
         lines.append(f"{key}: {platform} {json.dumps(name, ensure_ascii=False)} {entity_id}")
     return lines

@@ -81,11 +81,11 @@ geopro_202s:
 
   # Bank 0x0C - Heating Circuit Settings (read-only sensors)
   l1_minus20:
-    name: "L1 -20°C"
+    name: "L1 20°C below zero"
   l1_zero:
     name: "L1 0°C"
   l1_plus20:
-    name: "L1 +20°C"
+    name: "L1 20°C above zero"
   l1_min_limit:
     name: "L1 Minimiraja"
   l1_max_limit:
