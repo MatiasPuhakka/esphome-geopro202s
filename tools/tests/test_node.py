@@ -46,7 +46,7 @@ class SecretsTest(unittest.TestCase):
         self.assertIn("GEOPRO_SECRETS_FILE", str(raised.exception))
 
     def test_a_file_without_a_key_says_so(self):
-        secrets = TempSecrets(self, "ota_password: fake\n")
+        secrets = TempSecrets(self, "node_address: 10.0.0.7\n")
         with self.assertRaises(SystemExit) as raised:
             Node(secrets_path=secrets.path, api=RecordedNode())
 

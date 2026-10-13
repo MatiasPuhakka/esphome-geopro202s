@@ -1,6 +1,6 @@
 # The Node's config for a local build: the settings in node.yaml, with the
 # geopro_202s Component from this checkout.
-# The API key and OTA password come from secrets.yaml next to this file (gitignored).
+# The API key comes from secrets.yaml next to this file (gitignored).
 # The Home Assistant add-on builds addon/geopro-202s.yaml instead, which takes both
 # from main on GitHub.
 

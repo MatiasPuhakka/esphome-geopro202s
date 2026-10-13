@@ -3,7 +3,7 @@
 # only when the source or the refresh changes: the Node's settings live in node.yaml.
 # Both the settings and the geopro_202s Component come from main, fetched on every
 # build, so an install builds what main holds then (ADR 0005).
-# The API key and OTA password come from the add-on's secrets.yaml.
+# The API key comes from the add-on's secrets.yaml.
 
 packages:
   node:
