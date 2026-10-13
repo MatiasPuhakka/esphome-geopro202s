@@ -7,15 +7,24 @@ The flash check in `tools/flash_check.py` runs the checks in three phases: `befo
 ## Setup
 
 - **ESPHome version.** `geopro.yaml` needs ESPHome 2026.9.x ([ADR 0002](../adr/0002-supported-esphome-versions.md)). The `esphome` on PATH may be another version. The make targets that run ESPHome stop and say so; point them at a 2026.9.x install with `ESPHOME=/path/to/esphome`, for example `make check-node-config ESPHOME=/path/to/esphome`. When calling ESPHome directly, run `esphome version` first.
-- **Secrets.** `secrets.yaml` sits next to `geopro.yaml`, is gitignored and holds `api_encryption_key` and `ota_password`. Never print it, paste it into a doc or commit it; `make check-secrets` fails on an inline key or password. The Home Assistant token is `ACCESS_TOKEN` in the gitignored `.env`; treat it the same way. Source it into the shell (`set -a; . ./.env; set +a`) so the value stays out of what you type and out of output.
+- **Secrets.** `secrets.yaml` sits next to `geopro.yaml`, is gitignored and holds `api_encryption_key`, which the API and OTA uploads share. Never print it, paste it into a doc or commit it; `make check-secrets` fails on an inline key or password. The Home Assistant token is `ACCESS_TOKEN` in the gitignored `.env`; treat it the same way. Source it into the shell (`set -a; . ./.env; set +a`) so the value stays out of what you type and out of output.
 - **Without a secrets.yaml.** Write a dummy one, as CI does, only when none exists:
-  `printf 'api_encryption_key: "%s"\nota_password: ci\n' "$(head -c 32 /dev/urandom | base64)" > secrets.yaml`
+  `printf 'api_encryption_key: "%s"\n' "$(head -c 32 /dev/urandom | base64)" > secrets.yaml`
   Then `make check-node-config check-trace-config` validates both configs and prints ESPHome's warnings, and `make compile-node` builds the Node's firmware. A dummy secrets.yaml can't flash anything.
 
 ## How a change reaches the Node
 
 - **Home Assistant add-on.** It builds `/config/esphome/geopro-202s.yaml`, which holds `addon/geopro-202s.yaml`: `node.yaml` and the Component, both fetched from `main` on every build ([ADR 0005](../adr/0005-node-is-built-from-main.md)). A change reaches the Node when it is merged to `main` and the add-on installs it, with no edit in the add-on. Only a change to `addon/geopro-202s.yaml` itself is pasted into the add-on by hand, after it merges.
 - **Local build.** To test before merging, `make compile-node` (or `esphome compile geopro.yaml`), then `esphome upload geopro.yaml --device <Node address>`. The build lands in `.esphome/build/geopro-202s/`. This flashes the checkout's Component, so the Node then runs code that isn't on `main`; the next add-on install replaces it.
+- **Encrypted OTA.** `node.yaml` sets `ota: encryption: {}`, which encrypts uploads with the API key and needs no password (#85). The Node refuses an upload that doesn't encrypt with that key, so upload with ESPHome 2026.9.x and the real `secrets.yaml` next to the config; the upload log says `Encrypted connection established`.
+
+### Switching from the OTA password to encryption (#85)
+
+The firmware that ran before #85 (ESPHome 2026.9.1) has the password but also offers encryption, since it has the API key, and skips the password check on an encrypted upload. So the install that ships #85 already uploads encrypted, and the old password is never sent. Firmware older than 2026.9.0 offers no encryption and the upload stops; `tools/device_info.py` shows the Node's version.
+
+1. Run the before phase, merge, install from the add-on, then run the after phase with `--revision origin/main`.
+2. Upload the same commit from a clean checkout: `make compile-node`, then `esphome upload geopro.yaml --device <Node address>`. Check the log for `Encrypted connection established`, then run the after phase again. This proves that a local upload works with encrypted OTA.
+3. The owner removes `ota_password` from the add-on's `secrets.yaml` and from the one next to `geopro.yaml`. No config reads it after #85.
 
 ## Before flashing
 

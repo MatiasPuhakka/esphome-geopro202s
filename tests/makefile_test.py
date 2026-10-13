@@ -1,5 +1,6 @@
 # Tests the Makefile's ESPHome targets against a fake esphome script, so they run
-# without ESPHome installed. `make test` runs it.
+# without ESPHome installed, and check-secrets against a throwaway git repo.
+# `make test` runs it.
 import os
 import subprocess
 import tempfile
@@ -7,6 +8,12 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def make_env():
+    """The environment without the flags of the make that runs these tests."""
+    return {key: value for key, value in os.environ.items()
+            if key not in ('MAKEFLAGS', 'MFLAGS', 'MAKELEVEL')}
 
 # Answers `esphome version` with $FAKE_VERSION. For `esphome config` it prints a config on
 # stdout and $FAKE_LOG on stderr. It logs every call to $FAKE_CALLS.
@@ -30,8 +37,7 @@ class EsphomeTargetsTest(unittest.TestCase):
         self.esphome.chmod(0o755)
         self.calls = self.tmp / 'calls'
         self.calls.touch()
-        self.env = {key: value for key, value in os.environ.items()
-                    if key not in ('MAKEFLAGS', 'MFLAGS', 'MAKELEVEL')}
+        self.env = make_env()
         self.env.update(FAKE_VERSION='2026.9.1', FAKE_CALLS=str(self.calls), FAKE_LOG='')
 
     def make(self, target, esphome=None, **fake):
@@ -89,6 +95,41 @@ class EsphomeTargetsTest(unittest.TestCase):
         result = self.make('check-config', FAKE_VERSION='2026.9.3')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn('config tests/all-keys.yaml', self.calls.read_text())
+
+
+class CheckSecretsTest(unittest.TestCase):
+    """Runs check-secrets in a throwaway git repo, since it greps the tracked YAML."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.repo = Path(tmp.name)
+        subprocess.run(['git', 'init', '-q'], cwd=self.repo, check=True)
+
+    def check(self, yaml):
+        (self.repo / 'node.yaml').write_text(yaml)
+        subprocess.run(['git', 'add', 'node.yaml'], cwd=self.repo, check=True)
+        return subprocess.run(
+            ['make', '--no-print-directory', '-f', str(ROOT / 'Makefile'), 'check-secrets'],
+            cwd=self.repo, env=make_env(), capture_output=True, text=True)
+
+    def test_passes_on_secret_references_and_a_bare_ota_encryption(self):
+        result = self.check('api:\n  encryption:\n    key: !secret api_encryption_key\n'
+                            'ota:\n  - platform: esphome\n    encryption: {}\n')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_fails_on_an_inline_ota_key_and_names_only_its_line(self):
+        result = self.check('ota:\n  - platform: esphome\n    encryption:\n'
+                            '      key: "inline-value"\n')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('node.yaml:4\n', result.stdout)
+        self.assertNotIn('inline-value', result.stdout + result.stderr)
+
+    def test_fails_on_an_inline_ota_password(self):
+        result = self.check('ota:\n  - platform: esphome\n    password: inline-value\n')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('node.yaml:3\n', result.stdout)
+        self.assertNotIn('inline-value', result.stdout + result.stderr)
 
 
 if __name__ == '__main__':

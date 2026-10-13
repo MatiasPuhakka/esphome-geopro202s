@@ -157,8 +157,8 @@ api:
   encryption:
     key: !secret api_encryption_key
 
-# Optional: OTA updates
-# Requires secrets.yaml with: ota_password: "your-password-here"
+# Optional: OTA updates. A bare encryption block encrypts them with the API key above,
+# so it needs the api block.
 ota:
   - platform: esphome
-    password: !secret ota_password
+    encryption: {}

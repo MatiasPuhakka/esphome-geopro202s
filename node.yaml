@@ -5,7 +5,8 @@
 # Entity names match the YAML protocol copy this file used to hold, so Home Assistant
 # keeps the entity IDs and their history. The exceptions are L1 20°C below zero and
 # L1 20°C above zero, renamed on purpose in #76 (ADR 0004).
-# The API key and OTA password come from the secrets.yaml next to the including config.
+# The API key comes from the secrets.yaml next to the including config. The bare OTA
+# encryption block uses the API key, so OTA needs no secret of its own (#85).
 # Built with ESPHome 2026.9.1, the Home Assistant add-on's version.
 
 esphome:
@@ -118,7 +119,7 @@ api:
 
 ota:
   - platform: esphome
-    password: !secret ota_password
+    encryption: {}
 
 ethernet:
   type: LAN8720

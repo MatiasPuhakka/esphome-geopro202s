@@ -123,7 +123,7 @@ class TempEnv(TempFile):
 class TempSecrets(TempFile):
     NAME = "secrets.yaml"
 
-    def __init__(self, test, text='api_encryption_key: "%s"\nota_password: fake\n' % FAKE_KEY):
+    def __init__(self, test, text='api_encryption_key: "%s"\n' % FAKE_KEY):
         super().__init__(test, text)
 
 
