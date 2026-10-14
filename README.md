@@ -117,7 +117,7 @@ A reply's data length comes from its address: 31 bytes for a bank, and for a sin
 
 Adding a value takes one row, a key in `tests/all-keys.yaml` and a contract update (see below), and no C++ change. The hub registers each row with `register_value()` and passes every reply to the decoder in `value_decoder.h`/`value_decoder.cpp`, which has no ESPHome dependencies and is covered by `make test`.
 
-Each row names its entity kind, so editing a decode rule never moves a value to another platform. Adding an entity kind takes a member of `EntityKind` in `register_map.py`, its platform in `_PLATFORMS` in `__init__.py`, and a `publish_value()` overload in `geopro_202s_protocol.h`. `make test` checks each row's entity kind against the platform in `tests/entity-contract.txt`.
+Each row names its entity kind, so editing a decode rule never moves a value to another platform. Adding an entity kind takes a member of `EntityKind` in `register_map.py`, its platform in `_PLATFORMS` in `__init__.py`, and `publish_value()` and `invalidate_value()` overloads in `geopro_202s_protocol.h`. `make test` checks each row's entity kind against the platform in `tests/entity-contract.txt`.
 
 ### Home Assistant entity contract
 
@@ -142,6 +142,8 @@ The component reads every configured address once at startup, then reads values 
 Only one request is on the bus at a time. The next request goes out 50 ms after the previous one got its reply. A request with no reply within 500 ms is sent once more; if that also goes unanswered, the component moves on and tries the address again next cycle. A reply only counts if it is for the address that was asked for.
 
 This logic lives in `poll_scheduler.h`/`poll_scheduler.cpp`, which also have no ESPHome dependencies and are covered by `make test`.
+
+An address that is given up two cycles in a row is stale: every value read from it goes unknown in Home Assistant (sensors publish NaN, binary sensors invalidate their state) and the component logs one warning per address. Giving up on an address takes two timeouts, so a silent cycle of many addresses runs past its interval: with the Node's configuration and the default intervals, values go unknown 25 to 45 s after the Controller's last reply, and bank settings about 140 s after. The next decoded reply for the address restores them. A single missed cycle, as a false start at boot can cause, changes nothing. `session.h` gives the reason for the two cycles.
 
 The component counts bus errors: frames with a bad checksum, received bytes that end up in no frame, timeouts (each one a retry or a give-up), and replies that decode no values. At most once per `bank_interval` it logs one warning with the counts since the last warning, and how long ago that was. It logs nothing while all counts stay zero:
 
