@@ -9,6 +9,7 @@
 #include "esphome/components/text_sensor/text_sensor.h"
 #include "session.h"
 #include <array>
+#include <cmath>
 #include <functional>
 #include <vector>
 
@@ -17,12 +18,16 @@ namespace geopro_202s {
 
 static const char *const TAG = "geopro_202s";
 
-// How each entity kind publishes a decoded value. The hub picks a platform here and
-// nowhere else, as codegen does in _PLATFORMS in __init__.py.
+// How each entity kind publishes a decoded value, and how it shows as unknown in Home
+// Assistant once its Address is stale. The hub picks a platform here and nowhere else, as
+// codegen does in _PLATFORMS in __init__.py.
 inline void publish_value(sensor::Sensor *sensor, float value) { sensor->publish_state(value); }
 inline void publish_value(binary_sensor::BinarySensor *binary_sensor, float value) {
   binary_sensor->publish_state(value != 0.0f);
 }
+// A sensor has no invalidate_state() in ESPHome 2026.9; Home Assistant shows NaN as unknown.
+inline void invalidate_value(sensor::Sensor *sensor) { sensor->publish_state(NAN); }
+inline void invalidate_value(binary_sensor::BinarySensor *binary_sensor) { binary_sensor->invalidate_state(); }
 
 class Geopro202sComponent : public Component, public uart::UARTDevice {
  public:
@@ -53,12 +58,17 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
   void register_value(PollGroup group, AddressKind address_kind, uint16_t address, uint8_t offset, DecodeRule rule,
                       Entity *entity) {
     this->add_value_(group, Registration{address, offset, rule, address_kind},
-                     [entity](float value) { publish_value(entity, value); });
+                     Target{[entity](float value) { publish_value(entity, value); },
+                            [entity]() { invalidate_value(entity); }});
   }
 
  protected:
-  // Publishes a registration's decoded value on its entity.
-  using Target = std::function<void(float)>;
+  // What the hub does with a registration's entity: publishes a decoded Value on it, or
+  // makes it unknown when the Session reports the entry stale.
+  struct Target {
+    std::function<void(float)> publish;
+    std::function<void()> invalidate;
+  };
 
   void add_value_(PollGroup group, const Registration &registration, const Target &target);
   void publish_(const SessionOutput &output);

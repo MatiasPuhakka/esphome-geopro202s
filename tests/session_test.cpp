@@ -56,9 +56,13 @@ struct Bus {
   uint32_t now;
 
   // The Address of the Read request the Session sends now, or 0xFFFF for none.
-  uint32_t request() {
+  uint32_t request(SessionOutput *out = nullptr) {
     std::array<uint8_t, 6> request;
-    if (!session.next_request(now, request))
+    SessionOutput output;
+    const bool send = session.next_request(now, request, output);
+    if (out)
+      *out = output;
+    if (!send)
       return 0xFFFF;
     return address_of(request);
   }
@@ -75,6 +79,19 @@ struct Bus {
   }
 
   void advance(uint32_t ms) { now += ms; }
+
+  // Runs the loop with a silent Controller until `until`, a millisecond on the fake clock, and
+  // returns what the Session reported meanwhile.
+  SessionOutput run_silent(uint32_t until) {
+    SessionOutput all;
+    for (; now < until; advance(1)) {
+      SessionOutput output;
+      request(&output);
+      all.missed.insert(all.missed.end(), output.missed.begin(), output.missed.end());
+      all.stale.insert(all.stale.end(), output.stale.begin(), output.stale.end());
+    }
+    return all;
+  }
 };
 
 // A Session's counts in the order of COUNTER_FIELDS, so one CHECK shows them all: Checksum
@@ -250,6 +267,89 @@ TEST_CASE("counters: a timeout counts a retry, and a second one a give-up") {
   CHECK(bus.request() == 0xFFFF);
   CHECK(counts(bus.session) == std::vector<uint32_t>{0, 0, 1, 1, 0});
   CHECK(bus.session.counters().timeouts() == 2);
+}
+
+TEST_CASE("a give-up reports its Address as missed from the request path, since no bytes arrive to feed") {
+  Bus bus(register_map::rows_named({"outside_temp", "tank_top"}));
+  SessionOutput output;
+  CHECK(bus.request(&output) == 0x12);
+  CHECK(output.missed.empty());
+  bus.advance(REPLY_TIMEOUT_MS);
+  CHECK(bus.request(&output) == 0x12);  // the retry is not a miss yet
+  CHECK(output.missed.empty());
+  bus.advance(REPLY_TIMEOUT_MS);
+  CHECK(bus.request(&output) == 0xFFFF);
+  CHECK(output.missed == std::vector<uint16_t>{0x12});
+  // The miss was reported once.
+  bus.advance(REQUEST_GAP_MS);
+  CHECK(bus.request(&output) == 0x21);
+  CHECK(output.missed.empty());
+}
+
+TEST_CASE("an Address goes stale after two missed cycles, once, with every entry registered at it") {
+  // Entries 0, 1 and 2. The Status word and its compressor bit share Address 0x2D.
+  Bus bus(register_map::rows_named({"outside_temp", "status_word", "compressor"}));
+  const uint32_t cycle = esphome::geopro_202s::DEFAULT_VALUE_INTERVAL_MS;
+
+  // Cycle 1: each Address is given up once, and nothing is stale yet.
+  SessionOutput output = bus.run_silent(cycle);
+  CHECK(output.missed == std::vector<uint16_t>{0x12, STATUS_WORD});
+  CHECK(output.stale.empty());
+
+  // Cycle 2: the second miss makes each Address stale, with every entry at it.
+  output = bus.run_silent(2 * cycle);
+  CHECK(output.missed == std::vector<uint16_t>{0x12, STATUS_WORD});
+  CHECK(output.stale == std::vector<EntryId>{0, 1, 2});
+
+  // Cycle 3: a stale Address is reported once, not on every further miss.
+  output = bus.run_silent(3 * cycle);
+  CHECK(output.missed == std::vector<uint16_t>{0x12, STATUS_WORD});
+  CHECK(output.stale.empty());
+
+  // Cycle 4: a Reply for 0x12 ends its run of misses; its Value restores the entry.
+  REQUIRE(bus.request() == 0x12);
+  CHECK(bus.receive(reply(0x12, {0xFE, 0x0C})) == std::map<std::string, float>{{"outside_temp", -5.0f}});
+  output = bus.run_silent(4 * cycle);
+  CHECK(output.missed == std::vector<uint16_t>{STATUS_WORD});
+  CHECK(output.stale.empty());
+
+  // Cycle 5: one miss since the Reply doesn't make 0x12 stale.
+  output = bus.run_silent(5 * cycle);
+  CHECK(output.missed == std::vector<uint16_t>{0x12, STATUS_WORD});
+  CHECK(output.stale.empty());
+
+  // Cycle 6: the second does, again.
+  output = bus.run_silent(6 * cycle);
+  CHECK(output.stale == std::vector<EntryId>{0});
+}
+
+TEST_CASE("a Reply that decodes nothing still answers, so it doesn't count towards staleness") {
+  Bus bus(register_map::rows_named({"outside_temp"}));
+  const uint32_t cycle = esphome::geopro_202s::DEFAULT_VALUE_INTERVAL_MS;
+  CHECK(bus.run_silent(cycle).missed == std::vector<uint16_t>{0x12});
+
+  // Cycle 2 is answered with a Reply one data byte short, which decodes nothing.
+  REQUIRE(bus.request() == 0x12);
+  SessionOutput output;
+  CHECK(bus.receive(reply(0x12, {0xFE}), &output).empty());
+  CHECK(output.answered == std::vector<uint16_t>{0x12});
+
+  // The run of misses starts over: cycle 3 is the first miss and cycle 4 the second.
+  output = bus.run_silent(3 * cycle);
+  CHECK(output.missed == std::vector<uint16_t>{0x12});
+  CHECK(output.stale.empty());
+  output = bus.run_silent(4 * cycle);
+  CHECK(output.stale == std::vector<EntryId>{0});
+}
+
+TEST_CASE("a Reply for an Address nobody registered changes nothing") {
+  Bus bus(register_map::rows_named({"outside_temp"}));
+  const uint32_t cycle = esphome::geopro_202s::DEFAULT_VALUE_INTERVAL_MS;
+  CHECK(bus.run_silent(cycle).missed == std::vector<uint16_t>{0x12});
+  SessionOutput output;
+  bus.receive(reply(0x21, {0x14, 0x7E}), &output);
+  CHECK(output.answered == std::vector<uint16_t>{0x21});
+  CHECK(bus.run_silent(2 * cycle).stale == std::vector<EntryId>{0});
 }
 
 TEST_CASE("add_value gives ids counting up from 0, and the Session keeps the registrations") {

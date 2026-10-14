@@ -17,6 +17,8 @@ using esphome::geopro_202s::build_read_request;
 using esphome::geopro_202s::COUNTER_FIELDS;
 using esphome::geopro_202s::CounterField;
 using esphome::geopro_202s::Counters;
+using esphome::geopro_202s::EntryId;
+using esphome::geopro_202s::PollGroup;
 using esphome::geopro_202s::Frame;
 using esphome::geopro_202s::FrameDecoder;
 using esphome::geopro_202s::Session;
@@ -86,6 +88,19 @@ struct ExpectedValue {
   std::string source;
 };
 
+// The trace's Reply for each Address it has a Read request for.
+std::map<uint16_t, TraceLine> trace_replies() {
+  std::map<uint16_t, TraceLine> replies;
+  uint16_t requested = 0;
+  for (const TraceLine &line : read_trace()) {
+    if (line.sent)
+      requested = requested_address(line);
+    else
+      replies[requested] = line;
+  }
+  return replies;
+}
+
 // What a Session did while the trace's Replies played back.
 struct Replay {
   std::vector<std::array<uint8_t, 6>> requests;
@@ -93,6 +108,59 @@ struct Replay {
   std::map<std::string, float> published;  // by Register map key
   Counters counters;                       // at the end
 };
+
+// Something the Session reported at a time on the replay's clock: a miss of an Address, or an
+// entry going stale.
+struct Report {
+  uint32_t at;
+  uint16_t address;
+  EntryId entry;
+};
+
+// What a Session reported while the trace's Replies played back with an outage in the middle.
+struct OutageReplay {
+  std::vector<Report> missed;
+  std::vector<Report> stale;
+  // Each entry's Values after the outage, by Register map key.
+  std::map<std::string, float> published_after;
+};
+
+// Plays the trace as replay_trace() does, for `end` ms, with the Controller silent from
+// `silent_from` up to `silent_until`. A Read request sent in the silence gets no Reply.
+OutageReplay replay_outage(const std::vector<register_map::Row> &rows, uint32_t silent_from, uint32_t silent_until,
+                           uint32_t end) {
+  const std::map<uint16_t, TraceLine> replies = trace_replies();
+  Session session;
+  for (const register_map::Row &row : rows)
+    session.add_value(row.group, row.registration);
+
+  OutageReplay replay;
+  for (uint32_t now = 0; now < end; now += 5) {
+    std::array<uint8_t, 6> request;
+    SessionOutput output;
+    const bool send = session.next_request(now, request, output);
+    for (uint16_t address : output.missed)
+      replay.missed.push_back(Report{now, address, 0});
+    for (EntryId entry : output.stale)
+      replay.stale.push_back(Report{now, rows[entry].registration.address, entry});
+    if (!send)
+      continue;
+    if (now >= silent_from && now < silent_until)
+      continue;
+    const uint16_t address = static_cast<uint16_t>(request[3] << 8 | request[4]);
+    auto reply = replies.find(address);
+    REQUIRE_MESSAGE(reply != replies.end(), "the Session asked for an Address the trace has no Reply for");
+    now += 20;
+    for (uint8_t byte : reply->second.bytes) {
+      output = session.feed(&byte, 1, now);
+      REQUIRE(output.stale.empty());
+      if (now >= silent_until)
+        for (const auto &value : output.values)
+          replay.published_after[rows[value.index].key] = value.value;
+    }
+  }
+  return replay;
+}
 
 // Plays the trace through a Session built from the real Register map rows, as the hub would:
 // time advances in 5 ms steps, and each Read request the Session sends gets the trace's Reply
@@ -102,14 +170,7 @@ struct Replay {
 // Node that hears itself on the bus would receive it. Stops before the second cycle (10 s).
 Replay replay_trace(const std::vector<register_map::Row> &rows, const std::vector<uint8_t> &before = {},
                     bool echo = false) {
-  std::map<uint16_t, TraceLine> replies;
-  uint16_t requested = 0;
-  for (const TraceLine &line : read_trace()) {
-    if (line.sent)
-      requested = requested_address(line);
-    else
-      replies[requested] = line;
-  }
+  const std::map<uint16_t, TraceLine> replies = trace_replies();
 
   Session session;
   for (const register_map::Row &row : rows)
@@ -124,7 +185,10 @@ Replay replay_trace(const std::vector<register_map::Row> &rows, const std::vecto
   record(session.feed(before.data(), before.size(), 0));
   for (uint32_t now = 0; now < 5000; now += 5) {
     std::array<uint8_t, 6> request;
-    if (!session.next_request(now, request))
+    SessionOutput output;
+    const bool send = session.next_request(now, request, output);
+    record(output);
+    if (!send)
       continue;
     replay.requests.push_back(request);
     if (echo)
@@ -319,4 +383,56 @@ TEST_CASE("node trace: every row whose Address the trace covers decodes to its e
   // Every expected Value belongs to a row the trace covers, so a row that was renamed, removed or
   // moved to an Address outside the trace fails here.
   CHECK(checked == expected.size());
+}
+
+TEST_CASE("node trace: an outage makes every entry stale after two missed cycles of its Poll group, and the Replies after it restore them") {
+  const auto &rows = register_map::all_rows();
+  const uint32_t bank_interval = esphome::geopro_202s::DEFAULT_BANK_INTERVAL_MS;
+  // Both cycles are answered at 0 and the value cycle again at 10 s. The Controller goes
+  // silent before the third value cycle and the second bank cycle, and answers again after
+  // the third bank cycle has been given up.
+  const uint32_t silent_from = 15000;
+  const uint32_t silent_until = 155000;
+  const OutageReplay replay = replay_outage(rows, silent_from, silent_until, 200000);
+
+  REQUIRE(replay.stale.size() == rows.size());
+  std::set<EntryId> stale_entries;
+  for (const Report &report : replay.stale) {
+    const register_map::Row &row = rows[report.entry];
+    CAPTURE(row.key);
+    CHECK(stale_entries.insert(report.entry).second);
+    CHECK(report.at > silent_from);
+    CHECK(report.at < silent_until);
+
+    // The entry went stale on the second miss of its Address since the Controller went silent.
+    size_t misses = 0;
+    for (const Report &miss : replay.missed)
+      if (miss.address == report.address && miss.at <= report.at)
+        misses++;
+    CHECK(misses == esphome::geopro_202s::STALE_AFTER_MISSED_CYCLES);
+
+    // A Value's Address is given up in the value cycle, so it goes stale before the bank cycle
+    // after the outage began has even been given up once. A Bank's needs the second bank
+    // cycle in the outage, 120 s after the first.
+    if (row.group == PollGroup::VALUE)
+      CHECK(report.at < bank_interval);
+    else
+      CHECK(report.at > 2 * bank_interval);
+  }
+
+  // The Status word's six entries went stale together, on the one miss of their Address.
+  uint32_t status_stale_at = 0;
+  size_t status_entries = 0;
+  for (const Report &report : replay.stale) {
+    if (report.address != 0x2D)
+      continue;
+    if (status_entries++ == 0)
+      status_stale_at = report.at;
+    CHECK(report.at == status_stale_at);
+  }
+  CHECK(status_entries == 6);
+
+  // Each entry got a decoded Value once the Controller answered again. (replay_outage()
+  // checks that no feed reports anything stale.)
+  CHECK(replay.published_after.size() == rows.size());
 }

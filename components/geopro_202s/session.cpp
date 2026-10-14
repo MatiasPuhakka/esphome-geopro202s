@@ -32,7 +32,30 @@ std::string Counters::describe() const {
 EntryId Session::add_value(PollGroup group, const Registration &registration) {
   this->scheduler_.add_address(group, registration.address);
   this->registrations_.push_back(registration);
+  if (this->find_misses_(registration.address) == nullptr)
+    this->misses_.push_back(Misses{registration.address, 0});
   return this->registrations_.size() - 1;
+}
+
+Session::Misses *Session::find_misses_(uint16_t address) {
+  for (Misses &misses : this->misses_)
+    if (misses.address == address)
+      return &misses;
+  return nullptr;
+}
+
+// The scheduler only asks for registered Addresses, so the given-up one has a miss count.
+void Session::on_give_up_(uint16_t address, SessionOutput &output) {
+  output.missed.push_back(address);
+  Misses *misses = this->find_misses_(address);
+  if (misses == nullptr || misses->count == STALE_AFTER_MISSED_CYCLES)
+    return;  // already stale, and reported when it became so
+  misses->count++;
+  if (misses->count < STALE_AFTER_MISSED_CYCLES)
+    return;
+  for (size_t id = 0; id < this->registrations_.size(); id++)
+    if (this->registrations_[id].address == address)
+      output.stale.push_back(id);
 }
 
 SessionOutput Session::feed(const uint8_t *bytes, size_t len, uint32_t now) {
@@ -49,6 +72,9 @@ SessionOutput Session::feed(const uint8_t *bytes, size_t len, uint32_t now) {
       continue;
     this->scheduler_.on_frame(frame.address, now);
     output.answered.push_back(frame.address);
+    Misses *misses = this->find_misses_(frame.address);
+    if (misses != nullptr)
+      misses->count = 0;
     const std::vector<DecodedValue> values = decode_values(frame.address, frame.data, this->registrations_);
     if (values.empty())
       this->counters_.undecoded_replies++;
@@ -57,15 +83,17 @@ SessionOutput Session::feed(const uint8_t *bytes, size_t len, uint32_t now) {
   return output;
 }
 
-bool Session::next_request(uint32_t now, std::array<uint8_t, 6> &request) {
+bool Session::next_request(uint32_t now, std::array<uint8_t, 6> &request, SessionOutput &output) {
   uint16_t address;
   std::vector<RequestEvent> events;
   const bool send = this->scheduler_.next_request(now, address, events);
   for (const RequestEvent &event : events) {
-    if (event.kind == RequestEvent::Kind::RETRY)
+    if (event.kind == RequestEvent::Kind::RETRY) {
       this->counters_.retries++;
-    else
+    } else {
       this->counters_.give_ups++;
+      this->on_give_up_(event.address, output);
+    }
   }
   if (!send)
     return false;
