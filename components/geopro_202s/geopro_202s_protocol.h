@@ -19,7 +19,7 @@ namespace geopro_202s {
 static const char *const TAG = "geopro_202s";
 
 // How each entity kind publishes a decoded value, and how it shows as unknown in Home
-// Assistant once its Address is stale. The hub picks a platform here and nowhere else, as
+// Assistant once its Address is Stale. The hub picks a platform here and nowhere else, as
 // codegen does in _PLATFORMS in __init__.py.
 inline void publish_value(sensor::Sensor *sensor, float value) { sensor->publish_state(value); }
 inline void publish_value(binary_sensor::BinarySensor *binary_sensor, float value) {
@@ -64,7 +64,7 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
 
  protected:
   // What the hub does with a registration's entity: publishes a decoded Value on it, or
-  // makes it unknown when the Session reports the entry stale.
+  // makes it unknown when the Session reports the entry Stale.
   struct Target {
     std::function<void(float)> publish;
     std::function<void()> invalidate;

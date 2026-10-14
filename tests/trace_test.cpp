@@ -101,75 +101,53 @@ std::map<uint16_t, TraceLine> trace_replies() {
   return replies;
 }
 
+// A Value the Session published, and when on the replay's clock.
+struct Published {
+  float value;
+  uint32_t at;
+};
+
+// A Missed cycle the Session reported, and when.
+struct Miss {
+  uint32_t at;
+  uint16_t address;
+};
+
+// An entry the Session reported Stale, and when.
+struct StaleEntry {
+  uint32_t at;
+  EntryId entry;
+};
+
 // What a Session did while the trace's Replies played back.
 struct Replay {
   std::vector<std::array<uint8_t, 6>> requests;
   std::vector<uint16_t> answered;
-  std::map<std::string, float> published;  // by Register map key
-  Counters counters;                       // at the end
+  std::map<std::string, Published> published;  // each entry's latest Value, by Register map key
+  std::vector<Miss> missed;
+  std::vector<StaleEntry> stale;
+  Counters counters;  // at the end
 };
 
-// Something the Session reported at a time on the replay's clock: a miss of an Address, or an
-// entry going stale.
-struct Report {
-  uint32_t at;
-  uint16_t address;
-  EntryId entry;
+// How replay_trace() plays the trace. The defaults play the first cycle only.
+struct ReplayOptions {
+  // Fed at time 0, ahead of the first Read request.
+  std::vector<uint8_t> before;
+  // Feed each Read request back as it is sent, as a Node that hears itself on the bus would.
+  bool echo{false};
+  // The Controller is silent from `silent_from` up to `silent_until`: a Read request sent then
+  // gets no Reply.
+  uint32_t silent_from{0};
+  uint32_t silent_until{0};
+  // Stops before this time. The default stops before the second value cycle.
+  uint32_t end{5000};
 };
-
-// What a Session reported while the trace's Replies played back with an outage in the middle.
-struct OutageReplay {
-  std::vector<Report> missed;
-  std::vector<Report> stale;
-  // Each entry's Values after the outage, by Register map key.
-  std::map<std::string, float> published_after;
-};
-
-// Plays the trace as replay_trace() does, for `end` ms, with the Controller silent from
-// `silent_from` up to `silent_until`. A Read request sent in the silence gets no Reply.
-OutageReplay replay_outage(const std::vector<register_map::Row> &rows, uint32_t silent_from, uint32_t silent_until,
-                           uint32_t end) {
-  const std::map<uint16_t, TraceLine> replies = trace_replies();
-  Session session;
-  for (const register_map::Row &row : rows)
-    session.add_value(row.group, row.registration);
-
-  OutageReplay replay;
-  for (uint32_t now = 0; now < end; now += 5) {
-    std::array<uint8_t, 6> request;
-    SessionOutput output;
-    const bool send = session.next_request(now, request, output);
-    for (uint16_t address : output.missed)
-      replay.missed.push_back(Report{now, address, 0});
-    for (EntryId entry : output.stale)
-      replay.stale.push_back(Report{now, rows[entry].registration.address, entry});
-    if (!send)
-      continue;
-    if (now >= silent_from && now < silent_until)
-      continue;
-    const uint16_t address = static_cast<uint16_t>(request[3] << 8 | request[4]);
-    auto reply = replies.find(address);
-    REQUIRE_MESSAGE(reply != replies.end(), "the Session asked for an Address the trace has no Reply for");
-    now += 20;
-    for (uint8_t byte : reply->second.bytes) {
-      output = session.feed(&byte, 1, now);
-      REQUIRE(output.stale.empty());
-      if (now >= silent_until)
-        for (const auto &value : output.values)
-          replay.published_after[rows[value.index].key] = value.value;
-    }
-  }
-  return replay;
-}
 
 // Plays the trace through a Session built from the real Register map rows, as the hub would:
 // time advances in 5 ms steps, and each Read request the Session sends gets the trace's Reply
 // for that Address, fed in one byte at a time 20 ms later. The Session asks in its own order,
-// not the trace's, so Replies are matched by Address. `before` is fed at time 0, ahead of the
-// first Read request. With `echo`, each Read request is also fed back as it is sent, as a
-// Node that hears itself on the bus would receive it. Stops before the second cycle (10 s).
-Replay replay_trace(const std::vector<register_map::Row> &rows, const std::vector<uint8_t> &before = {},
-                    bool echo = false) {
+// not the trace's, so Replies are matched by Address.
+Replay replay_trace(const std::vector<register_map::Row> &rows, const ReplayOptions &options = ReplayOptions()) {
   const std::map<uint16_t, TraceLine> replies = trace_replies();
 
   Session session;
@@ -177,29 +155,35 @@ Replay replay_trace(const std::vector<register_map::Row> &rows, const std::vecto
     session.add_value(row.group, row.registration);
 
   Replay replay;
-  auto record = [&](const SessionOutput &output) {
+  auto record = [&](const SessionOutput &output, uint32_t now) {
     replay.answered.insert(replay.answered.end(), output.answered.begin(), output.answered.end());
     for (const auto &value : output.values)
-      replay.published[rows[value.index].key] = value.value;
+      replay.published[rows[value.index].key] = Published{value.value, now};
+    for (uint16_t address : output.missed)
+      replay.missed.push_back(Miss{now, address});
+    for (EntryId entry : output.stale)
+      replay.stale.push_back(StaleEntry{now, entry});
   };
-  record(session.feed(before.data(), before.size(), 0));
-  for (uint32_t now = 0; now < 5000; now += 5) {
+  record(session.feed(options.before.data(), options.before.size(), 0), 0);
+  for (uint32_t now = 0; now < options.end; now += 5) {
     std::array<uint8_t, 6> request;
     SessionOutput output;
     const bool send = session.next_request(now, request, output);
-    record(output);
+    record(output, now);
     if (!send)
       continue;
     replay.requests.push_back(request);
-    if (echo)
+    if (options.echo)
       for (uint8_t byte : request)
-        record(session.feed(&byte, 1, now));
+        record(session.feed(&byte, 1, now), now);
+    if (now >= options.silent_from && now < options.silent_until)
+      continue;
     const uint16_t address = static_cast<uint16_t>(request[3] << 8 | request[4]);
     auto reply = replies.find(address);
     REQUIRE_MESSAGE(reply != replies.end(), "the Session asked for an Address the trace has no Reply for");
     now += 20;
     for (uint8_t byte : reply->second.bytes)
-      record(session.feed(&byte, 1, now));
+      record(session.feed(&byte, 1, now), now);
   }
   replay.counters = session.counters();
   return replay;
@@ -270,7 +254,9 @@ TEST_CASE("node trace: the Session asks for every Address the trace covers once,
 TEST_CASE("node trace: replaying it counts no bus errors, with or without the Node's Read requests echoed back") {
   for (bool echo : {false, true}) {
     CAPTURE(echo);
-    const Replay replay = replay_trace(register_map::all_rows(), {}, echo);
+    ReplayOptions options;
+    options.echo = echo;
+    const Replay replay = replay_trace(register_map::all_rows(), options);
     CHECK(replay.answered.size() == 17);
     for (const CounterField &field : COUNTER_FIELDS) {
       CAPTURE(field.label);
@@ -283,7 +269,9 @@ TEST_CASE("node trace: after a false start, every later Reply is answered once a
   // 02 06 21 is a false start whose Length byte promises a 37-byte Frame. Without a reset the
   // Frame codec held every later Reply until 37 bytes had arrived, and the first two Addresses
   // were answered late, twice each.
-  const Replay replay = replay_trace(register_map::all_rows(), {0x02, 0x06, 0x21});
+  ReplayOptions options;
+  options.before = {0x02, 0x06, 0x21};
+  const Replay replay = replay_trace(register_map::all_rows(), options);
 
   const std::set<uint16_t> traced = traced_addresses();
   REQUIRE(traced.size() == 17);
@@ -378,53 +366,57 @@ TEST_CASE("node trace: every row whose Address the trace covers decodes to its e
       FAIL_CHECK("the row decoded to nothing");
       continue;
     }
-    CHECK(decoded_value->second == doctest::Approx(expected_value->second.value));
+    CHECK(decoded_value->second.value == doctest::Approx(expected_value->second.value));
   }
   // Every expected Value belongs to a row the trace covers, so a row that was renamed, removed or
   // moved to an Address outside the trace fails here.
   CHECK(checked == expected.size());
 }
 
-TEST_CASE("node trace: an outage makes every entry stale after two missed cycles of its Poll group, and the Replies after it restore them") {
+TEST_CASE("node trace: an outage makes every entry Stale after two Missed cycles of its Poll group, and the Replies after it restore them") {
   const auto &rows = register_map::all_rows();
   const uint32_t bank_interval = esphome::geopro_202s::DEFAULT_BANK_INTERVAL_MS;
   // Both cycles are answered at 0 and the value cycle again at 10 s. The Controller goes
   // silent before the third value cycle and the second bank cycle, and answers again after
   // the third bank cycle has been given up.
-  const uint32_t silent_from = 15000;
-  const uint32_t silent_until = 155000;
-  const OutageReplay replay = replay_outage(rows, silent_from, silent_until, 200000);
+  ReplayOptions options;
+  options.silent_from = 15000;
+  options.silent_until = 155000;
+  options.end = 200000;
+  const Replay replay = replay_trace(rows, options);
 
   REQUIRE(replay.stale.size() == rows.size());
   std::set<EntryId> stale_entries;
-  for (const Report &report : replay.stale) {
+  for (const StaleEntry &report : replay.stale) {
     const register_map::Row &row = rows[report.entry];
     CAPTURE(row.key);
     CHECK(stale_entries.insert(report.entry).second);
-    CHECK(report.at > silent_from);
-    CHECK(report.at < silent_until);
+    CHECK(report.at > options.silent_from);
+    CHECK(report.at < options.silent_until);
 
-    // The entry went stale on the second miss of its Address since the Controller went silent.
-    size_t misses = 0;
-    for (const Report &miss : replay.missed)
-      if (miss.address == report.address && miss.at <= report.at)
-        misses++;
-    CHECK(misses == esphome::geopro_202s::STALE_AFTER_MISSED_CYCLES);
+    // The entry went Stale on the second Missed cycle of its Address since the Controller
+    // went silent.
+    size_t missed = 0;
+    for (const Miss &miss : replay.missed)
+      if (miss.address == row.registration.address && miss.at <= report.at)
+        missed++;
+    CHECK(missed == esphome::geopro_202s::STALE_AFTER_MISSED_CYCLES);
 
-    // A Value's Address is given up in the value cycle, so it goes stale before the bank cycle
-    // after the outage began has even been given up once. A Bank's needs the second bank
-    // cycle in the outage, 120 s after the first.
+    // A Value's Address is given up in the value cycle, so it goes Stale before the first
+    // bank cycle in the outage (at 60 s) has been given up. A Bank's goes Stale in the
+    // second bank cycle in the outage, which starts at 120 s.
     if (row.group == PollGroup::VALUE)
       CHECK(report.at < bank_interval);
     else
       CHECK(report.at > 2 * bank_interval);
   }
 
-  // The Status word's six entries went stale together, on the one miss of their Address.
+  // The Status word's six entries went Stale together, on the one Missed cycle of their
+  // Address.
   uint32_t status_stale_at = 0;
   size_t status_entries = 0;
-  for (const Report &report : replay.stale) {
-    if (report.address != 0x2D)
+  for (const StaleEntry &report : replay.stale) {
+    if (rows[report.entry].registration.address != 0x2D)
       continue;
     if (status_entries++ == 0)
       status_stale_at = report.at;
@@ -432,7 +424,10 @@ TEST_CASE("node trace: an outage makes every entry stale after two missed cycles
   }
   CHECK(status_entries == 6);
 
-  // Each entry got a decoded Value once the Controller answered again. (replay_outage()
-  // checks that no feed reports anything stale.)
-  CHECK(replay.published_after.size() == rows.size());
+  // Each entry got a decoded Value once the Controller answered again.
+  REQUIRE(replay.published.size() == rows.size());
+  for (const auto &published : replay.published) {
+    CAPTURE(published.first);
+    CHECK(published.second.at >= options.silent_until);
+  }
 }

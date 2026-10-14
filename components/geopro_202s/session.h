@@ -29,11 +29,11 @@ namespace geopro_202s {
 // REPLY_TIMEOUT_MS later, gets through.
 static const uint32_t SILENCE_GAP_MS = 100;
 
-// An Address is stale once this many cycles of its Poll group in a row have given up on it,
-// with no Reply for it in between. A give-up is one missed cycle: the Poll scheduler drops a
+// An Address is Stale once this many cycles of its Poll group in a row have given up on it,
+// with no Reply for it in between. A give-up is one Missed cycle: the Poll scheduler drops a
 // given-up Address until its next cycle, so each cycle gives up an Address at most once.
-// One missed cycle isn't enough. A False start at boot can swallow a Reply and its retry, and
-// tests/trace_test.cpp shows one Address missing its cycle that way; marking it stale would
+// One Missed cycle isn't enough. A False start at boot can swallow a Reply and its retry, and
+// tests/trace_test.cpp shows one Address missing its cycle that way; marking it Stale would
 // put an unknown state into Home Assistant's history, which the overnight flash check fails
 // on. Two in a row means four unanswered Read requests across two cycles. A silent cycle
 // takes longer than its interval when the group has many Addresses, since each give-up costs
@@ -48,17 +48,17 @@ static const uint8_t STALE_AFTER_MISSED_CYCLES = 2;
 using EntryId = size_t;
 
 // What a Session call produced: feed() fills `values` and `answered` from the bytes, and
-// next_request() fills `missed` and `stale` from the timeouts it notices.
+// next_request() fills `missed` and `stale` from the give-ups it notices.
 struct SessionOutput {
   // The Values to publish, each with the entry it belongs to.
   std::vector<DecodedValue> values;
   // The Address of each Reply received, in order, whether or not it decoded.
   std::vector<uint16_t> answered;
-  // The Address of each Read request given up, in order.
+  // The Address of each Missed cycle, in order.
   std::vector<uint16_t> missed;
-  // The entries whose Address just became stale (STALE_AFTER_MISSED_CYCLES), each once. A
-  // Reply for the Address, decoded or not, ends its run of misses, and the entry's next
-  // decoded Value restores it.
+  // The entries whose Address just became Stale (STALE_AFTER_MISSED_CYCLES), each once. A
+  // Reply for the Address, decoded or not, ends its run of Missed cycles, and the entry's
+  // next decoded Value restores it.
   std::vector<EntryId> stale;
 };
 
@@ -111,9 +111,9 @@ static const CounterField COUNTER_FIELDS[] = {
 static_assert(sizeof(Counters) == sizeof(COUNTER_FIELDS) / sizeof(COUNTER_FIELDS[0]) * sizeof(uint32_t),
               "every count in Counters needs a row in COUNTER_FIELDS");
 
-// The loop's decisions with no I/O: received bytes and the time go in, Read requests and
-// decoded Values come out. It owns what counts as a Reply, when a request is done and
-// which entry gets each Value. The hub moves bytes and Values between it and ESPHome.
+// The loop's decisions with no I/O: received bytes and the time go in, Read requests,
+// decoded Values and Stale entries come out. It owns what counts as a Reply, when a request
+// is done, which entry gets each Value and when an Address is Stale. The hub moves bytes and Values between it and ESPHome.
 // Like PollScheduler it has no clock: the caller passes millis() on every call.
 class Session {
  public:
@@ -121,8 +121,8 @@ class Session {
   void set_bank_interval(uint32_t interval_ms) { this->scheduler_.set_bank_interval(interval_ms); }
   uint32_t bank_interval() const { return this->scheduler_.bank_interval(); }
 
-  // Registers a value and returns its id. The scheduler reads each Address once,
-  // however many values share it.
+  // Registers a value and returns its id. The scheduler reads each Address once, and the
+  // Session counts its Missed cycles once, however many values share it.
   EntryId add_value(PollGroup group, const Registration &registration);
 
   const std::vector<Registration> &registrations() const { return this->registrations_; }
@@ -130,8 +130,9 @@ class Session {
   SessionOutput feed(const uint8_t *bytes, size_t len, uint32_t now);
 
   // Returns true and sets `request` when a Read request should be sent now. A give-up is
-  // noticed here, with no bytes arriving, so this is where it goes into `output`: the hub
-  // publishes `output` after this call as it does after feed().
+  // noticed here, with no bytes arriving, so this is where it goes into `output` as a Missed
+  // cycle or a Stale Address: the hub publishes `output` after this call as it does after
+  // feed().
   bool next_request(uint32_t now, std::array<uint8_t, 6> &request, SessionOutput &output);
 
   // The counts since the Session was made. They only grow (until a count wraps at 2^32), and
@@ -140,21 +141,21 @@ class Session {
   Counters counters() const;
 
  protected:
-  // How many cycles in a row have given up on an Address since its last Reply.
-  struct Misses {
+  // How many cycles in a row an Address has missed since its last Reply.
+  struct MissedCycles {
     uint16_t address;
     uint8_t count;
   };
 
-  // The miss count of a registered Address, or nullptr for any other.
-  Misses *find_misses_(uint16_t address);
+  // The Missed cycles of a registered Address, or nullptr for any other.
+  MissedCycles *find_missed_cycles_(uint16_t address);
   void on_give_up_(uint16_t address, SessionOutput &output);
 
   FrameDecoder decoder_;
   PollScheduler scheduler_;
   std::vector<Registration> registrations_;
   // One per registered Address, in the order the Addresses were first registered.
-  std::vector<Misses> misses_;
+  std::vector<MissedCycles> missed_cycles_;
   // The counts the Session keeps itself. The Frame codec keeps the rest.
   Counters counters_;
   // The `now` of the last bytes passed to feed().

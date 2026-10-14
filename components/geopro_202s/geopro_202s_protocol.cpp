@@ -27,8 +27,8 @@ void Geopro202sComponent::loop() {
     this->publish_(this->session_.feed(buffer, len, now));
   }
 
-  // A give-up, and an Address going stale, come out of the request path: no bytes arrive to
-  // feed. So the request path's output is published too, in the same loop.
+  // A Missed cycle, and an Address going Stale, come out of the request path: no bytes
+  // arrive to feed. So the request path's output is published too, in the same loop.
   std::array<uint8_t, 6> request;
   SessionOutput output;
   const bool send = this->session_.next_request(now, request, output);
@@ -66,16 +66,13 @@ void Geopro202sComponent::publish_(const SessionOutput &output) {
   }
   for (uint16_t address : output.missed)
     ESP_LOGD(TAG, "No reply for address 0x%04X this cycle", address);
-  // The entries at one Address go stale together, so one line per Address.
-  uint16_t stale_address = 0;
+  // The entries at one Address go Stale together, so one line per Address.
   for (size_t i = 0; i < output.stale.size(); i++) {
     const EntryId entry = output.stale[i];
     const uint16_t address = registrations[entry].address;
-    if (i == 0 || address != stale_address) {
+    if (i == 0 || address != registrations[output.stale[i - 1]].address)
       ESP_LOGW(TAG, "Address 0x%04X unanswered for %u cycles, its values are unknown until it replies", address,
                (unsigned) STALE_AFTER_MISSED_CYCLES);
-      stale_address = address;
-    }
     this->targets_[entry].invalidate();
   }
 }
