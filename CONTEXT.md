@@ -121,8 +121,12 @@ _Avoid_: comms error, fault
 The 16-bit number a Read request asks for; either a single Value or a Bank.
 _Avoid_: id, sensor id, register
 
+**Missed cycle**:
+A cycle of an Address's Poll group that ended with the Poll scheduler giving up on it, so the Node got no Reply for the Address. Each cycle can miss an Address once. With the Controller silent a cycle runs past its interval, since each give-up costs two Reply timeouts, so the next one starts when the queue empties.
+_Avoid_: miss, missed poll, dropped read
+
 **Stale**:
-An Address that the Poll scheduler has given up on in two consecutive cycles of its Poll group, with no Reply for it in between. The Session reports every Value registered at it, once, and the Hub shows those Values as unknown in Home Assistant until the next decoded Reply. A Reply that decodes nothing still ends the run of misses. The reason for two cycles is in `session.h`.
+An Address with two Missed cycles in a row and no Reply for it in between. The Session reports every entry registered at it, once, and the Hub shows those entries as unknown in Home Assistant until the next decoded Reply. A Reply that decodes nothing still ends the run of Missed cycles. The reason for two cycles is in `session.h`.
 _Avoid_: unavailable (what Home Assistant shows when the Node itself is gone), timed out
 
 **Address kind**:
@@ -174,10 +178,10 @@ The part of the Component that decides which Address to request next, with one R
 _Avoid_: poller, request queue
 
 **Session**:
-The part of the Component that turns received bytes and the time into Read requests and decoded Values. It composes the Frame codec, Poll scheduler and value decoder, owns the Register map entries, decides what counts as a Reply and when a request is done, counts Bus errors, and decides when an Address is Stale. It has no clock and no ESPHome includes. Each decoded Value carries the id of its entry, and so does each entry reported Stale.
+The part of the Component that turns received bytes and the time into Read requests and decoded Values. It composes the Frame codec, Poll scheduler and value decoder, owns the Register map entries, decides what counts as a Reply and when a request is done, counts Bus errors, and decides when an Address is Stale. It has no clock and no ESPHome includes. Each decoded Value carries the id of its entry, and a Stale Address is reported as the ids of its entries.
 _Avoid_: driver, transport
 
 **Hub**:
-The ESPHome-facing class (`Geopro202sComponent`). It moves UART bytes and the time into the Session, sends the Read requests the Session returns, publishes the Values it hands back, and makes the entities of the entries it reports Stale unknown. It is the only code that touches the UART or an entity.
+The ESPHome-facing class (`Geopro202sComponent`). It moves UART bytes and the time into the Session, sends the Read requests the Session returns, publishes the Values it hands back, and makes the entities of the entries it reports Stale unknown. A Missed cycle arrives with no bytes, so the Hub publishes what the Session's request path returns as well as what its feed does. It is the only code that touches the UART or an entity.
 _Avoid_: adapter, controller (that is the Ouman unit)
 
