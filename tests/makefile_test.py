@@ -1,7 +1,6 @@
 # Tests the Makefile's ESPHome targets against a fake esphome script, so they run
-# without ESPHome installed, and the secrets targets in throwaway directories.
+# without ESPHome installed, and check-secrets in a throwaway repo.
 # `make test` runs it.
-import base64
 import os
 import subprocess
 import tempfile
@@ -55,28 +54,12 @@ class EsphomeTargetsTest(unittest.TestCase):
         self.assertIn('ESPHOME=/path/to/esphome', result.stdout)
 
     def test_every_esphome_target_refuses_an_older_esphome(self):
-        for target in ('check-config', 'check-node-config', 'check-trace-config',
-                       'check-contract', 'update-contract', 'compile', 'compile-node'):
+        targets = ('check-config', 'check-contract', 'update-contract', 'compile')
+        for target in targets:
             with self.subTest(target):
                 self.assertRefused(self.make(target, FAKE_VERSION='2025.2.2'), '2025.2.2')
         # Each target asked for the version and ran nothing else.
-        self.assertEqual(self.calls.read_text(), 'version\n' * 7)
-
-    def test_node_config_check_prints_warnings_when_it_passes(self):
-        result = self.make('check-node-config', FAKE_LOG=(
-            'INFO Reading configuration geopro.yaml...\n'
-            'WARNING GPIO12 is a strapping PIN\nSee https://esphome.io/guides/faq/\n'
-            'INFO Configuration is valid!\n'))
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn('WARNING GPIO12 is a strapping PIN\nSee https://esphome.io/guides/faq/\n',
-                      result.stdout)
-        self.assertNotIn('INFO', result.stdout)
-
-    def test_node_config_check_fails_on_a_deprecation(self):
-        result = self.make('check-node-config',
-                           FAKE_LOG='WARNING The "foo" option is deprecated\n')
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn('WARNING The "foo" option is deprecated', result.stdout)
+        self.assertEqual(self.calls.read_text(), 'version\n' * len(targets))
 
     def test_contract_check_runs_the_python_next_to_esphome(self):
         python = self.esphome.parent / 'python'
@@ -108,8 +91,8 @@ class CheckSecretsTest(unittest.TestCase):
         subprocess.run(['git', 'init', '-q'], cwd=self.repo, check=True)
 
     def check(self, yaml):
-        (self.repo / 'node.yaml').write_text(yaml)
-        subprocess.run(['git', 'add', 'node.yaml'], cwd=self.repo, check=True)
+        (self.repo / 'config.yaml').write_text(yaml)
+        subprocess.run(['git', 'add', 'config.yaml'], cwd=self.repo, check=True)
         return subprocess.run(
             ['make', '--no-print-directory', '-f', str(ROOT / 'Makefile'), 'check-secrets'],
             cwd=self.repo, env=make_env(), capture_output=True, text=True)
@@ -123,45 +106,14 @@ class CheckSecretsTest(unittest.TestCase):
         result = self.check('ota:\n  - platform: esphome\n    encryption:\n'
                             '      key: "inline-value"\n')
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn('node.yaml:4\n', result.stdout)
+        self.assertIn('config.yaml:4\n', result.stdout)
         self.assertNotIn('inline-value', result.stdout + result.stderr)
 
     def test_fails_on_an_inline_ota_password(self):
         result = self.check('ota:\n  - platform: esphome\n    password: inline-value\n')
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn('node.yaml:3\n', result.stdout)
+        self.assertIn('config.yaml:3\n', result.stdout)
         self.assertNotIn('inline-value', result.stdout + result.stderr)
-
-
-class DummySecretsTest(unittest.TestCase):
-    """Runs dummy-secrets in an empty directory, where it writes secrets.yaml."""
-
-    def setUp(self):
-        tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(tmp.cleanup)
-        self.dir = Path(tmp.name)
-        self.secrets = self.dir / 'secrets.yaml'
-
-    def make(self):
-        return subprocess.run(
-            ['make', '--no-print-directory', '-f', str(ROOT / 'Makefile'), 'dummy-secrets'],
-            cwd=self.dir, env=make_env(), capture_output=True, text=True)
-
-    def test_writes_a_random_32_byte_api_key_and_nothing_else(self):
-        result = self.make()
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        lines = self.secrets.read_text().splitlines()
-        self.assertEqual(len(lines), 1, lines)
-        name, _, value = lines[0].partition(': ')
-        self.assertEqual(name, 'api_encryption_key')
-        self.assertEqual(len(base64.b64decode(value.strip('"'), validate=True)), 32)
-
-    def test_leaves_an_existing_secrets_yaml_alone(self):
-        self.secrets.write_text('api_encryption_key: "real"\n')
-        result = self.make()
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(self.secrets.read_text(), 'api_encryption_key: "real"\n')
-        self.assertIn('secrets.yaml exists', result.stdout)
 
 
 if __name__ == '__main__':

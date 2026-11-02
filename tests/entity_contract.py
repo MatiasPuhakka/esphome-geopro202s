@@ -1,32 +1,24 @@
-"""The Home Assistant entity contract: what each key publishes, and the Node's entity IDs.
+"""The Home Assistant entity contract: what each key publishes.
 
 Writes tests/entity-contract.txt from `esphome config` output; see "Home Assistant
 entity contract" in the README for why.
 
-    check KEYS_OUT NODE_OUT    fail with a diff if the contract changed (make check-contract)
-    update KEYS_OUT NODE_OUT   rewrite the contract (make update-contract)
-    record-ids NODE_OUT        record the Node's entity IDs from Home Assistant
+    check KEYS_OUT    fail with a diff if the contract changed (make check-contract)
+    update KEYS_OUT   rewrite the contract (make update-contract)
 
-KEYS_OUT and NODE_OUT are `esphome config` output for tests/all-keys.yaml and
-geopro.yaml. check and update read the Register map, so they need the Python that has
-ESPHome installed. record-ids reads HA_URL (such as http://homeassistant.local:8123) and
-a long-lived ACCESS_TOKEN from the environment and writes tests/ha-entity-ids.txt.
+KEYS_OUT is `esphome config` output for tests/all-keys.yaml. Both read the Register map,
+so they need the Python that has ESPHome installed.
 """
 
-import datetime
 import difflib
 import importlib.util
 import json
-import os
-import re
 import sys
-import unicodedata
-import urllib.request
+from pathlib import Path
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-CONTRACT = os.path.join(HERE, "entity-contract.txt")
-ENTITY_IDS = os.path.join(HERE, "ha-entity-ids.txt")
-REGISTER_MAP = os.path.join(HERE, "..", "components", "geopro_202s", "register_map.py")
+HERE = Path(__file__).resolve().parent
+CONTRACT = HERE / "entity-contract.txt"
+REGISTER_MAP = HERE.parent / "components" / "geopro_202s" / "register_map.py"
 
 # Contract field name -> the option `esphome config` prints for it.
 _OPTIONS = (
@@ -129,75 +121,6 @@ def key_lines(config_text, platforms):
     return lines
 
 
-def _friendly_name(config_text):
-    for option, value, _ in _options(_block(config_text, "esphome"), 2):
-        if option == "friendly_name":
-            return value
-    return None
-
-
-def entity_ids_text(states, node_name, recorded):
-    """The entity IDs file: each of the Node's sensors and binary sensors in a states
-    snapshot from Home Assistant, by friendly name. Keeps no state or other attribute."""
-    entities = sorted(
-        (state["entity_id"], state["attributes"]["friendly_name"])
-        for state in states
-        if state["entity_id"].split(".")[0] in ("sensor", "binary_sensor")
-        and state["attributes"].get("friendly_name", "").startswith(node_name + " ")
-    )
-    header = (
-        f"# The entity IDs Home Assistant has for the Node's entities, recorded {recorded}\n"
-        "# from GET /api/states by `python3 tests/entity_contract.py record-ids NODE_OUT`.\n"
-        "# entity ID<TAB>friendly name\n"
-    )
-    return header + "".join(f"{entity_id}\t{name}\n" for entity_id, name in entities)
-
-
-def parse_entity_ids(text):
-    """(entity ID, friendly name) pairs from the entity IDs file."""
-    return [
-        tuple(line.split("\t", 1))
-        for line in text.splitlines()
-        if line and not line.startswith("#")
-    ]
-
-
-# ESPHome's text sensors are sensors in Home Assistant.
-_HA_DOMAIN = {"text_sensor": "sensor"}
-
-
-def _slug(name):
-    """Close to the slug Home Assistant 2026.10 builds a new entity's ID from: ä to a, ° to deg,
-    every other run of characters outside a-z and 0-9 to one _."""
-    text = unicodedata.normalize("NFKD", name.replace("°", "deg")).encode("ascii", "ignore").decode()
-    return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
-
-
-def node_lines(config_text, platforms, entity_ids):
-    # Home Assistant names a Node's entity "<friendly_name> <name>" and picks its entity ID
-    # once, so look the ID up by that name and the entity's platform.
-    node_name = _friendly_name(config_text)
-    by_name = {(entity_id.split(".")[0], name): entity_id for entity_id, name in entity_ids}
-    by_slug = {}
-    lines = []
-    for key, options in _entities(config_text):
-        platform = _platform(platforms, key)
-        name = options["name"]
-        full_name = f"{node_name} {name}" if node_name else name
-        domain = _HA_DOMAIN.get(platform, platform)
-        # Two names with one slug get one entity ID, and Home Assistant adds _2 to the second (#76).
-        slug = _slug(name)
-        other_key, other_name = by_slug.setdefault((domain, slug), (key, name))
-        if other_key != key:
-            raise ValueError(
-                f'{other_key} ("{other_name}") and {key} ("{name}") would get the same Home Assistant '
-                f"entity ID, ending in {slug}, and the second one a _2. Rename one (ADR 0004)."
-            )
-        entity_id = by_name.get((domain, full_name), "(no entity ID recorded)")
-        lines.append(f"{key}: {platform} {json.dumps(name, ensure_ascii=False)} {entity_id}")
-    return lines
-
-
 _HEADER = """\
 # The Home Assistant entity contract. Generated by `make update-contract` from
 # `esphome config`; `make check-contract` fails when the generated one differs.
@@ -206,15 +129,11 @@ _HEADER = """\
 """
 
 
-def contract_text(keys_config, node_config, platforms, entity_ids):
+def contract_text(keys_config, platforms):
     return "\n".join([
         _HEADER,
         "# Every key in tests/all-keys.yaml: platform and entity options (- for unset).",
         *key_lines(keys_config, platforms),
-        "",
-        "# Every entity in node.yaml: platform, name and the entity ID Home Assistant has",
-        "# for it, from tests/ha-entity-ids.txt.",
-        *node_lines(node_config, platforms, entity_ids),
         "",
     ])
 
@@ -251,22 +170,13 @@ def _write(path, text):
         file.write(text)
 
 
-def _generated(keys_out, node_out):
-    return contract_text(_read(keys_out), _read(node_out), _platforms(), parse_entity_ids(_read(ENTITY_IDS)))
-
-
-def _fetch_states():
-    request = urllib.request.Request(
-        os.environ["HA_URL"].rstrip("/") + "/api/states",
-        headers={"Authorization": "Bearer " + os.environ["ACCESS_TOKEN"]},
-    )
-    with urllib.request.urlopen(request, timeout=30) as response:
-        return json.load(response)
+def _generated(keys_out):
+    return contract_text(_read(keys_out), _platforms())
 
 
 def main(argv):
     command, *paths = argv or [""]
-    if command == "check" and len(paths) == 2:
+    if command == "check" and len(paths) == 1:
         diff = contract_diff(_read(CONTRACT), _generated(*paths))
         if diff:
             sys.stdout.write(diff)
@@ -274,12 +184,8 @@ def main(argv):
                   "`make update-contract` and commit tests/entity-contract.txt.")
             return 1
         return 0
-    if command == "update" and len(paths) == 2:
+    if command == "update" and len(paths) == 1:
         _write(CONTRACT, _generated(*paths))
-        return 0
-    if command == "record-ids" and len(paths) == 1:
-        node_name = _friendly_name(_read(paths[0]))
-        _write(ENTITY_IDS, entity_ids_text(_fetch_states(), node_name, datetime.date.today().isoformat()))
         return 0
     print(__doc__, file=sys.stderr)
     return 2

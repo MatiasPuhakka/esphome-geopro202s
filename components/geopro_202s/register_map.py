@@ -90,7 +90,7 @@ def status_bit(mask):
 @dataclass(frozen=True)
 class Value:
     # The config key and the entity kind. Home Assistant knows the entity by its kind
-    # and its name in node.yaml.
+    # and its name in the Node's config.
     key: str
     entity_kind: EntityKind
     # The address read for this value (for settings, the bank), where the value
@@ -242,8 +242,8 @@ VALUES = (
     # Kompr.Aika, manuals/kasikirja.md#s10; a counter, not an M-number. Observed:
     # never published 0 in the Node logs of 2026-10-09 (#10).
     _hours("hours_comp", 0x3B),
-    # Not in the manual. Observed: 0xFE07 at idle (2026-10-09 trace). docs/controller.md,
-    # Status word, has what each bit did.
+    # Not in the manual. Observed: 0xFE07 at idle (2026-10-09 trace). The bit rows below
+    # say what each bit did.
     STATUS_WORD,
 
     # Status word bits. The manual doesn't describe the Status word, so every bit
@@ -297,9 +297,8 @@ VALUES = (
     # manuals/kasikirja.md#s8, manuals/kasikirja.md#s9
     _bank_temperature("l1_summer_close", 0x2C, 8),
 
-    # Bank 0x0B: ML settings, manuals/kasikirja.md#s21 (the Settings table in
-    # docs/controller.md). Every row matched the Controller's display on
-    # 2026-10-09 (#10).
+    # Bank 0x0B: ML settings, manuals/kasikirja.md#s21. Every row matched the
+    # Controller's display on 2026-10-09 (#10).
     # Var.ylä talvi, manuals/kasikirja.md#s21
     _bank_temperature("winter_temp", 0x0B, 1),
     # Var.ylä kesä, manuals/kasikirja.md#s21
