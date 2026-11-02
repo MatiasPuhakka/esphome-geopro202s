@@ -48,20 +48,20 @@ class BrokenLinksTest(unittest.TestCase):
 
     def test_a_code_comment_cites_from_the_repo_root(self):
         code = self.write(
-            "components/geopro_202s/register_map.py",
+            "tools/tests/test_pdf_tools.py",
             "# Kompr.esto (manuals/kasikirja.md#s21)\n# VaraajaYlä (manuals/kasikirja.md#s20)\n",
         )
         self.assertEqual(
             broken_links(self.root, [code]),
-            [("components/geopro_202s/register_map.py", 2, "manuals/kasikirja.md#s20")],
+            [("tools/tests/test_pdf_tools.py", 2, "manuals/kasikirja.md#s20")],
         )
 
 
 class CitingTest(unittest.TestCase):
     def test_a_test_that_cites_a_page_is_checked_but_the_checkers_own_made_up_links_are_not(self):
         self.assertEqual(
-            citing(["components/geopro_202s/register_map.py", "tools/tests/test_check_manual_links.py"]),
-            ["components/geopro_202s/register_map.py"],
+            citing(["tools/tests/test_pdf_tools.py", "tools/tests/test_check_manual_links.py"]),
+            ["tools/tests/test_pdf_tools.py"],
         )
 
     def test_pdfs_images_and_fixtures_are_not_checked(self):
