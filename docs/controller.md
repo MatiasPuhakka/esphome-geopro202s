@@ -87,6 +87,24 @@ The manual lists the tank-top and tank-bottom rules separately and doesn't say h
 
 The Lisälämpöpainike (Dig 1) swaps VaraajaAlaMin for Lisälämmitys for Lisäläm.aika (pp. [20][s20], [21][s21], [23][s23]).
 
+## Gaps between runs
+
+How long a full tank carries the house: the time from the end of one run to the start of the next. `tools/gaps.py` lists the gaps over a window and sums them up by outdoor band. #24's scheduler can move a run at most this far, because the tank can't be heated much past where the Controller already stops (M10 about 48–49 °C at the end of a run, and the high-pressure trip at about 51 °C).
+
+**Observed:** from 2026-10-23 06:00 to 2026-11-02 10:00, at 4 to 12 °C outside, the gaps depend on the DHW circulation pump (`switch.kv_kierto_switch`, off from 22:00 to 07:00 since 2026-10-27), not on the outdoor temperature:
+
+| Outdoor | Pump on: gaps, median | Pump off: gaps, median |
+|---|---|---|
+| 4–6 °C | 7, 1.8 h | 5, 4.6 h |
+| 6–8 °C | 24, 1.9 h | 2, 5.5 h |
+| 8–10 °C | 47, 2.0 h | 2, 4.4 h |
+
+With the pump on, M9 falls 2.6–2.9 °C an hour between runs and the next run starts on the tank top. With it off, M9 falls 0.6–1.4 °C an hour, M4 2–4 °C an hour as the heating draws on it, and the next run mostly starts on the tank middle, once M4 is down to VaraajaAlaMin. Hot water use shows as M9 falling 2–4 °C in 10 min, on the evenings between 18:00 and 21:00, and cuts a gap to 0.5–0.8 h.
+
+**Observed:** the compressor ran 9.0 − 0.55 × M1 hours a day (M1 the daily mean), from the daily change of `hours_comp` from 2026-10-10 to 2026-11-01, at 0.6 to 10.5 °C outside, give or take 1.1 h. That reaches zero at about 16 °C. The compressor only took over the heating on 2026-10-07; the electric heater did it before.
+
+**Estimate:** colder days aren't recorded yet. The heating draw grows with 16 °C − M1, so a pump-off gap of 4.6 h at about 5.5 °C would shrink to about 3 h at 0 °C and 1.5 h at −15 °C, less as the L1 setpoint raises the tank-middle start. Below about −5 °C the heating, not the circulation pump, would set the gaps day and night. Extrapolating the daily hours gives 9 h of running a day at 0 °C and 17 h at −15 °C. Rerun `tools/gaps.py` as the weather gets colder and replace this with what it shows.
+
 ## Electric heater S1
 
 S1 sits in the line into the tank top, after the tulistin and before M7 ([p. 22][s22]). All rules are on [p. 23][s23] unless noted.
