@@ -132,7 +132,69 @@ class RecordedDayTest(unittest.TestCase):
     def test_the_kompr_esto_stop_ends_the_1422_run_with_the_tank_top_still_calling(self):
         at_stop = [s.state for s in self.steps if s.time <= local("10-09 14:33:02")][-1]
 
-        self.assertEqual(at_stop, State(tank_top_call=True, kompr_esto_stop=True, calling=False))
+        self.assertEqual(replace(at_stop, last_run_end=None),
+                         State(tank_top_call=True, kompr_esto_stop=True, calling=False))
+        self.assertEqual(at_stop.last_run_end.strftime("%H:%M"), "14:33")
+
+
+# The ML settings from 2026-10-26 (docs/controller.md): VaraajaYlä 54.75 at 6 °C outside, so the
+# tank top starts below 49.75 and stops above 54.75.
+NOVEMBER = Settings(var_yla_kesa=53, var_yla_talvi=58, varaaja_yla_ero=5, varaaja_ala_ero=5,
+                    var_yla_ero_sv=5, kompr_esto=51, ml_ohjaustapa=1, varaaja_ala_min=32)
+
+
+def middle_calls(readings, l1=28.0, state=State(), start=local("11-01 03:00:00")):
+    """Steps the model through (minutes, M9, M4, M10) readings at 6 °C outside and returns whether
+    it called after each, and the last State."""
+    calls = []
+    for minutes, top, middle, bottom in readings:
+        reading = Temperatures(outdoor=6, tank_top=top, tank_bottom=bottom, tank_middle=middle)
+        state = step(NOVEMBER, reading, state, l1, start + timedelta(minutes=minutes))
+        calls.append(state.calling)
+    return calls, state
+
+
+class TankMiddleTest(unittest.TestCase):
+    def test_thresholds_take_the_highest_term(self):
+        low = thresholds(NOVEMBER, 6, l1=28)  # L1 + 5 − 5 = 28 is under VaraajaAlaMin 32
+        high = thresholds(NOVEMBER, 6, l1=35)
+
+        self.assertEqual((low.middle_start, low.bottom_stop), (32, 37))  # VaraajaAlaMin, + VaraajaAlaEro
+        self.assertEqual((high.middle_start, high.bottom_stop), (35, 40))  # L1 + 5 − 5, L1 + 5
+
+    def test_no_middle_thresholds_without_an_l1_setpoint_or_varaaja_ala_min(self):
+        self.assertIsNone(thresholds(NOVEMBER, 6).middle_start)
+        self.assertIsNone(thresholds(OCTOBER, 6, l1=28).bottom_stop)
+
+    def test_m4_below_varaaja_ala_min_starts_a_run_with_the_tank_top_full_enough(self):
+        # The night runs of 2026-10-30 to 2026-11-02 started this way, at M4 31.7 to 31.8.
+        calls, _ = middle_calls([(0, 52.3, 32.1, 31.0), (1, 52.3, 31.8, 31.0)])
+
+        self.assertEqual(calls, [False, True])
+
+    def test_the_run_goes_on_past_the_bottom_stop_until_the_tank_top_is_full(self):
+        # On those nights M10 passed 37 °C some 20 min in, and the run ended at VaraajaYlä.
+        calls, _ = middle_calls([(0, 52.3, 31.8, 31.0), (20, 52.8, 40.0, 37.5), (60, 54.6, 47.0, 47.8),
+                                 (70, 54.8, 48.0, 48.2)])
+
+        self.assertEqual(calls, [True, True, True, False])
+
+    def test_a_tank_top_run_goes_on_until_the_bottom_is_past_its_stop(self):
+        calls, _ = middle_calls([(0, 49.5, 45.0, 34.0), (30, 54.8, 46.0, 36.5), (31, 54.8, 46.0, 37.1)])
+
+        self.assertEqual(calls, [True, True, False])
+
+    def test_waits_5_minutes_after_a_run_before_a_tank_middle_start(self):
+        _, after_run = middle_calls([(0, 49.5, 45.0, 40.0), (30, 54.8, 46.0, 48.0)])
+
+        calls, _ = middle_calls([(34, 54.0, 31.5, 31.0), (35, 54.0, 31.5, 31.0)], state=after_run)
+
+        self.assertEqual(calls, [False, True])
+
+    def test_records_when_the_run_ended(self):
+        _, state = middle_calls([(0, 49.5, 45.0, 40.0), (30, 54.8, 46.0, 48.0)])
+
+        self.assertEqual(state.last_run_end, local("11-01 03:30:00"))
 
 
 class L1CurveTest(unittest.TestCase):

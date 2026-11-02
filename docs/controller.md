@@ -79,7 +79,11 @@ All rules are on [p. 23][s23] unless noted. "L1 setpoint" is the supply temperat
 | Running-feedback alarm | If the compressor is switched on and M11 (Kompr.käynti) reports no running, the Controller raises Poikkeamahälytys and cuts the compressor. The alarm clears itself after 5 min and the compressor may start again. | [20][s20] |
 | M4/M10 fallback | If M4 fails, the Controller steers by M10, and the other way round. | [22][s22] |
 
-The manual lists the tank-top and tank-bottom rules separately and doesn't say how they combine, apart from Kompr.esto overriding the tank top. It states the 5-minute wait only for the tank-middle start.
+The manual lists the tank-top and tank-bottom rules separately and doesn't say how they combine, apart from Kompr.esto overriding the tank top. It states the 5-minute wait only for the tank-middle start. L2 isn't in use, so its terms drop out; with an L1 setpoint around 28 °C, VaraajaAlaMin (32 °C) sets both the tank-middle start (below 32 °C) and the tank-bottom stop (above 37 °C).
+
+**Observed:** either start begins a run, and a run ends only once M9 is above VaraajaYlä and M10 above the tank-bottom stop. From 2026-10-26 22:40 to 2026-11-02 10:00, four night runs (2026-10-30 05:46, 2026-10-31 03:34, 2026-11-01 03:07 and 2026-11-02 02:05) started with M9 2.1 to 3.7 °C above the tank-top start and M4 at 31.7 to 31.8 °C, just under VaraajaAlaMin. M10 passed 37 °C 19 to 21 min in, and each run went on for another 50 to 70 min, until M9 reached VaraajaYlä. Every other run started on the tank top. No run in the window shows whether the 5-minute wait holds.
+
+**Observed:** `tools/controller.py` with these rules, replayed over the same window through `tools/cycles.py`, started within 2 min of 42 of the 53 runs and stopped within 2 min of 46. When the Controller started a run on the tank top, M9 was on average 0.11 °C below the modelled start threshold, and when it stopped one, 0.12 °C above VaraajaYlä (standard deviations 0.19 and 0.15 °C). The misses are runs where the Controller switched with M9 up to 0.4 °C on the other side of the model's threshold: the model then starts a few minutes early or late, or misses a stop and joins two runs into one. Neither M1 averaged over 1 to 24 h nor VaraajaYlä rounded to whole or half degrees fits the switching temperatures better than M1 itself.
 
 The Lisälämpöpainike (Dig 1) swaps VaraajaAlaMin for Lisälämmitys for Lisäläm.aika (pp. [20][s20], [21][s21], [23][s23]).
 
@@ -167,7 +171,8 @@ The check needs all seven to hold at once, so a threshold under the single holds
 - Whether VaraajaYlä uses M1 or the averaged outdoor temperature. The L1 setpoint uses the average.
 - Why Syyskuivaus didn't run in October 2026. A power cycle that clears the Controller's count of daily means would explain it.
 - What the L1 curve does beyond −20 °C and +20 °C outside.
-- How the tank-top and tank-bottom calls combine, and whether the 5-minute wait also applies to tank-top starts.
+- Whether the 5-minute wait holds for tank-middle starts, and whether it also applies to tank-top starts.
+- Why the Controller switches up to 0.4 °C away from the modelled tank-top thresholds.
 - Which factory values for VaraajaAlaEro and VaraajaYläEro are right.
 - Which Dig input each of `digi1`–`digi3` reports.
 - What the Bank bytes without a row hold. The end of `components/geopro_202s/register_map.py` lists them with their 2026-10-09 values.

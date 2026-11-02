@@ -17,8 +17,8 @@ if not __package__:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tools.ha import HomeAssistant  # noqa: E402
-from tools.plant import (COMPRESSOR, MODEL_INPUTS, OUTDOOR, PHASES, TANK_BOTTOM,  # noqa: E402
-                         TANK_MIDDLE, TANK_TOP, bits, compressor_runs, numbers, replay, value_at)
+from tools.plant import (COMPRESSOR, OUTDOOR, PHASES, TANK_BOTTOM, TANK_MIDDLE, TANK_TOP,  # noqa: E402
+                         bits, compressor_runs, model_history, numbers, replay, value_at)
 from tools.runs import lowest_phase  # noqa: E402
 
 COLUMNS = (OUTDOOR, TANK_TOP, TANK_MIDDLE, TANK_BOTTOM)
@@ -26,7 +26,7 @@ ON_OFF = {True: "on", False: "off", None: "-"}
 
 
 def report(client, start, end, step_minutes=5):
-    history = client.history([COMPRESSOR, *MODEL_INPUTS, TANK_MIDDLE, *PHASES], start, end)
+    history = model_history(client, [COMPRESSOR, *PHASES], start, end)
     series = history.series
     status = bits(series.get(COMPRESSOR, []))
     phases = [numbers(series.get(p, [])) for p in PHASES]
