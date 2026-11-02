@@ -15,7 +15,31 @@ jobs:
       - run: make test
       - run: make tools-test
 
+  # Whether the esphome job has anything to check. A pull request that changes only the
+  # tools, docs, manuals or Markdown files can't change what ESPHome validates or compiles,
+  # so the job skips it. Pushes to main always run it.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      firmware: ${{ steps.diff.outputs.firmware }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The pull request's merge commit and its first parent, the base branch.
+          fetch-depth: 2
+      - id: diff
+        run: |
+          if [ "${{ github.event_name }}" != pull_request ]; then
+            echo firmware=true >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          other=$(git diff --name-only HEAD^1 HEAD -- . ':!tools/' ':!docs/' ':!manuals/' ':!*.md')
+          printf 'Files the esphome job checks:\n%s\n' "${other:-(none)}"
+          if [ -n "$other" ]; then echo firmware=true; else echo firmware=false; fi >> "$GITHUB_OUTPUT"
+
   esphome:
+    needs: changes
+    if: needs.changes.outputs.firmware == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
