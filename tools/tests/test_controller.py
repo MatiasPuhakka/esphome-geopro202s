@@ -2,7 +2,9 @@ import unittest
 from dataclasses import replace
 from datetime import timedelta
 
-from tools.controller import SAHKOVASTUS, Settings, State, Temperatures, step, thresholds
+from tools.controller import (SAHKOVASTUS, L1Settings, Settings, State, Temperatures,
+                              autumn_dry_active, l1_curve, l1_setpoint, outdoor_average, step,
+                              thresholds)
 from tools.plant import COMPRESSOR, OUTDOOR, TANK_TOP, bits, numbers, replay, value_at
 from tools.runs import status_runs
 from tools.tests.recorded import local, recorded_day
@@ -10,6 +12,9 @@ from tools.tests.recorded import local, recorded_day
 # The settings on 2026-10-10 (#24 Notes, docs/controller.md).
 OCTOBER = Settings(var_yla_kesa=50, var_yla_talvi=55, varaaja_yla_ero=3, varaaja_ala_ero=5,
                    var_yla_ero_sv=5, kompr_esto=51, ml_ohjaustapa=0)
+# Circuit L1's settings from 2026-10-27 18:48 (docs/controller.md).
+L1 = L1Settings(curve_minus20=36, curve_zero=31, curve_plus20=21, min_limit=20, max_limit=65,
+                night_effect=0, autumn_dry=3, out_temp_delay=2)
 
 
 class ThresholdTest(unittest.TestCase):
@@ -128,6 +133,82 @@ class RecordedDayTest(unittest.TestCase):
         at_stop = [s.state for s in self.steps if s.time <= local("10-09 14:33:02")][-1]
 
         self.assertEqual(at_stop, State(tank_top_call=True, kompr_esto_stop=True, calling=False))
+
+
+class L1CurveTest(unittest.TestCase):
+    def test_runs_straight_between_the_three_points_and_flat_beyond(self):
+        cases = {30: 21, 20: 21, 10: 26, 5.6: 28.2, 0: 31, -10: 33.5, -20: 36, -30: 36}
+        for outdoor, expected in cases.items():
+            with self.subTest(outdoor=outdoor):
+                self.assertAlmostEqual(l1_curve(L1, outdoor), expected)
+
+
+class L1SetpointTest(unittest.TestCase):
+    def test_is_the_curve_when_nothing_else_applies(self):
+        self.assertAlmostEqual(l1_setpoint(L1, 5.6), 28.2)
+
+    def test_syyskuivaus_adds_its_setting(self):
+        self.assertAlmostEqual(l1_setpoint(L1, 5.6, autumn_dry=True), 31.2)
+
+    def test_the_night_setback_subtracts_its_setting(self):
+        setback = replace(L1, night_effect=5)
+
+        self.assertAlmostEqual(l1_setpoint(setback, 5.6, night=True), 23.2)
+        self.assertAlmostEqual(l1_setpoint(setback, 5.6), 28.2)
+
+    def test_the_limits_apply_after_everything_else(self):
+        tight = replace(L1, min_limit=25, max_limit=30, night_effect=10)
+
+        self.assertEqual(l1_setpoint(tight, 5.6, night=True), 25)  # 18.2 raised to Minimiraja
+        self.assertEqual(l1_setpoint(tight, -20, autumn_dry=True), 30)  # 39 cut to Maksimiraja
+
+
+def at(text):
+    return local("11-01 " + text)
+
+
+class OutdoorAverageTest(unittest.TestCase):
+    readings = [(at("10:00:00"), 4.0), (at("11:00:00"), 6.0), (at("11:30:00"), 8.0)]
+
+    def test_weights_each_reading_by_how_long_it_held_in_the_window(self):
+        # 12:00 over 2 h: 4 °C for 1 h, 6 °C for 30 min, 8 °C for 30 min.
+        self.assertAlmostEqual(outdoor_average(self.readings, at("12:00:00"), 2), 5.5)
+
+    def test_counts_the_reading_from_before_the_window_from_the_window_start(self):
+        # 12:30 over 2 h: 4 °C from 10:30 to 11:00, 6 °C to 11:30, 8 °C to 12:30.
+        self.assertAlmostEqual(outdoor_average(self.readings, at("12:30:00"), 2), 6.5)
+
+    def test_averages_from_the_first_reading_when_the_window_starts_before_it(self):
+        # 11:00 over 2 h: only 4 °C, from 10:00.
+        self.assertAlmostEqual(outdoor_average(self.readings, at("11:00:00"), 2), 4.0)
+
+    def test_zero_hours_is_the_last_reading(self):
+        self.assertEqual(outdoor_average(self.readings, at("11:45:00"), 0), 8.0)
+
+    def test_ignores_readings_after_the_time(self):
+        self.assertEqual(outdoor_average(self.readings, at("10:30:00"), 2), 4.0)
+
+    def test_none_before_the_first_reading(self):
+        self.assertIsNone(outdoor_average(self.readings, at("09:00:00"), 2))
+
+
+class AutumnDryTest(unittest.TestCase):
+    warm = [10.0] * 20
+
+    def test_switches_on_when_the_mean_falls_below_7_after_20_warm_days(self):
+        self.assertFalse(autumn_dry_active(self.warm))
+        self.assertTrue(autumn_dry_active(self.warm + [6.0]))
+
+    def test_needs_20_warm_days_in_a_row(self):
+        self.assertFalse(autumn_dry_active([10.0] * 19 + [6.0]))
+        self.assertFalse(autumn_dry_active([10.0] * 10 + [6.0] + [10.0] * 10 + [6.0]))
+
+    def test_lasts_20_cold_days_and_skips_the_warm_ones_between(self):
+        cold = [6.0] * 19
+
+        self.assertTrue(autumn_dry_active(self.warm + cold))
+        self.assertTrue(autumn_dry_active(self.warm + cold[:10] + [9.0] * 5 + cold[10:]))
+        self.assertFalse(autumn_dry_active(self.warm + cold + [6.0]))
 
 
 if __name__ == "__main__":

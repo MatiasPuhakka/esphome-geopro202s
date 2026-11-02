@@ -47,6 +47,22 @@ With Var.ylä kesä 50 °C and Var.ylä talvi 55 °C, the formula gives 52.1 °C
 
 **Observed:** `tools/controller.py` replays this formula with M1 against the recorded day in `tools/tests/fixtures/history_2026-10-09_day.json`. With M1 steady, it switches within 2 s of the Status bit. From 20:59 on 2026-10-09 to 01:20 on 2026-10-10, while M1 fell from 8.7 to 5.4 °C, it switched 40 to 60 s apart from the Controller: the Controller started at M9 48.2 and 48.6 °C, where the formula gives start thresholds of 48.41 and 48.82 °C, and stopped at 51.4 and 51.8 °C, below the formula's 51.41 and 51.86 °C. A lagging outdoor value, such as an average of M1, would explain both.
 
+## L1 setpoint
+
+The L1 setpoint is the supply temperature the Controller aims for on heating circuit L1. The L1 valve opens and closes to hold the L1 supply (M2) there. The Component doesn't read the setpoint; `tools/controller.py` computes it from the Bank 0x0C settings. The Menovesi-info screen ([p. 12][s12]) shows how the Controller adds it up, starting from the curve at the current outdoor temperature:
+
+1. **The curve.** Three points set it: the supply temperature at −20 °C, 0 °C and +20 °C outside ([p. 6][s6]). The model draws straight lines between them. The manual draws a smooth curve and doesn't say what happens beyond −20 °C and +20 °C; the model holds the end values, as VaraajaYlä does.
+2. **The outdoor temperature** the curve reads is M1 averaged over Ulkol.hidas, 2 h on this Controller (factory 2 h, range 0–20 h, [p. 26][s26]). Home Assistant shows the setting as 120 min, because the entity's display unit is set to minutes.
+3. **Syyskuivaus** adds its setting, 3 °C here, while it runs. It starts when the daily outdoor mean falls below 7 °C after at least 20 days in a row above 7 °C, and lasts for the next 20 days with a mean below 7 °C ([p. 9][s9]).
+4. **Yöalennus v.** subtracts its setting while the clock or a GSM command has the night setback on ([p. 8][s8]). It is 0 °C here, so there is no Esikorotus after it either.
+5. **Minimiraja and Maksimiraja**, 20 °C and 65 °C here, apply last ([pp. 8][s8], [12][s12]).
+
+Room, wind and sun compensation need sensors this plant doesn't have, so the model leaves them out.
+
+**Observed:** from 2026-10-27 18:48, when the curve was set to 36, 31 and 21 °C, to 2026-11-02 10:00, M2 was on average 0.04 °C above the modelled setpoint, and 0.34 °C from it on average, at 5 to 10 °C outside. In the 5.5 h when M1 moved 1.5 °C or more in 2 h, M2 was on average 0.21 °C from the model with a 1 h average of M1, 0.27 °C with 2 h and 0.32 °C with M1 itself, so the Controller does average M1. With 4 and 6 h it was 0.55 and 0.68 °C. Under the previous curve (36, 29 and 20 °C, 2026-10-26 23:00 to 2026-10-27 18:45), M2 was 0.27 °C below the model.
+
+**Observed:** Syyskuivaus didn't add its 3 °C in that time, though the rule on [p. 9][s9] says it should. By the hourly means Home Assistant keeps for M1, every day from 2026-08-01 to 2026-09-22 averaged over 7 °C and 2026-09-23 averaged 6.5 °C, and only 14 days from 2026-09-23 on have averaged under 7 °C (2026-10-06 and 2026-10-07 have no data). The model therefore takes Syyskuivaus as an input instead of working it out from the daily means.
+
 ## Compressor
 
 All rules are on [p. 23][s23] unless noted. "L1 setpoint" is the supply temperature the Controller computes for heating circuit L1 (säätimen määräämä menoveden lämpötila L1); the Component doesn't read it. Every rule that uses the L1 setpoint has the same clause for L2.
@@ -148,12 +164,18 @@ The check needs all seven to hold at once, so a threshold under the single holds
 ## Open questions
 
 - What makes the Controller freeze its measurements on the bus, and whether anything short of a power cycle clears it.
-- Whether VaraajaYlä uses M1 or the averaged outdoor temperature.
+- Whether VaraajaYlä uses M1 or the averaged outdoor temperature. The L1 setpoint uses the average.
+- Why Syyskuivaus didn't run in October 2026. A power cycle that clears the Controller's count of daily means would explain it.
+- What the L1 curve does beyond −20 °C and +20 °C outside.
 - How the tank-top and tank-bottom calls combine, and whether the 5-minute wait also applies to tank-top starts.
 - Which factory values for VaraajaAlaEro and VaraajaYläEro are right.
 - Which Dig input each of `digi1`–`digi3` reports.
 - What the Bank bytes without a row hold. The end of `components/geopro_202s/register_map.py` lists them with their 2026-10-09 values.
 
+[s6]: ../manuals/kasikirja.md#s6
+[s8]: ../manuals/kasikirja.md#s8
+[s9]: ../manuals/kasikirja.md#s9
+[s12]: ../manuals/kasikirja.md#s12
 [s20]: ../manuals/kasikirja.md#s20
 [s21]: ../manuals/kasikirja.md#s21
 [s22]: ../manuals/kasikirja.md#s22

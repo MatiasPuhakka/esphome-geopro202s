@@ -138,7 +138,7 @@ tools/pdf_png.js "manuals/Geopro 202S Käsikirja.pdf" .scratch/pages 3 22    # .
 
 Both are pure: no Home Assistant, no clock. `plant.py` looks up the entities they read in the contract and turns history rows into their inputs.
 
-- `controller.py` follows `docs/controller.md`. Settings and M1, M9 and M10 in; VaraajaYlä, the start, stop, heater and restart thresholds, and whether the Controller should be calling for the compressor out. It models the tank-top start and stop, the Kompr.esto stop and restart, and ML Ohjaustapa Sähkövastus. It leaves out the tank-middle start and the tank-bottom stop, because they need the L1 setpoint, which the Component doesn't read.
+- `controller.py` follows `docs/controller.md`. Settings and M1, M9 and M10 in; VaraajaYlä, the start, stop, heater and restart thresholds, and whether the Controller should be calling for the compressor out. It models the tank-top start and stop, the Kompr.esto stop and restart, and ML Ohjaustapa Sähkövastus. It also computes the L1 setpoint from the L1 curve settings and the averaged M1, which the tank-middle start and the tank-bottom stop need; the model doesn't use it for them yet (#107).
 - `runs.py` takes the compressor Status bit and the three Shelly phase currents and finds runs, starts and breaks (see CONTEXT.md). The currents alone can't tell the compressor from the sauna or S1, which also draw 4 A or more on every phase, so it counts only the current inside a Status-bit run.
 
 On the recorded day the model calls within a minute of every Status-bit edge, and the phase currents start and end every run within the 10 s value interval.
