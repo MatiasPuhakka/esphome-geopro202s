@@ -121,6 +121,12 @@ python3 tools/profile.py "2026-10-10 04:00" "2026-10-10 05:00" --step 5
 Both replace the `.scratch/cycles/scripts/` versions, which read saved history files. They fetch through the client instead, and drop the columns the model doesn't use: M7, brine, L1 supply and the hour counters. `profile.py` no longer prints a row for the slot that starts at END.
 
 
+`gaps.py` lists the gaps between compressor runs in a window: how long each lasted, M1 over it, how fast M9, M4 and M10 fell, the fastest M9 fall in 10 minutes and the tank at the next start. Then it sums them up per 2 °C outdoor band, with the gaps where the DHW circulation pump (`switch.kv_kierto_switch`, from the home-assistant repo) was off apart from the rest.
+
+```sh
+python3 tools/gaps.py 2026-10-23T06:00 --end 2026-11-02T10:00
+```
+
 `check_manual_links.py` checks that every link to a manual page anchor, such as the `#s21` of page 21 in `manuals/kasikirja.md`, points at a manual and anchor that exist (ADR 0006). It prints each broken link with its file and line and exits with status 1 if there is one. CI runs it as `make check-manual-links`.
 
 ```sh
