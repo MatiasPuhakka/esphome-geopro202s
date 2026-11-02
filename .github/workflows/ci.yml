@@ -44,8 +44,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # The version the Home Assistant add-on builds the Node with. When the
-        # add-on moves to a new series, bump this and SUPPORTED_ESPHOME in the
+        # The version the owner's Home Assistant add-on builds their Node with. When
+        # the add-on moves to a new series, bump this and SUPPORTED_ESPHOME in the
         # Makefile in the same change (docs/adr/0002).
         esphome: ["2026.9.1"]
     steps:
@@ -67,17 +67,9 @@ jobs:
       # them whenever a config or the Component changes.
       - uses: actions/cache@v4
         with:
-          path: |
-            .esphome
-            tests/.esphome
-          key: esphome-build-${{ matrix.esphome }}-${{ hashFiles('*.yaml', 'tests/*.yaml', 'components/**') }}
+          path: tests/.esphome
+          key: esphome-build-${{ matrix.esphome }}-${{ hashFiles('tests/*.yaml', 'components/**') }}
           restore-keys: esphome-build-${{ matrix.esphome }}-
       - run: make check-config
-      - run: |
-          make dummy-secrets
-          make check-node-config
-          make check-trace-config
-      # Reuses the secrets.yaml written above.
       - run: make check-contract
       - run: make compile
-      - run: make compile-node

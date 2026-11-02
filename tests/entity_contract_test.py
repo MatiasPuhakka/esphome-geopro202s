@@ -54,105 +54,11 @@ class KeyContractTest(unittest.TestCase):
             entity_contract.key_lines(KEYS_CONFIG, {"outside_temp": "sensor"})
 
 
-NODE_CONFIG = """\
-esphome:
-  name: geopro-202s
-  friendly_name: Geopro
-geopro_202s:
-  id: geopro
-  l1_minus20:
-    name: L1 20°C below zero
-    state_class: measurement
-  l1_plus20:
-    name: L1 20°C above zero
-    state_class: measurement
-  compressor:
-    name: Kompressori
-    device_class: running
-  value_interval: 10s
-"""
-
-NODE_PLATFORMS = {"l1_minus20": "sensor", "l1_plus20": "sensor", "compressor": "binary_sensor"}
-
-
-class NodeContractTest(unittest.TestCase):
-    def test_gives_each_entity_the_id_home_assistant_has_for_its_friendly_name(self):
-        entity_ids = [
-            ("sensor.geopro_l1_20_c_above_zero", "Geopro L1 20°C above zero"),
-            ("sensor.geopro_l1_20_c_below_zero", "Geopro L1 20°C below zero"),
-            ("binary_sensor.geopro_kompressori", "Geopro Kompressori"),
-        ]
-        self.assertEqual(
-            entity_contract.node_lines(NODE_CONFIG, NODE_PLATFORMS, entity_ids),
-            [
-                'l1_minus20: sensor "L1 20°C below zero" sensor.geopro_l1_20_c_below_zero',
-                'l1_plus20: sensor "L1 20°C above zero" sensor.geopro_l1_20_c_above_zero',
-                'compressor: binary_sensor "Kompressori" binary_sensor.geopro_kompressori',
-            ],
-        )
-
-    def test_fails_on_two_names_that_would_get_the_same_entity_id(self):
-        # Before #76 Home Assistant had these two as sensor.geopro_l1_20_c and sensor.geopro_l1_20_c_2.
-        config = NODE_CONFIG.replace("L1 20°C below zero", "L1 -20°C").replace("L1 20°C above zero", "L1 +20°C")
-        with self.assertRaisesRegex(ValueError, r'l1_minus20 \("L1 -20°C"\) and l1_plus20 \("L1 \+20°C"\)'):
-            entity_contract.node_lines(config, NODE_PLATFORMS, [])
-
-    def test_looks_up_a_text_sensor_among_home_assistants_sensors(self):
-        config = (
-            "esphome:\n"
-            "  name: geopro-202s\n"
-            "  friendly_name: Geopro\n"
-            "geopro_202s:\n"
-            "  component_revision:\n"
-            "    name: Komponentin versio\n"
-        )
-        entity_ids = [("sensor.geopro_komponentin_versio", "Geopro Komponentin versio")]
-        self.assertEqual(
-            entity_contract.node_lines(config, {"component_revision": "text_sensor"}, entity_ids),
-            ['component_revision: text_sensor "Komponentin versio" sensor.geopro_komponentin_versio'],
-        )
-
-    def test_reads_names_esphome_quotes_or_wraps(self):
-        # How ESPHome 2026.9.1 prints these names in `esphome config`.
-        config = (
-            "esphome:\n"
-            "  name: geopro-202s\n"
-            "geopro_202s:\n"
-            "  l1_minus20:\n"
-            "    name: 'it''s: 20'\n"
-            "    force_update: false\n"
-            "  l1_plus20:\n"
-            "    name: Lisälämmitys aika ja paljon muuta tekstiä joka ei mahdu yhdelle riville\n"
-            "      vaan jatkuu\n"
-            "    filters:\n"
-            "      - multiply: 2.0\n"
-            "  compressor:\n"
-            "    name: \"tab\\there\"\n"
-        )
-        self.assertEqual(
-            entity_contract.node_lines(config, NODE_PLATFORMS, []),
-            [
-                'l1_minus20: sensor "it\'s: 20" (no entity ID recorded)',
-                'l1_plus20: sensor "Lisälämmitys aika ja paljon muuta tekstiä joka ei mahdu'
-                ' yhdelle riville vaan jatkuu" (no entity ID recorded)',
-                'compressor: binary_sensor "tab\\there" (no entity ID recorded)',
-            ],
-        )
-
-    def test_flags_an_entity_with_no_recorded_id_on_its_platform(self):
-        # A sensor called Kompressori is a different entity from the binary sensor.
-        entity_ids = [("sensor.geopro_kompressori", "Geopro Kompressori")]
-        self.assertEqual(
-            entity_contract.node_lines(NODE_CONFIG, NODE_PLATFORMS, entity_ids)[2],
-            'compressor: binary_sensor "Kompressori" (no entity ID recorded)',
-        )
-
-
 class ContractDiffTest(unittest.TestCase):
     def test_shows_a_changed_state_class_as_a_one_line_diff(self):
-        committed = entity_contract.contract_text(KEYS_CONFIG, KEYS_CONFIG, PLATFORMS, [])
+        committed = entity_contract.contract_text(KEYS_CONFIG, PLATFORMS)
         changed = KEYS_CONFIG.replace("state_class: measurement", "state_class: total")
-        generated = entity_contract.contract_text(changed, KEYS_CONFIG, PLATFORMS, [])
+        generated = entity_contract.contract_text(changed, PLATFORMS)
         diff = entity_contract.contract_diff(committed, generated).splitlines()
         self.assertEqual(
             [line for line in diff if line[:1] in "+-" and line[:3] not in ("+++", "---")],
@@ -164,32 +70,16 @@ class ContractDiffTest(unittest.TestCase):
             ],
         )
 
-    def test_is_empty_when_nothing_changed(self):
-        text = entity_contract.contract_text(KEYS_CONFIG, KEYS_CONFIG, PLATFORMS, [])
-        self.assertEqual(entity_contract.contract_diff(text, text), "")
-
-
-class EntityIdsTest(unittest.TestCase):
-    def test_records_the_nodes_sensors_from_a_states_snapshot(self):
-        states = [
-            {"entity_id": "sensor.geopro_ulkol_mp_tila", "state": "-3.2",
-             "attributes": {"friendly_name": "Geopro Ulkolämpötila", "unit_of_measurement": "°C"}},
-            {"entity_id": "binary_sensor.geopro_kompressori", "state": "on",
-             "attributes": {"friendly_name": "Geopro Kompressori"}},
-            {"entity_id": "sensor.sun_next_dawn", "state": "2026-10-12T04:00:00+00:00",
-             "attributes": {"friendly_name": "Sun Next dawn"}},
-            {"entity_id": "button.geopro_restart", "state": "unknown",
-             "attributes": {"friendly_name": "Geopro Restart"}},
-        ]
-        text = entity_contract.entity_ids_text(states, "Geopro", "2026-10-11")
+    def test_lists_only_the_keys(self):
+        text = entity_contract.contract_text(KEYS_CONFIG, PLATFORMS)
         self.assertEqual(
-            entity_contract.parse_entity_ids(text),
-            [
-                ("binary_sensor.geopro_kompressori", "Geopro Kompressori"),
-                ("sensor.geopro_ulkol_mp_tila", "Geopro Ulkolämpötila"),
-            ],
+            [line for line in text.splitlines() if line and not line.startswith("#")],
+            entity_contract.key_lines(KEYS_CONFIG, PLATFORMS),
         )
-        self.assertNotIn("-3.2", text)
+
+    def test_is_empty_when_nothing_changed(self):
+        text = entity_contract.contract_text(KEYS_CONFIG, PLATFORMS)
+        self.assertEqual(entity_contract.contract_diff(text, text), "")
 
 
 if __name__ == "__main__":

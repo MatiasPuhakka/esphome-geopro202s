@@ -1638,7 +1638,7 @@ Kuvan kuvaus: kaavio "Varaajan yläosan lämpötilakäyrä". Pystyakseli on vara
 
 > **Repo note:** the Merkitys text of VarYläEroSv calls the setting "VaraajaYläEroSv"; the menu label is VarYläEroSv. Maaliuos häl's factory value has no unit; its range is in °C.
 
-> **Repo note:** p. 26 swaps the factory values of VaraajaAlaEro and VaraajaYläEro (3 °C and 5 °C). The factory-reset list on p. 29 agrees with this page. [`docs/controller.md`](../docs/controller.md#factory-values-that-contradict-each-other) has what the Controller held.
+> **Repo note:** p. 26 swaps the factory values of VaraajaAlaEro and VaraajaYläEro (3 °C and 5 °C). The factory-reset list on p. 29 agrees with this page.
 
 ### OHJAUSTAVAT:
 
@@ -1683,7 +1683,7 @@ Kuvan kuvaus: periaatekuva maalämpöjärjestelmästä. Säädin on ylhäällä,
 
 Huom! Varaajan keskianturin (M4) rikkoontuessa säädin käyttää ohjaavana anturina varaajan alaosan anturia (M10) ja päinvastoin.
 
-> **Repo note:** the figure shows no flow direction on the JV's ports. [`docs/controller.md`](../docs/controller.md#jv) has the flow the owner confirmed for this unit.
+> **Repo note:** the figure shows no flow direction on the JV's ports.
 
 ### Esimerkki 1.
 
@@ -1718,7 +1718,7 @@ Huom! Sähkövastus kytkeytyy päälle vasta "SV_viiveaika" -ajan kuluttua (tehd
 
 Huom! Esimerkissä oletetaan, että säätöpiiri L1 pyytää ylintä lämpötilaa, jolloin ohjaus on esitetty L1:n mukaan. Jos L2 tai "VaraajaAlaMin" edellyttävät ylempää lämpötilaa kuin L1, tapahtuu ohjaus niiden perusteella.
 
-> **Repo note:** VaraajaYläEro 5 °C and VaraajaAlaEro 3 °C are the examples' own settings; [`docs/controller.md`](../docs/controller.md#factory-values-that-contradict-each-other) has the factory values. The asterisk of the 5-minute footnote isn't attached to anything in the chart; p. 23 states the same wait for a start on mittaus 4.
+> **Repo note:** VaraajaYläEro 5 °C and VaraajaAlaEro 3 °C are the examples' own settings, not factory values; pp. [21](#s21) and [26](#s26) disagree on those. The asterisk of the 5-minute footnote isn't attached to anything in the chart; p. 23 states the same wait for a start on mittaus 4.
 
 ---
 
@@ -1983,7 +1983,7 @@ Siirrä osoitin [Selaus] -näppäimellä sen asetuksen kohdalle, jonka arvoa hal
 | JV Esto | 60s | 30...240s | Jakoventtiilin kiinniajon eston kestoaika. Kiinniajon esto aloitetaan sähkövastuksen päällekytkemisestä. |
 | Maaliuos häl | -6 | -10...0°C | Hälytys maalämpökoneelta palaavan maaliuoksen alilämmöstä. |
 
-> **Repo note:** p. 21 gives VaraajaAlaEro 5 °C and VaraajaYläEro 3 °C, and the factory-reset list on p. 29 agrees with p. 21. This page swaps them, in both its ML Asetusarvot screen and its table. [`docs/controller.md`](../docs/controller.md#factory-values-that-contradict-each-other) has what the Controller held.
+> **Repo note:** p. 21 gives VaraajaAlaEro 5 °C and VaraajaYläEro 3 °C, and the factory-reset list on p. 29 agrees with p. 21. This page swaps them, in both its ML Asetusarvot screen and its table.
 
 > **Repo note:** Kompr.esto and VarYläEroSv, which p. 21 lists as huoltotila settings and p. 29 lists among the huoltotaso factory values, are on neither this page's screen nor its table.
 

@@ -14,8 +14,6 @@ ESPHOME_PYTHON ?= $(firstword $(wildcard $(dir $(shell command -v $(ESPHOME)))py
 PYTHON ?= python3
 CONFIG_TEST := tests/all-keys.yaml
 CONFIG_ARDUINO := tests/all-keys-arduino.yaml
-NODE_CONFIG := geopro.yaml
-TRACE_CONFIG := geopro-trace.yaml
 
 # Component sources with no ESPHome dependency, built and tested on the host.
 PURE_MODULES := frame poll_scheduler value_decoder session
@@ -28,7 +26,7 @@ NODE_TRACE := tests/traces/node-2026-10-09.log
 # The export runs on plain python3 without ESPHome.
 REGISTER_MAP_ROWS := $(BUILD_DIR)/register_map_rows.inc
 
-.PHONY: test pure-check tools-test check-secrets dummy-secrets check-manual-links esphome-version check-config check-node-config check-trace-config check-contract update-contract compile compile-node clean
+.PHONY: test pure-check tools-test check-secrets check-manual-links esphome-version check-config check-contract update-contract compile clean
 
 test: pure-check $(TEST_BIN)
 	./$(TEST_BIN)
@@ -48,8 +46,8 @@ $(TEST_BIN): $(TEST_SRCS) $(PURE_SRCS) $(wildcard $(COMPONENT_DIR)/*.h) $(wildca
 	@mkdir -p $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -DNODE_TRACE='"$(CURDIR)/$(NODE_TRACE)"' -I$(COMPONENT_DIR) -Itests -I$(BUILD_DIR) -o $@ $(TEST_SRCS) $(PURE_SRCS)
 
-# Runs the tools' tests offline with the stdlib only: the Python tools against recorded Home
-# Assistant JSON, and on macOS the PDF tools against the manual PDFs.
+# Runs the tools' tests offline with the stdlib only: the manual link check, and on macOS
+# the PDF tools against the manual PDFs.
 tools-test:
 	python3 -I -m unittest discover -t . -s tools/tests
 
@@ -63,16 +61,6 @@ check-secrets:
 	@if git grep -nE '^[[:space:]]*(key|password):[[:space:]]*[^![:space:]]' -- '*.yaml' ':!.github' | cut -d: -f1,2 | grep .; then \
 		echo "These lines hold a key or password inline. Move the value to secrets.yaml and use !secret."; \
 		exit 1; \
-	fi
-
-# Writes a secrets.yaml with a random API key, for CI and any checkout without the real
-# one, so the config checks and compile-node run. It leaves an existing file alone. A
-# dummy key can't flash the Node.
-dummy-secrets:
-	@if [ -e secrets.yaml ]; then \
-		echo "secrets.yaml exists; leaving it alone."; \
-	else \
-		printf 'api_encryption_key: "%s"\n' "$$(head -c 32 /dev/urandom | base64)" > secrets.yaml; \
 	fi
 
 # Stops with a message unless $(ESPHOME) is a $(SUPPORTED_ESPHOME).x release. Every
@@ -93,44 +81,19 @@ check-config: esphome-version
 	@mkdir -p $(BUILD_DIR)
 	$(ESPHOME) config $(CONFIG_TEST) > $(BUILD_DIR)/config.out || { cat $(BUILD_DIR)/config.out; exit 1; }
 
-# Validates $(1) and fails on deprecation warnings, so an option ESPHome is about to
-# remove fails here before it breaks a build. Writes ESPHome's output to $(2).out and
-# its log to $(2).log in $(BUILD_DIR), and prints the log's warnings when it passes.
-define check_with_warnings
-	@mkdir -p $(BUILD_DIR)
-	$(ESPHOME) config $(1) > $(BUILD_DIR)/$(2).out 2> $(BUILD_DIR)/$(2).log || { cat $(BUILD_DIR)/$(2).out $(BUILD_DIR)/$(2).log; exit 1; }
-	@if grep -qi deprecat $(BUILD_DIR)/$(2).log; then cat $(BUILD_DIR)/$(2).log; exit 1; fi
-	@grep -v '^INFO ' $(BUILD_DIR)/$(2).log || true
-endef
-
-# Validates the Node's config. Needs secrets.yaml next to geopro.yaml (dummy-secrets
-# writes one).
-check-node-config: esphome-version
-	$(call check_with_warnings,$(NODE_CONFIG),node-config)
-
-# Validates the trace-capture overlay, which includes geopro.yaml. Same needs as
-# check-node-config.
-check-trace-config: esphome-version
-	$(call check_with_warnings,$(TRACE_CONFIG),trace-config)
-
 # The Home Assistant entity contract, tests/entity-contract.txt: each key's platform and
-# entity options, and the Node's entity names and IDs, taken from both config checks'
-# output. check-contract fails with a diff when it changed; update-contract rewrites it.
-check-contract: check-config check-node-config
-	$(ESPHOME_PYTHON) tests/entity_contract.py check $(BUILD_DIR)/config.out $(BUILD_DIR)/node-config.out
+# entity options, taken from check-config's output. check-contract fails with a diff when
+# it changed; update-contract rewrites it.
+check-contract: check-config
+	$(ESPHOME_PYTHON) tests/entity_contract.py check $(BUILD_DIR)/config.out
 
-update-contract: check-config check-node-config
-	$(ESPHOME_PYTHON) tests/entity_contract.py update $(BUILD_DIR)/config.out $(BUILD_DIR)/node-config.out
+update-contract: check-config
+	$(ESPHOME_PYTHON) tests/entity_contract.py update $(BUILD_DIR)/config.out
 
 # Builds firmware for both ESP32 frameworks. Slow on the first run (toolchain download).
 compile: esphome-version
 	$(ESPHOME) compile $(CONFIG_TEST)
 	$(ESPHOME) compile $(CONFIG_ARDUINO)
-
-# Builds the Node's firmware into .esphome/build/geopro-202s/. Needs secrets.yaml next to
-# geopro.yaml; the one dummy-secrets writes is enough to build, not to flash.
-compile-node: esphome-version
-	$(ESPHOME) compile $(NODE_CONFIG)
 
 clean:
 	rm -rf $(BUILD_DIR)
