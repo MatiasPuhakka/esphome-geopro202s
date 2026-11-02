@@ -15,9 +15,9 @@ if not __package__:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tools.ha import HomeAssistant  # noqa: E402
-from tools.plant import (COMPRESSOR, HEATER, MODEL_INPUTS, OUTDOOR, PHASES, SETTING_KEYS, SETTINGS,  # noqa: E402
-                         TANK_BOTTOM, TANK_MIDDLE, TANK_TOP, bits, compressor_runs, numbers, replay,
-                         value_at)
+from tools.plant import (COMPRESSOR, HEATER, OUTDOOR, PHASES, SETTING_KEYS, SETTINGS, TANK_BOTTOM,  # noqa: E402
+                         TANK_MIDDLE, TANK_TOP, bits, compressor_runs, model_history, numbers,
+                         replay, value_at)
 from tools.runs import overlaps, status_runs  # noqa: E402
 
 
@@ -49,7 +49,9 @@ def _model_text(steps, model_calls, run):
     called = ("calls %s -> %s" % (overlapping[0].start.strftime("%H:%M:%S"),
                                   overlapping[0].end.strftime("%H:%M:%S") if overlapping[0].end else "")
               if overlapping else "no call")
-    return "model: start below %.2f, stop above %.2f, %s" % (t.start, t.stop, called)
+    middle = ("" if t.middle_start is None else
+              ", M4 below %.2f starts, M10 above %.2f lets it stop" % (t.middle_start, t.bottom_stop))
+    return "model: start below %.2f, stop above %.2f%s, %s" % (t.start, t.stop, middle, called)
 
 
 def _temperature(series, entity_id, when):
@@ -58,7 +60,7 @@ def _temperature(series, entity_id, when):
 
 
 def report(client, start, end=None):
-    history = client.history([COMPRESSOR, HEATER, *MODEL_INPUTS, TANK_MIDDLE, *PHASES], start, end)
+    history = model_history(client, [COMPRESSOR, HEATER, *PHASES], start, end)
     series = history.series
     steps = replay(series)
     model_calls = status_runs([(s.time, s.state.calling) for s in steps])

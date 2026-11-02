@@ -4,12 +4,17 @@ Pure: settings and temperatures in, the thresholds, the L1 setpoint and whether 
 should be calling for the compressor out. Each page cited is a link into the Käsikirja's
 transcription, such as manuals/kasikirja.md#s21 for p. 21."""
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 # VaraajaYlä equals Var.ylä kesä at this outdoor temperature and above (manuals/kasikirja.md#s21).
 SUMMER_OUTDOOR = 20.0
 # VaraajaYlä equals Var.ylä talvi at this outdoor temperature and below (manuals/kasikirja.md#s21).
 WINTER_OUTDOOR = -20.0
+# How much hotter than the L1 setpoint the tank-middle and tank-bottom rules keep the tank, in °C
+# (manuals/kasikirja.md#s23).
+L1_MARGIN = 5.0
+# How long after a run ends the tank-middle rule may start the next one (manuals/kasikirja.md#s23).
+MIDDLE_START_GAP = timedelta(minutes=5)
 # The ML Ohjaustapa code for Sähkövastus, which turns compressor control into heater control
 # (manuals/kasikirja.md#s23). The codes follow the menu order; the owner confirmed them on
 # 2026-10-11 (docs/controller.md).
@@ -27,6 +32,8 @@ class Settings:
     var_yla_ero_sv: float  # VarYläEroSv
     kompr_esto: float  # Kompr.esto
     ml_ohjaustapa: int  # ML Ohjaustapa code
+    # VaraajaAlaMin, for the tank-middle start and the tank-bottom stop. None leaves both out.
+    varaaja_ala_min: float | None = None
 
 
 @dataclass(frozen=True)
@@ -39,6 +46,10 @@ class Thresholds:
     # After a Kompr.esto stop, M10 must fall to this before the compressor restarts
     # (manuals/kasikirja.md#s23).
     restart: float
+    # M4 below this starts the compressor, and M10 above this stops that call
+    # (manuals/kasikirja.md#s23). None without an L1 setpoint or VaraajaAlaMin.
+    middle_start: float | None = None
+    bottom_stop: float | None = None
 
 
 def varaaja_yla(settings, outdoor):
@@ -49,12 +60,22 @@ def varaaja_yla(settings, outdoor):
     return settings.var_yla_kesa + (settings.var_yla_talvi - settings.var_yla_kesa) * share
 
 
-def thresholds(settings, outdoor):
+def thresholds(settings, outdoor, l1=None):
+    """The thresholds at an outdoor temperature. l1 is the L1 setpoint (l1_setpoint), which the
+    tank-middle start and the tank-bottom stop need along with VaraajaAlaMin. Each takes the
+    highest of its terms (manuals/kasikirja.md#s23): M4 below any start term starts, and M10
+    must rise above every stop term. L2 isn't in use, and the Lisälämpöpainike terms are left
+    out."""
     setpoint = varaaja_yla(settings, outdoor)
     start = setpoint - settings.varaaja_yla_ero
+    middle_start = bottom_stop = None
+    if l1 is not None and settings.varaaja_ala_min is not None:
+        middle_start = max(l1 + L1_MARGIN - settings.varaaja_ala_ero, settings.varaaja_ala_min)
+        bottom_stop = max(l1 + L1_MARGIN, settings.varaaja_ala_min + settings.varaaja_ala_ero)
     return Thresholds(varaaja_yla=setpoint, start=start, stop=setpoint,
                       heater=start - settings.var_yla_ero_sv,
-                      restart=settings.kompr_esto - settings.varaaja_ala_ero)
+                      restart=settings.kompr_esto - settings.varaaja_ala_ero,
+                      middle_start=middle_start, bottom_stop=bottom_stop)
 
 
 @dataclass(frozen=True)
@@ -151,6 +172,7 @@ class Temperatures:
     outdoor: float  # M1
     tank_top: float  # M9
     tank_bottom: float  # M10
+    tank_middle: float | None = None  # M4; None leaves the tank-middle start out
 
 
 @dataclass(frozen=True)
@@ -159,29 +181,48 @@ class State:
     tank_top_call: bool = False  # M9 fell below the start threshold and hasn't risen above the stop one
     kompr_esto_stop: bool = False  # M10 reached Kompr.esto and hasn't fallen to the restart threshold
     calling: bool = False  # the Controller calls for the compressor
+    tank_middle_call: bool = False  # M4 fell below its start threshold and M10 hasn't risen above its stop one
+    last_run_end: datetime | None = None  # when the Controller last stopped calling
 
 
-def step(settings, temperatures, state):
-    """The State after one reading.
+def step(settings, temperatures, state, l1=None, when=None):
+    """The State after one reading. l1 is the L1 setpoint, and when the reading's time, which the
+    tank-middle start's 5-minute gap needs.
 
-    Models the tank-top start and stop, the Kompr.esto stop and restart, and ML Ohjaustapa
-    Sähkövastus (manuals/kasikirja.md#s23). Leaves out the tank-middle start and the tank-bottom
-    stop, which need the L1 setpoint the Component doesn't read, and the running-feedback
-    alarm (manuals/kasikirja.md#s20). How the tank-top and tank-bottom calls combine is an open
-    question in docs/controller.md; here the Kompr.esto stop overrides the tank-top call, as
-    manuals/kasikirja.md#s23 says."""
-    t = thresholds(settings, temperatures.outdoor)
+    Models the tank-top start and stop, the tank-middle start and tank-bottom stop, the
+    Kompr.esto stop and restart, and ML Ohjaustapa Sähkövastus (manuals/kasikirja.md#s23).
+    Without M4, l1 or VaraajaAlaMin it leaves the tank-middle and tank-bottom rules out. Leaves
+    out the running-feedback alarm (manuals/kasikirja.md#s20) and the M4/M10 fallback
+    (manuals/kasikirja.md#s22).
+
+    The manual doesn't say how the calls combine. Here, as observed in docs/controller.md, either
+    start begins a call, and a call ends only once M9 is above VaraajaYlä and M10 above the
+    tank-bottom stop. The Kompr.esto stop overrides both."""
+    t = thresholds(settings, temperatures.outdoor, l1)
+    middle = t.middle_start is not None and temperatures.tank_middle is not None
+    rested = (state.calling or state.last_run_end is None or when is None
+              or when - state.last_run_end >= MIDDLE_START_GAP)
+    # A call ends only once the tank top is above VaraajaYlä and the tank bottom above its stop.
+    satisfied = temperatures.tank_top > t.stop and (not middle or temperatures.tank_bottom > t.bottom_stop)
     if temperatures.tank_top < t.start:
         top_call = True
-    elif temperatures.tank_top > t.stop:
+    elif satisfied:
         top_call = False
     else:
         top_call = state.tank_top_call
+    if middle and temperatures.tank_middle < t.middle_start and rested:
+        middle_call = True
+    elif satisfied or not middle:
+        middle_call = False
+    else:
+        middle_call = state.tank_middle_call
     if temperatures.tank_bottom >= settings.kompr_esto:
         esto = True
     elif temperatures.tank_bottom <= t.restart:
         esto = False
     else:
         esto = state.kompr_esto_stop
-    calling = top_call and not esto and settings.ml_ohjaustapa != SAHKOVASTUS
-    return State(tank_top_call=top_call, kompr_esto_stop=esto, calling=calling)
+    calling = (top_call or middle_call) and not esto and settings.ml_ohjaustapa != SAHKOVASTUS
+    last_run_end = when if state.calling and not calling else state.last_run_end
+    return State(tank_top_call=top_call, kompr_esto_stop=esto, calling=calling,
+                 tank_middle_call=middle_call, last_run_end=last_run_end)

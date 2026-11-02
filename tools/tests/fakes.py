@@ -92,6 +92,8 @@ class ReplayHomeAssistant:
             end = datetime.fromisoformat(query["end_time"][0]).timestamp()
             series = []
             for entity_id in query["filter_entity_id"][0].split(","):
+                if entity_id not in self.rows:
+                    continue  # Home Assistant leaves out an entity it has no history for
                 # The first row is the state at the start, stamped with the start time.
                 first = {"entity_id": entity_id, "state": self._at(entity_id, start)["state"],
                          "last_changed": datetime.fromtimestamp(start, timezone.utc).isoformat()}
