@@ -28,6 +28,8 @@ geopro_202s:
   bank_interval: 2min
   component_revision:
     name: "component_revision"
+  measurements_frozen:
+    name: "measurements_frozen"
   outside_temp:
     name: "outside_temp"
   l1_room:

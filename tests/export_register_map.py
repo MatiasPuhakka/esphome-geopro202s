@@ -3,7 +3,8 @@
     python3 tests/export_register_map.py components/geopro_202s/register_map.py build/register_map_rows.inc
 
 Each line is one row of VALUES, in order: its key, a Registration with the
-Address, offset, Decode rule and Address kind, then the Poll group, as __init__.py's
+Address, offset, Decode rule and Address kind, the Poll group, and whether it
+is a temperature measurement, as __init__.py's
 to_code() passes them to register_value(). row_line() writes them itself, so keep
 it in step with to_code() and _decode_rule(). tests/register_map.cpp includes the
 file. The Makefile reruns this whenever register_map.py changes, so the tests never
@@ -37,7 +38,8 @@ def row_line(value):
     return (
         f'{{"{value.key}", {{0x{value.address:02X}, {value.offset}, '
         f'DecodeRule({rule.width}, {"true" if rule.signed else "false"}, {rule.divisor}, 0x{rule.mask:02X}), '
-        f'AddressKind::{value.address_kind.value}}}, PollGroup::{value.group.value}}},'
+        f'AddressKind::{value.address_kind.value}}}, PollGroup::{value.group.value}, '
+        f'{"true" if value.temperature_measurement else "false"}}},'
     )
 
 

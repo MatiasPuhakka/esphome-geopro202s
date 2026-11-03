@@ -43,6 +43,19 @@ static const uint32_t SILENCE_GAP_MS = 100;
 // that an automation acting on a Status bit doesn't run on a frozen value for long.
 static const uint8_t STALE_AFTER_MISSED_CYCLES = 2;
 
+// The measurements are Frozen once every temperature measurement has decoded to the same
+// value for longer than this. On 2026-10-12 the Controller served the same M1-M10 values for
+// about two hours, from a Node boot until it was power-cycled, while its hour counters and
+// Status word kept updating and its display stayed live. So only the temperature measurements
+// count, and the time is counted from their first decoded Values: the freeze began at a boot
+// and outlasted a Node reboot, so there may be no changing value to see first.
+// 60 minutes is the threshold the owner's overnight flash check uses (#97). In about 10 days
+// of Home Assistant history up to 2026-10-13, the longest stretch in which no temperature
+// measurement changed was 19 minutes, and 6.8 minutes since the Component; the freeze's
+// longest stretch between Node reboots was 83 minutes. 60 sits between them and catches a
+// freeze within the first hour of a night.
+static const uint32_t FROZEN_AFTER_MS = 60UL * 60UL * 1000UL;
+
 // Identifies one registered value. Ids count up from 0 in the order add_value() is called,
 // so the hub can keep its entities in a vector indexed by id.
 using EntryId = size_t;
@@ -113,7 +126,8 @@ static_assert(sizeof(Counters) == sizeof(COUNTER_FIELDS) / sizeof(COUNTER_FIELDS
 
 // The loop's decisions with no I/O: received bytes and the time go in, Read requests,
 // decoded Values and Stale entries come out. It owns what counts as a Reply, when a request
-// is done, which entry gets each Value and when an Address is Stale. The hub moves bytes and Values between it and ESPHome.
+// is done, which entry gets each Value, when an Address is Stale and when the measurements
+// are Frozen. The hub moves bytes and Values between it and ESPHome.
 // Like PollScheduler it has no clock: the caller passes millis() on every call.
 class Session {
  public:
@@ -122,8 +136,9 @@ class Session {
   uint32_t bank_interval() const { return this->scheduler_.bank_interval(); }
 
   // Registers a value and returns its id. The scheduler reads each Address once, and the
-  // Session counts its Missed cycles once, however many values share it.
-  EntryId add_value(PollGroup group, const Registration &registration);
+  // Session counts its Missed cycles once, however many values share it. A
+  // `temperature_measurement` is watched for Frozen measurements.
+  EntryId add_value(PollGroup group, const Registration &registration, bool temperature_measurement = false);
 
   const std::vector<Registration> &registrations() const { return this->registrations_; }
 
@@ -134,6 +149,14 @@ class Session {
   // cycle or a Stale Address: the hub publishes `output` after this call as it does after
   // feed().
   bool next_request(uint32_t now, std::array<uint8_t, 6> &request, SessionOutput &output);
+
+  // Whether the measurements are Frozen (FROZEN_AFTER_MS). It turns on at the first Reply
+  // after the threshold and off at the first Reply that changes a temperature measurement.
+  // A temperature measurement whose Address goes Stale restarts the count from its next
+  // decoded Value, as an unknown state ends a hold in Home Assistant's history, so a silent
+  // Controller doesn't count as a freeze. Nor does one that has never answered for some
+  // temperature measurement: every one needs a decoded Value first.
+  bool measurements_frozen() const { return this->frozen_; }
 
   // The counts since the Session was made. They only grow (until a count wraps at 2^32), and
   // reading them changes nothing, so a caller that wants the counts for a span keeps the
@@ -147,9 +170,17 @@ class Session {
     uint8_t count;
   };
 
+  // The latest decoded value of an entry watched for Frozen measurements.
+  struct Watched {
+    EntryId entry;
+    bool known;
+    float value;
+  };
+
   // The Missed cycles of a registered Address, or nullptr for any other.
   MissedCycles *find_missed_cycles_(uint16_t address);
   void on_give_up_(uint16_t address, SessionOutput &output);
+  void watch_(const DecodedValue &value, uint32_t now);
 
   FrameDecoder decoder_;
   PollScheduler scheduler_;
@@ -160,6 +191,11 @@ class Session {
   Counters counters_;
   // The `now` of the last bytes passed to feed().
   uint32_t last_bytes_at_{0};
+  // One per temperature measurement, in the order they were registered.
+  std::vector<Watched> watched_;
+  // When a temperature measurement last decoded to a new value, or to its first.
+  uint32_t changed_at_{0};
+  bool frozen_{false};
 };
 
 // Decides when the hub logs a line of bus errors: at most once per interval, and only when a

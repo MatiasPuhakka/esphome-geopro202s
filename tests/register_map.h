@@ -14,6 +14,8 @@ struct Row {
   std::string key;
   esphome::geopro_202s::Registration registration;
   esphome::geopro_202s::PollGroup group;
+  // An M-number temperature, watched for Frozen measurements.
+  bool temperature_measurement;
 };
 
 // Every row, in register_map.py's order.

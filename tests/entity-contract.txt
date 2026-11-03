@@ -5,6 +5,7 @@
 
 # Every key in tests/all-keys.yaml: platform and entity options (- for unset).
 component_revision: text_sensor unit=- device_class=- state_class=- accuracy=- icon=mdi:source-commit entity_category=diagnostic
+measurements_frozen: binary_sensor unit=- device_class=problem state_class=- accuracy=- icon=mdi:thermometer-alert entity_category=-
 outside_temp: sensor unit=°C device_class=temperature state_class=measurement accuracy=2 icon=mdi:thermometer entity_category=-
 l1_room: sensor unit=°C device_class=temperature state_class=measurement accuracy=2 icon=mdi:thermometer entity_category=-
 l1_supply: sensor unit=°C device_class=temperature state_class=measurement accuracy=2 icon=mdi:thermometer entity_category=-

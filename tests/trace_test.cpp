@@ -7,6 +7,7 @@
 
 #include <array>
 #include <fstream>
+#include <functional>
 #include <map>
 #include <set>
 #include <sstream>
@@ -21,6 +22,8 @@ using esphome::geopro_202s::EntryId;
 using esphome::geopro_202s::PollGroup;
 using esphome::geopro_202s::Frame;
 using esphome::geopro_202s::FrameDecoder;
+using esphome::geopro_202s::frame_checksum;
+using esphome::geopro_202s::FROZEN_AFTER_MS;
 using esphome::geopro_202s::Session;
 using esphome::geopro_202s::SessionOutput;
 
@@ -119,6 +122,12 @@ struct StaleEntry {
   EntryId entry;
 };
 
+// The Session's measurements_frozen() changed to `frozen` at `at`.
+struct FrozenChange {
+  uint32_t at;
+  bool frozen;
+};
+
 // What a Session did while the trace's Replies played back.
 struct Replay {
   std::vector<std::array<uint8_t, 6>> requests;
@@ -126,6 +135,8 @@ struct Replay {
   std::map<std::string, Published> published;  // each entry's latest Value, by Register map key
   std::vector<Miss> missed;
   std::vector<StaleEntry> stale;
+  // Each change of measurements_frozen(), which starts off.
+  std::vector<FrozenChange> frozen;
   Counters counters;  // at the end
 };
 
@@ -141,7 +152,22 @@ struct ReplayOptions {
   uint32_t silent_until{0};
   // Stops before this time. The default stops before the second value cycle.
   uint32_t end{5000};
+  // When set, gets the trace's Reply for each Read request and the time, and may change it
+  // before it is fed.
+  std::function<void(std::vector<uint8_t> &reply, uint32_t now)> edit;
 };
+
+// Sets a single Value's Reply to carry `raw`, big-endian, and fixes its Checksum.
+void set_raw(std::vector<uint8_t> &reply, uint16_t raw) {
+  REQUIRE(reply.size() == 8);
+  reply[5] = static_cast<uint8_t>(raw >> 8);
+  reply[6] = static_cast<uint8_t>(raw & 0xFF);
+  reply[7] = frame_checksum(reply.data() + 1, reply.size() - 2);
+}
+
+uint16_t raw_of(const std::vector<uint8_t> &reply) { return static_cast<uint16_t>(reply[5] << 8 | reply[6]); }
+
+uint16_t reply_address(const std::vector<uint8_t> &reply) { return static_cast<uint16_t>(reply[3] << 8 | reply[4]); }
 
 // Plays the trace through a Session built from the real Register map rows, as the hub would:
 // time advances in 5 ms steps, and each Read request the Session sends gets the trace's Reply
@@ -152,7 +178,7 @@ Replay replay_trace(const std::vector<register_map::Row> &rows, const ReplayOpti
 
   Session session;
   for (const register_map::Row &row : rows)
-    session.add_value(row.group, row.registration);
+    session.add_value(row.group, row.registration, row.temperature_measurement);
 
   Replay replay;
   auto record = [&](const SessionOutput &output, uint32_t now) {
@@ -163,6 +189,9 @@ Replay replay_trace(const std::vector<register_map::Row> &rows, const ReplayOpti
       replay.missed.push_back(Miss{now, address});
     for (EntryId entry : output.stale)
       replay.stale.push_back(StaleEntry{now, entry});
+    const bool frozen = replay.frozen.empty() ? false : replay.frozen.back().frozen;
+    if (session.measurements_frozen() != frozen)
+      replay.frozen.push_back(FrozenChange{now, !frozen});
   };
   record(session.feed(options.before.data(), options.before.size(), 0), 0);
   for (uint32_t now = 0; now < options.end; now += 5) {
@@ -182,7 +211,10 @@ Replay replay_trace(const std::vector<register_map::Row> &rows, const ReplayOpti
     auto reply = replies.find(address);
     REQUIRE_MESSAGE(reply != replies.end(), "the Session asked for an Address the trace has no Reply for");
     now += 20;
-    for (uint8_t byte : reply->second.bytes)
+    std::vector<uint8_t> bytes = reply->second.bytes;
+    if (options.edit)
+      options.edit(bytes, now);
+    for (uint8_t byte : bytes)
       record(session.feed(&byte, 1, now), now);
   }
   replay.counters = session.counters();
@@ -430,4 +462,59 @@ TEST_CASE("node trace: an outage makes every entry Stale after two Missed cycles
     CAPTURE(published.first);
     CHECK(published.second.at >= options.silent_until);
   }
+}
+
+// The Controller served the same M1-M10 Values from a Node boot on 2026-10-12 while its hour
+// counters and Status word kept updating. Replaying the trace again and again is that freeze:
+// every Reply carries the trace's Values.
+const uint16_t BRINE = 0x19;
+
+TEST_CASE("node trace: the trace's first cycle doesn't freeze the measurements") {
+  const Replay replay = replay_trace(register_map::all_rows());
+  CHECK(replay.answered.size() == 17);
+  CHECK(replay.frozen.empty());
+}
+
+TEST_CASE("node trace: repeated temperatures freeze the measurements once the threshold has passed, and the first change thaws them") {
+  // The brine Value moves by 0.01 °C from here on.
+  const uint32_t change_from = FROZEN_AFTER_MS + 120000;
+  uint32_t first_change = 0;
+  ReplayOptions options;
+  options.end = change_from + 60000;
+  options.edit = [&](std::vector<uint8_t> &reply, uint32_t now) {
+    if (now < change_from || reply_address(reply) != BRINE)
+      return;
+    set_raw(reply, raw_of(reply) + 1);
+    if (first_change == 0)
+      first_change = now;
+  };
+  const Replay replay = replay_trace(register_map::all_rows(), options);
+
+  REQUIRE(replay.frozen.size() == 2);
+  // Every temperature first decoded in the first cycle, within 5 s of boot, and the value
+  // cycle reads them every 10 s, so the first Reply after the threshold comes within 15 s.
+  CHECK(replay.frozen[0].frozen);
+  CHECK(replay.frozen[0].at > FROZEN_AFTER_MS);
+  CHECK(replay.frozen[0].at < FROZEN_AFTER_MS + 15000);
+  CHECK_FALSE(replay.frozen[1].frozen);
+  CHECK(replay.frozen[1].at == first_change);
+}
+
+TEST_CASE("node trace: changing hour counters and Status word don't keep the measurements from freezing") {
+  const uint16_t HOURS_EH = 0x3A, HOURS_COMP = 0x3B, STATUS_WORD = 0x2D;
+  ReplayOptions options;
+  options.end = FROZEN_AFTER_MS + 60000;
+  options.edit = [&](std::vector<uint8_t> &reply, uint32_t now) {
+    const uint16_t address = reply_address(reply);
+    if (address == HOURS_EH || address == HOURS_COMP)
+      set_raw(reply, raw_of(reply) + now / 60000);  // a new hour every minute
+    else if (address == STATUS_WORD)
+      set_raw(reply, raw_of(reply) ^ ((now / 10000) % 2 ? 0x10 : 0));  // the compressor bit
+  };
+  const Replay replay = replay_trace(register_map::all_rows(), options);
+
+  REQUIRE(replay.frozen.size() == 1);
+  CHECK(replay.frozen[0].frozen);
+  CHECK(replay.frozen[0].at > FROZEN_AFTER_MS);
+  CHECK(replay.frozen[0].at < FROZEN_AFTER_MS + 15000);
 }

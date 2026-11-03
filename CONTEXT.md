@@ -117,6 +117,10 @@ _Avoid_: miss, missed poll, dropped read
 An Address with two Missed cycles in a row and no Reply for it in between. The Session reports every entry registered at it, once, and the Hub shows those entries as unknown in Home Assistant until the next decoded Reply. A Reply that decodes nothing still ends the run of Missed cycles. The reason for two cycles is in `session.h`.
 _Avoid_: unavailable (what Home Assistant shows when the Node itself is gone), timed out
 
+**Frozen measurements**:
+The Controller answering every Read request for a temperature M-number with the same value for longer than 60 minutes, as it did on 2026-10-12 while its display stayed live and its hour counters and Status word kept updating. The Session decides it, counting from each temperature's first decoded Value after boot; a change in any of them ends it, and so does one going Stale. The reason for 60 minutes is in `session.h`.
+_Avoid_: stuck sensors, frozen Controller (the Controller itself keeps running)
+
 **Address kind**:
 Whether an Address holds a single Value or a Bank. It sets the Reply's data length: 31 bytes for a Bank, and for a single Value, its offset plus its byte width.
 _Avoid_: address type
@@ -166,7 +170,7 @@ The part of the Component that decides which Address to request next, with one R
 _Avoid_: poller, request queue
 
 **Session**:
-The part of the Component that turns received bytes and the time into Read requests and decoded Values. It composes the Frame codec, Poll scheduler and value decoder, owns the Register map entries, decides what counts as a Reply and when a request is done, counts Bus errors, and decides when an Address is Stale. It has no clock and no ESPHome includes. Each decoded Value carries the id of its entry, and a Stale Address is reported as the ids of its entries.
+The part of the Component that turns received bytes and the time into Read requests and decoded Values. It composes the Frame codec, Poll scheduler and value decoder, owns the Register map entries, decides what counts as a Reply and when a request is done, counts Bus errors, and decides when an Address is Stale and when the measurements are Frozen. It has no clock and no ESPHome includes. Each decoded Value carries the id of its entry, and a Stale Address is reported as the ids of its entries.
 _Avoid_: driver, transport
 
 **Hub**:

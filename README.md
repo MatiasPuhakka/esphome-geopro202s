@@ -125,7 +125,7 @@ Home Assistant keys each entity on its platform (sensor or binary sensor) and na
 
 `make check-contract` rebuilds the file from `esphome config` and fails with a diff when it changed. If the change is deliberate, run `make update-contract` and commit the new file, so the migration gets reviewed. Both need ESPHome 2026.9. Every ESPHome target stops with a message when the `ESPHOME` variable (by default the `esphome` on PATH) names another version, so point it at a 2026.9 install when needed, for example `make check-contract ESPHOME=venv/bin/esphome`. The contract targets run the `python` next to that `esphome`.
 
-The host tests decode with the Register map's own rows. Whenever `register_map.py` changes, `make test` runs `tests/export_register_map.py` with plain `python3` to write every row's key, address, offset, decode rule, address kind and poll group to `build/register_map_rows.inc`, so a wrong offset in any row the tests decode fails `make test`.
+The host tests decode with the Register map's own rows. Whenever `register_map.py` changes, `make test` runs `tests/export_register_map.py` with plain `python3` to write every row's key, address, offset, decode rule, address kind, poll group and whether it is a temperature measurement to `build/register_map_rows.inc`, so a wrong offset in any row the tests decode fails `make test`.
 
 ### Polling
 
@@ -142,6 +142,18 @@ The component counts bus errors: frames with a bad checksum, received bytes that
 ```
 [W][geopro_202s]: Bus errors in the last 180 s: checksum failures 1, discarded bytes 8, retries 1, give-ups 1, replies that decoded nothing 0
 ```
+
+### Frozen measurements
+
+On 2026-10-12 the Controller kept answering with the same temperatures for about two hours while its display showed live ones. The hour counters and the status word kept updating, and only power-cycling the Controller cleared it. The optional `measurements_frozen` key publishes a binary sensor with the `problem` device class that turns on when no configured temperature measurement has changed for 60 minutes, counted from their first values after boot, and off at the first reply that changes one:
+
+```yaml
+geopro_202s:
+  measurements_frozen:
+    name: "Measurements Frozen"
+```
+
+The temperature sensors keep their last values while it is on, so you can compare them with the Controller's display. A stale temperature address restarts the count, so a silent Controller shows unknown values rather than frozen ones. `session.h` gives the reason for the 60 minutes.
 
 ### Component revision
 

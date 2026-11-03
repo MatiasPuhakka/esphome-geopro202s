@@ -29,12 +29,29 @@ std::string Counters::describe() const {
   return line;
 }
 
-EntryId Session::add_value(PollGroup group, const Registration &registration) {
+EntryId Session::add_value(PollGroup group, const Registration &registration, bool temperature_measurement) {
   this->scheduler_.add_address(group, registration.address);
   this->registrations_.push_back(registration);
   if (this->find_missed_cycles_(registration.address) == nullptr)
     this->missed_cycles_.push_back(MissedCycles{registration.address, 0});
-  return this->registrations_.size() - 1;
+  const EntryId id = this->registrations_.size() - 1;
+  if (temperature_measurement)
+    this->watched_.push_back(Watched{id, false, 0.0f});
+  return id;
+}
+
+void Session::watch_(const DecodedValue &value, uint32_t now) {
+  for (Watched &watched : this->watched_) {
+    if (watched.entry != value.index)
+      continue;
+    if (!watched.known || watched.value != value.value) {
+      watched.known = true;
+      watched.value = value.value;
+      this->changed_at_ = now;
+      this->frozen_ = false;
+    }
+    return;
+  }
 }
 
 Session::MissedCycles *Session::find_missed_cycles_(uint16_t address) {
@@ -56,6 +73,12 @@ void Session::on_give_up_(uint16_t address, SessionOutput &output) {
   for (size_t id = 0; id < this->registrations_.size(); id++)
     if (this->registrations_[id].address == address)
       output.stale.push_back(id);
+  for (Watched &watched : this->watched_) {
+    if (this->registrations_[watched.entry].address == address) {
+      watched.known = false;
+      this->frozen_ = false;
+    }
+  }
 }
 
 SessionOutput Session::feed(const uint8_t *bytes, size_t len, uint32_t now) {
@@ -78,7 +101,15 @@ SessionOutput Session::feed(const uint8_t *bytes, size_t len, uint32_t now) {
     const std::vector<DecodedValue> values = decode_values(frame.address, frame.data, this->registrations_);
     if (values.empty())
       this->counters_.undecoded_replies++;
+    for (const DecodedValue &value : values)
+      this->watch_(value, now);
     output.values.insert(output.values.end(), values.begin(), values.end());
+  }
+  if (!output.answered.empty() && !this->watched_.empty() && now - this->changed_at_ > FROZEN_AFTER_MS) {
+    bool all_known = true;
+    for (const Watched &watched : this->watched_)
+      all_known = all_known && watched.known;
+    this->frozen_ = all_known;
   }
   return output;
 }
