@@ -5,8 +5,9 @@
 namespace esphome {
 namespace geopro_202s {
 
-void Geopro202sComponent::add_value_(PollGroup group, const Registration &registration, const Target &target) {
-  this->session_.add_value(group, registration);
+void Geopro202sComponent::add_value_(PollGroup group, const Registration &registration, bool temperature_measurement,
+                                     const Target &target) {
+  this->session_.add_value(group, registration, temperature_measurement);
   this->targets_.push_back(target);
 }
 
@@ -14,6 +15,9 @@ void Geopro202sComponent::setup() {
   ESP_LOGCONFIG(TAG, "Setting up Geopro 202S...");
   if (this->component_revision_text_sensor_ != nullptr)
     this->component_revision_text_sensor_->publish_state(this->component_revision_);
+  // Off from boot, so Home Assistant shows a state before the first hour has passed.
+  if (this->measurements_frozen_binary_sensor_ != nullptr)
+    this->measurements_frozen_binary_sensor_->publish_state(false);
 }
 
 void Geopro202sComponent::loop() {
@@ -38,7 +42,23 @@ void Geopro202sComponent::loop() {
     this->write_array(request.data(), request.size());
   }
 
+  this->publish_measurements_frozen_();
   this->report_bus_errors_(now);
+}
+
+// The temperature entities keep their last Values while it is on, so they can be compared
+// with the Controller's display, and a freeze looks different from a silent Controller,
+// whose entities go unknown.
+void Geopro202sComponent::publish_measurements_frozen_() {
+  const bool frozen = this->session_.measurements_frozen();
+  if (this->measurements_frozen_binary_sensor_ == nullptr || this->measurements_frozen_binary_sensor_->state == frozen)
+    return;
+  if (frozen)
+    ESP_LOGW(TAG, "No temperature measurement has changed for %u min; the Controller may need a power cycle",
+             (unsigned) (FROZEN_AFTER_MS / 60000));
+  else
+    ESP_LOGI(TAG, "The temperature measurements are changing again");
+  this->measurements_frozen_binary_sensor_->publish_state(frozen);
 }
 
 // Logs the bus errors counted since the last line at WARN, which the Node's INFO logger

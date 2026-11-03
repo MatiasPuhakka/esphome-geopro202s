@@ -50,14 +50,20 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
     this->component_revision_text_sensor_ = text_sensor;
   }
 
+  // On while the Session finds the measurements Frozen. Optional.
+  void set_measurements_frozen_binary_sensor(binary_sensor::BinarySensor *binary_sensor) {
+    this->measurements_frozen_binary_sensor_ = binary_sensor;
+  }
+
   // Registers one value from the Register map: which cycle reads its address,
   // whether that address is a bank or a single value, the address, where the
-  // value starts in the reply, how to decode it, and the entity that publishes
-  // it, of any kind publish_value() takes.
+  // value starts in the reply, how to decode it, whether the Session watches it
+  // for Frozen measurements, and the entity that publishes it, of any kind
+  // publish_value() takes.
   template<typename Entity>
   void register_value(PollGroup group, AddressKind address_kind, uint16_t address, uint8_t offset, DecodeRule rule,
-                      Entity *entity) {
-    this->add_value_(group, Registration{address, offset, rule, address_kind},
+                      bool temperature_measurement, Entity *entity) {
+    this->add_value_(group, Registration{address, offset, rule, address_kind}, temperature_measurement,
                      Target{[entity](float value) { publish_value(entity, value); },
                             [entity]() { invalidate_value(entity); }});
   }
@@ -70,12 +76,15 @@ class Geopro202sComponent : public Component, public uart::UARTDevice {
     std::function<void()> invalidate;
   };
 
-  void add_value_(PollGroup group, const Registration &registration, const Target &target);
+  void add_value_(PollGroup group, const Registration &registration, bool temperature_measurement,
+                  const Target &target);
   void publish_(const SessionOutput &output);
+  void publish_measurements_frozen_();
   void report_bus_errors_(uint32_t now);
 
   const char *component_revision_{"unknown"};
   text_sensor::TextSensor *component_revision_text_sensor_{nullptr};
+  binary_sensor::BinarySensor *measurements_frozen_binary_sensor_{nullptr};
 
   Session session_;
 

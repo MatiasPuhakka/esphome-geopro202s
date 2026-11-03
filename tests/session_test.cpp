@@ -17,6 +17,7 @@ using esphome::geopro_202s::Counters;
 using esphome::geopro_202s::DEFAULT_BANK_INTERVAL_MS;
 using esphome::geopro_202s::EntryId;
 using esphome::geopro_202s::frame_checksum;
+using esphome::geopro_202s::FROZEN_AFTER_MS;
 using esphome::geopro_202s::PollGroup;
 using esphome::geopro_202s::REPLY_TIMEOUT_MS;
 using esphome::geopro_202s::REQUEST_GAP_MS;
@@ -48,7 +49,7 @@ uint16_t address_of(const std::array<uint8_t, 6> &request) {
 struct Bus {
   explicit Bus(const std::vector<register_map::Row> &rows, uint32_t start = 0) : rows(rows), now(start) {
     for (const register_map::Row &row : rows)
-      session.add_value(row.group, row.registration);
+      session.add_value(row.group, row.registration, row.temperature_measurement);
   }
 
   std::vector<register_map::Row> rows;
@@ -321,6 +322,43 @@ TEST_CASE("an Address goes stale after two missed cycles, once, with every entry
   // Cycle 6: the second does, again.
   output = bus.run_silent(6 * cycle);
   CHECK(output.stale == std::vector<EntryId>{0});
+}
+
+TEST_CASE("a Stale temperature measurement restarts the count, so a silent Controller doesn't count as a freeze") {
+  Bus bus(register_map::rows_named({"outside_temp"}));
+  const uint32_t cycle = esphome::geopro_202s::DEFAULT_VALUE_INTERVAL_MS;
+  const std::vector<uint8_t> minus_five = reply(0x12, {0xFE, 0x0C});
+
+  REQUIRE(bus.request() == 0x12);
+  bus.receive(minus_five);
+  bus.advance(FROZEN_AFTER_MS);
+  REQUIRE(bus.request() == 0x12);
+  bus.receive(minus_five);
+  CHECK_FALSE(bus.session.measurements_frozen());  // held for exactly the threshold
+  bus.advance(1);
+  bus.receive(minus_five);
+  CHECK(bus.session.measurements_frozen());
+
+  // Two Missed cycles make 0x12 Stale, which ends the freeze.
+  SessionOutput output = bus.run_silent(bus.now + 3 * cycle);
+  REQUIRE(output.stale == std::vector<EntryId>{0});
+  CHECK_FALSE(bus.session.measurements_frozen());
+
+  // The same Value again starts a new count.
+  bus.receive(minus_five);
+  CHECK_FALSE(bus.session.measurements_frozen());
+  bus.advance(FROZEN_AFTER_MS + 1);
+  bus.receive(minus_five);
+  CHECK(bus.session.measurements_frozen());
+}
+
+TEST_CASE("without a temperature measurement registered, the measurements never freeze") {
+  Bus bus(register_map::rows_named({"hours_comp", "status_word"}));
+  REQUIRE(bus.request() == 0x3B);
+  bus.receive(reply(0x3B, {0x20, 0x01}));
+  bus.advance(FROZEN_AFTER_MS + 1);
+  bus.receive(reply(0x3B, {0x20, 0x01}));
+  CHECK_FALSE(bus.session.measurements_frozen());
 }
 
 TEST_CASE("a Reply that decodes nothing still answers, so it doesn't count towards staleness") {

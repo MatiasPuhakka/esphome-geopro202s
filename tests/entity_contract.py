@@ -148,7 +148,7 @@ def contract_diff(committed, generated):
 
 def _platforms():
     """Each entity key's platform: its entity kind in the Register map, plus the hub's
-    own text sensor."""
+    own text sensor and binary sensor."""
     spec = importlib.util.spec_from_file_location("register_map", REGISTER_MAP)
     register_map = importlib.util.module_from_spec(spec)
     try:
@@ -157,6 +157,7 @@ def _platforms():
         sys.exit(f"{error}. Run this with the Python that has ESPHome installed (make PYTHON=...).")
     platforms = {value.key: value.entity_kind.value for value in register_map.VALUES}
     platforms["component_revision"] = "text_sensor"
+    platforms["measurements_frozen"] = "binary_sensor"
     return platforms
 
 

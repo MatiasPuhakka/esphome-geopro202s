@@ -4,7 +4,7 @@ from pathlib import Path
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import binary_sensor, sensor, text_sensor, uart
-from esphome.const import CONF_ID, ENTITY_CATEGORY_DIAGNOSTIC
+from esphome.const import CONF_ID, DEVICE_CLASS_PROBLEM, ENTITY_CATEGORY_DIAGNOSTIC
 from esphome.core import HexInt
 
 from .register_map import VALUES, EntityKind
@@ -41,6 +41,7 @@ def _decode_rule(rule):
 CONF_VALUE_INTERVAL = 'value_interval'
 CONF_BANK_INTERVAL = 'bank_interval'
 CONF_COMPONENT_REVISION = 'component_revision'
+CONF_MEASUREMENTS_FROZEN = 'measurements_frozen'
 
 # A zero interval would poll without pause, so require more than zero.
 _poll_interval = cv.All(cv.positive_not_null_time_period, cv.positive_time_period_milliseconds)
@@ -58,6 +59,9 @@ CONFIG_SCHEMA = (
         cv.Optional(CONF_BANK_INTERVAL, default='60s'): _poll_interval,
         cv.Optional(CONF_COMPONENT_REVISION): text_sensor.text_sensor_schema(
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC, icon='mdi:source-commit'),
+        # On while the Session finds the Controller's measurements Frozen (session.h).
+        cv.Optional(CONF_MEASUREMENTS_FROZEN): binary_sensor.binary_sensor_schema(
+            device_class=DEVICE_CLASS_PROBLEM, icon='mdi:thermometer-alert'),
         **{cv.Optional(value.key): _entity_schema(value) for value in VALUES},
     })
     .extend(cv.COMPONENT_SCHEMA)
@@ -90,6 +94,9 @@ async def to_code(config):
     if CONF_COMPONENT_REVISION in config:
         entity = await text_sensor.new_text_sensor(config[CONF_COMPONENT_REVISION])
         cg.add(hub.set_component_revision_text_sensor(entity))
+    if CONF_MEASUREMENTS_FROZEN in config:
+        entity = await binary_sensor.new_binary_sensor(config[CONF_MEASUREMENTS_FROZEN])
+        cg.add(hub.set_measurements_frozen_binary_sensor(entity))
 
     for value in VALUES:
         if value.key not in config:
@@ -99,4 +106,5 @@ async def to_code(config):
         group = getattr(PollGroup, value.group.value)
         address_kind = getattr(AddressKind, value.address_kind.value)
         cg.add(hub.register_value(
-            group, address_kind, HexInt(value.address), value.offset, _decode_rule(value.decode), entity))
+            group, address_kind, HexInt(value.address), value.offset, _decode_rule(value.decode),
+            value.temperature_measurement, entity))

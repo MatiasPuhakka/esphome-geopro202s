@@ -107,6 +107,9 @@ class Value:
     state_class: Optional[str] = None
     accuracy: Optional[int] = None
     icon: Optional[str] = None
+    # Whether this is an M-number temperature, which the Session watches for Frozen
+    # measurements (session.h).
+    temperature_measurement: bool = False
 
     def __post_init__(self):
         assert isinstance(self.entity_kind, EntityKind), f"{self.key}: entity_kind must be an EntityKind"
@@ -141,6 +144,7 @@ def _temperature(key, address):
         key, EntityKind.SENSOR, address, CENTI_S16,
         unit=UNIT_CELSIUS, device_class=DEVICE_CLASS_TEMPERATURE,
         state_class=STATE_CLASS_MEASUREMENT, accuracy=2, icon="mdi:thermometer",
+        temperature_measurement=True,
     )
 
 
